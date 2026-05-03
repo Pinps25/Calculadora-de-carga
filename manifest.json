@@ -1,0 +1,22 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/>{
+  "short_name": "Calculadora",
+  "name": "Calculadora de Carga",
+  "description": "Ferramenta profissional de pesagem e conferência logística.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "./",
+  "theme_color": "#0056b3"
+}

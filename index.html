@@ -1,0 +1,2898 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a6b3c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CONFERÊNCIA DE PESAGEM</title>
+    
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0056b3">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Calculadora Pronta para Uso Offline!'))
+        .catch(err => console.log('Erro ao registrar:', err));
+    });
+  }
+</script>
+
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;800&display=swap" rel="stylesheet"></noscript>
+
+    <style>
+        /* ─── TOKENS ─── */
+        :root {
+            --green:   #1a6b3c;
+            --green-l: #27ae60;
+            --green-bg:#e8f5ee;
+            --navy:    #1c2b3a;
+            --red:     #c0392b;
+            --red-bg:  #fdf2f1;
+            --amber:   #c96a00;
+            --amber-bg:#fff8ed;
+            --grey:    #f0f3f6;
+            --border:  #dde3ea;
+            --text:    #1c2b3a;
+            --muted:   #6b7a8d;
+            --white:   #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+            --radius:  10px;
+            --font-ui: 'Sora', sans-serif;
+            --font-num:'DM Mono', monospace;
+            --drawer-w: 310px;
+        }
+
+        /* ─── RESET / BASE ─── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Sora', sans-serif;
+            background: #f0f3f6;
+            color: #1c2b3a;
+            min-height: 100vh;
+            padding: 12px 12px 100px;
+        }
+
+        /* ─── CARD ─── */
+        .card {
+            background: #ffffff;
+            max-width: 1100px;
+            margin: 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.12);
+            overflow: hidden;
+        }
+
+        /* ─── HEADER ─── */
+        .app-header {
+            background: #1c2b3a;
+            padding: 16px 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .header-top { display: flex; align-items: center; gap: 12px; }
+        .app-header h1 {
+            color: #ffffff;
+            font-size: .95rem;
+            font-weight: 800;
+            letter-spacing: .10em;
+            text-transform: uppercase;
+            flex: 1;
+        }
+        .app-header h1 span { color: #27ae60; }
+        .header-save {
+            font-size: 10px; font-weight: 700;
+            color: #27ae60; font-family: 'DM Mono', monospace;
+            opacity: 0; transition: opacity .3s; white-space: nowrap;
+        }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-ghost {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.15);
+            color: #ffffff; padding: 7px 14px; border-radius: 7px;
+            font-size: 11px; font-weight: 600; font-family: 'Sora', sans-serif;
+            cursor: pointer; transition: background .2s; letter-spacing: .04em;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,.18); }
+
+        /* ─── HAMBURGER ─── */
+        .btn-hamburger {
+            width: 38px; height: 38px;
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 8px; cursor: pointer;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 5px; padding: 0; flex-shrink: 0;
+            transition: background .2s;
+        }
+        .btn-hamburger:hover { background: rgba(255,255,255,.2); }
+        .btn-hamburger span {
+            display: block; width: 18px; height: 2px;
+            background: #ffffff; border-radius: 2px;
+        }
+
+        /* ─── DRAWER ─── */
+        .drawer-overlay {
+            position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0,0,0,.55); z-index: 490;
+            opacity: 0; pointer-events: none; transition: opacity .3s ease;
+        }
+        .drawer-overlay.open { opacity: 1; pointer-events: all; }
+        .side-drawer {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: 310px; max-width: 90vw;
+            background: #ffffff; z-index: 500;
+            transform: translateX(-100%);
+            transition: transform .32s cubic-bezier(.4,0,.2,1);
+            box-shadow: 4px 0 32px rgba(0,0,0,.18);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .side-drawer.open { transform: translateX(0); }
+        .drawer-header {
+            background: #1c2b3a; padding: 20px 18px 16px;
+            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+        }
+        .drawer-header h2 {
+            color: #ffffff; font-size: .85rem;
+            font-weight: 800; letter-spacing: .1em;
+            text-transform: uppercase; flex: 1;
+        }
+        .drawer-header h2 span { color: #27ae60; }
+        .btn-close-drawer {
+            width: 30px; height: 30px; border-radius: 6px;
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+            color: #ffffff; font-size: 14px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background .2s; flex-shrink: 0;
+        }
+        .btn-close-drawer:hover { background: rgba(255,255,255,.22); }
+        .drawer-body {
+            flex: 1; overflow-y: auto; padding: 0;
+            scrollbar-width: thin; scrollbar-color: #dde3ea transparent;
+        }
+        .drawer-body::-webkit-scrollbar { width: 4px; }
+        .drawer-body::-webkit-scrollbar-thumb { background: #dde3ea; border-radius: 2px; }
+        .drawer-section { padding: 18px 18px 14px; border-bottom: 1px solid #dde3ea; }
+        .drawer-section:last-child { border-bottom: none; }
+        .drawer-section-title {
+            display: block; font-size: 9px; font-weight: 800;
+            letter-spacing: .12em; text-transform: uppercase;
+            color: #6b7a8d; margin-bottom: 14px;
+        }
+        .drawer-field { margin-bottom: 12px; }
+        .drawer-field:last-child { margin-bottom: 0; }
+        .drawer-label {
+            display: block; font-size: 9px; font-weight: 800;
+            letter-spacing: .08em; text-transform: uppercase;
+            color: #6b7a8d; margin-bottom: 4px;
+        }
+        .drawer-input {
+            width: 100%; padding: 9px 11px;
+            border: 1px solid #dde3ea; border-radius: 7px;
+            font-size: 13px; font-family: 'Sora', sans-serif;
+            color: #1c2b3a; background: #ffffff;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .drawer-input:focus {
+            outline: none; border-color: #27ae60;
+            box-shadow: 0 0 0 3px rgba(39,174,96,.15);
+        }
+
+        /* ─── TOGGLES ─── */
+        .toggle-item {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid #f0f3f6;
+            gap: 12px; cursor: pointer;
+        }
+        .toggle-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .toggle-item:first-child { padding-top: 0; }
+        .toggle-info { flex: 1; }
+        .toggle-label { display: block; font-size: 12px; font-weight: 600; color: #1c2b3a; line-height: 1.3; }
+        .toggle-desc  { display: block; font-size: 10px; color: #6b7a8d; margin-top: 2px; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track {
+            position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+            background: #dde3ea; border-radius: 12px;
+            cursor: pointer; transition: background .22s;
+        }
+        .toggle-track::after {
+            content: ''; position: absolute; left: 3px; top: 3px;
+            width: 18px; height: 18px; background: white; border-radius: 50%;
+            transition: transform .22s; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+        }
+        .toggle-switch input:checked + .toggle-track { background: #27ae60; }
+        .toggle-switch input:checked + .toggle-track::after { transform: translateX(20px); }
+
+        .drawer-footer { padding: 16px 18px; border-top: 1px solid #dde3ea; flex-shrink: 0; }
+        .btn-help-drawer {
+            width: 100%; padding: 12px 16px;
+            background: #f0f3f6; border: 1px solid #dde3ea;
+            border-radius: 8px; font-size: 12px; font-weight: 700;
+            font-family: 'Sora', sans-serif; color: #6b7a8d;
+            cursor: pointer; text-align: left;
+            transition: background .2s, color .2s; letter-spacing: .03em;
+        }
+        .btn-help-drawer:hover { background: #e8f5ee; color: #1a6b3c; border-color: #27ae60; }
+
+        /* ─── TABS ─── */
+        .tabs-bar {
+            padding: 12px 16px 0; display: flex; gap: 6px;
+            overflow-x: auto; border-bottom: 1px solid #dde3ea;
+            scrollbar-width: none;
+        }
+        .tabs-bar::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            padding: 9px 16px; border: none; background: transparent;
+            border-radius: 8px 8px 0 0; font-size: 11px; font-weight: 700;
+            font-family: 'Sora', sans-serif; cursor: pointer; white-space: nowrap;
+            color: #6b7a8d; border-bottom: 3px solid transparent;
+            transition: color .2s, border-color .2s; letter-spacing: .04em;
+        }
+        .tab-btn:hover { color: #1c2b3a; }
+        .tab-btn.active     { color: #1a6b3c; border-bottom-color: #1a6b3c; }
+        .tab-btn.tab-error  { color: #c0392b;   border-bottom-color: #c0392b; }
+        .tab-btn.tab-warning{ color: #c96a00; border-bottom-color: #c96a00; }
+
+        /* ─── CARD BODY ─── */
+        .card-body { padding: 20px; }
+
+        /* ─── FORM SECTION ─── */
+        .form-section {
+            background: #f0f3f6; border: 1px solid #dde3ea;
+            border-radius: 10px; padding: 16px; margin-bottom: 16px;
+        }
+        .grid-produto {
+            display: grid; gap: 10px;
+            grid-template-columns: 200px 1fr;
+        }
+        @media (max-width: 520px) { .grid-produto { grid-template-columns: 1fr; } }
+        label.field-label {
+            display: block; font-size: 9px; font-weight: 800;
+            letter-spacing: .08em; text-transform: uppercase;
+            color: #6b7a8d; margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%; padding: 9px 11px;
+            border: 1px solid #dde3ea; border-radius: 7px;
+            font-size: 13px; font-family: 'Sora', sans-serif;
+            color: #1c2b3a; background: #ffffff;
+            transition: border-color .2s, box-shadow .2s; appearance: none;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: #27ae60;
+            box-shadow: 0 0 0 3px rgba(39,174,96,.15);
+        }
+        input[type="number"] { font-family: 'DM Mono', monospace; }
+        input[type="date"]   { font-family: 'DM Mono', monospace; font-size: 12px; }
+        .validade-global-wrap .field-label { color: #1a6b3c; }
+        #validade-global {
+            border-color: rgba(39,174,96,.35); background: #e8f5ee;
+        }
+        #validade-global:focus { border-color: #27ae60; }
+
+        /* ─── CONFIRMADOR ─── */
+        .confirmador {
+            font-size: 9px; font-weight: 700; font-family: 'DM Mono', monospace;
+            color: #3a86c8; height: 13px; display: block;
+            margin-top: 3px; letter-spacing: .02em;
+        }
+        body.no-confirmadores .confirmador { display: none; }
+
+        /* ─── PALLET BLOCK ─── */
+        .pallet-block {
+            background: #ffffff; border: 1px solid #dde3ea;
+            border-left: 4px solid #27ae60; border-radius: 10px;
+            padding: 16px; margin-bottom: 14px;
+            transition: border-color .25s, background .25s, box-shadow .25s;
+        }
+        .pallet-block.has-error {
+            border-left-color: #c0392b; border-left-width: 6px;
+            background: #fdf2f1;
+            animation: pulse-red 2.5s ease-in-out infinite;
+        }
+        .pallet-block.is-warning {
+            border-left-color: #c96a00; border-left-width: 6px;
+            background: #fff8ed;
+        }
+        @keyframes pulse-red {
+            0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,.0); }
+            50%      { box-shadow: 0 0 0 6px rgba(192,57,43,.15); }
+        }
+        .pallet-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 14px;
+        }
+        .pallet-title {
+            font-weight: 800; font-size: 12px; color: #1a6b3c;
+            letter-spacing: .06em; text-transform: uppercase;
+        }
+        .btn-remove {
+            background: transparent; border: 1px solid #c0392b;
+            color: #c0392b; padding: 4px 10px; border-radius: 5px;
+            font-size: 10px; font-weight: 700; font-family: 'Sora', sans-serif;
+            cursor: pointer; transition: background .2s, color .2s;
+        }
+        .btn-remove:hover { background: #c0392b; color: #ffffff; }
+        .pallet-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 520px) {
+            .pallet-grid { grid-template-columns: repeat(2, 1fr); }
+            .pallet-grid .col-full { grid-column: span 2 !important; }
+        }
+        .pallet-alert {
+            grid-column: 1 / -1; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; padding: 12px 14px; border-radius: 7px;
+            font-size: 12px; font-weight: 700; margin-top: 6px; text-align: center;
+        }
+        .pallet-block.has-error  .pallet-alert { display: flex; background: #c0392b;   color: #ffffff; }
+        .pallet-block.is-warning .pallet-alert { display: flex; background: #c96a00; color: #ffffff; }
+        .btn-auth {
+            background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.5);
+            color: #ffffff; padding: 8px 20px; border-radius: 6px;
+            font-size: 11px; font-weight: 800; font-family: 'Sora', sans-serif;
+            cursor: pointer; white-space: nowrap; transition: background .2s;
+            width: 100%; max-width: 280px;
+        }
+        .btn-auth:hover { background: rgba(255,255,255,.35); }
+
+        /* ─── PALLET FOOTER ─── */
+        .pallet-footer {
+            grid-column: 1 / -1; display: flex; gap: 14px;
+            margin-top: 12px; padding-top: 14px;
+            border-top: 1px dashed #dde3ea; align-items: stretch;
+        }
+        .footer-outputs { display: flex; flex: 1; gap: 8px; flex-direction: column; }
+        .outputs-row { display: flex; gap: 8px; }
+        .output-chip {
+            flex: 1; background: #f0f3f6; border: 1px solid #dde3ea;
+            border-radius: 7px; padding: 8px 6px; text-align: center;
+            font-size: 9px; font-weight: 800; text-transform: uppercase;
+            color: #6b7a8d; letter-spacing: .05em;
+        }
+        .output-chip .chip-val {
+            display: block; font-family: 'DM Mono', monospace;
+            font-size: 12px; font-weight: 500; color: #1c2b3a; margin-top: 3px;
+        }
+        .output-chip.chip-liq { background: #e8f5ee; border-color: #27ae60; color: #1a6b3c; }
+        .output-chip.chip-liq .chip-val { color: #1a6b3c; font-weight: 700; }
+        .pallet-block.has-error  .output-chip.chip-liq { background: #fdf2f1;   border-color: #c0392b;   color: #c0392b; }
+        .pallet-block.has-error  .output-chip.chip-liq .chip-val { color: #c0392b; }
+        .pallet-block.is-warning .output-chip.chip-liq { background: #fff8ed; border-color: #c96a00; color: #c96a00; }
+        .pallet-block.is-warning .output-chip.chip-liq .chip-val { color: #c96a00; }
+        .btn-camera {
+            display: block; width: 100%; padding: 9px;
+            background: #1c2b3a; color: #ffffff; border-radius: 7px;
+            font-size: 10px; font-weight: 700; font-family: 'Sora', sans-serif;
+            text-align: center; cursor: pointer; transition: background .2s; letter-spacing: .04em;
+        }
+        .btn-camera.has-photo { background: #1a6b3c; }
+        .btn-camera:hover { opacity: .85; }
+        .footer-photo { width: 80px; height: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .img-preview {
+            width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
+            display: none; border: 2px solid #dde3ea; cursor: zoom-in;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); transition: transform .2s;
+        }
+        .img-preview:hover { transform: scale(1.05); }
+        body.no-camera .btn-camera { display: none; }
+        body.no-camera .footer-photo { display: none; }
+
+        /* ─── ADD PALLET ─── */
+        .btn-add-pallet {
+            width: 100%; padding: 13px; background: transparent;
+            border: 2px dashed #27ae60; color: #1a6b3c;
+            border-radius: 10px; font-size: 12px; font-weight: 800;
+            font-family: 'Sora', sans-serif; cursor: pointer; margin-bottom: 20px;
+            transition: background .2s; letter-spacing: .05em; text-transform: uppercase;
+        }
+        .btn-add-pallet:hover { background: #e8f5ee; }
+
+        /* ─── AVULSOS ─── */
+        .avulsos-section {
+            background: #fffbf2; border: 1px solid #f5c76e;
+            border-left: 4px solid #c96a00;
+            border-radius: 10px; margin-bottom: 16px;
+            overflow: hidden;
+        }
+        body.no-avulsos .avulsos-section { display: none; }
+        .avulsos-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; cursor: pointer; user-select: none;
+            transition: background .2s;
+        }
+        .avulsos-header:hover { background: #fff3d6; }
+        .section-tag {
+            font-size: 9px; font-weight: 800; letter-spacing: .1em;
+            text-transform: uppercase; color: #c96a00; display: block;
+            margin: 0;
+        }
+        .avulsos-toggle-icon {
+            font-size: 16px; opacity: .65; line-height: 1;
+            transition: transform .3s ease;
+        }
+        .avulsos-body {
+            max-height: 0; overflow: hidden;
+            transition: max-height .4s ease, opacity .35s ease, padding .35s ease;
+            opacity: 0; padding: 0 14px;
+        }
+        .avulsos-body.open {
+            max-height: 300px; opacity: 1; padding: 0 14px 14px;
+        }
+        .avulsos-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr 1fr; }
+        @media (max-width: 520px) {
+            .avulsos-grid { grid-template-columns: 1fr 1fr; }
+            .avulsos-grid .col-full { grid-column: span 2; }
+        }
+
+        /* ─── PESO DESEJADO ─── */
+        .peso-desejado-wrap {
+            background: #ffffff;
+            border: 2px solid #1c2b3a;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .peso-desejado-top {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+        }
+        .peso-desejado-top .pd-label-group { flex: 1; }
+        .pd-title {
+            display: block;
+            font-size: 9px; font-weight: 800;
+            letter-spacing: .1em; text-transform: uppercase;
+            color: #1c2b3a; margin-bottom: 4px;
+        }
+        #peso-desejado {
+            font-family: 'DM Mono', monospace;
+            font-size: 15px;
+            font-weight: 500;
+            border-color: #1c2b3a;
+        }
+        #peso-desejado:focus { border-color: #27ae60; box-shadow: 0 0 0 3px rgba(39,174,96,.15); }
+        .pd-result-box {
+            display: none;
+            margin-top: 14px;
+            border-radius: 8px;
+            padding: 12px 16px;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .pd-result-box.passou {
+            display: flex;
+            background: #e8f5ee;
+            border: 1.5px solid #27ae60;
+        }
+        .pd-result-box.faltou {
+            display: flex;
+            background: #fdf2f1;
+            border: 1.5px solid #c0392b;
+        }
+        .pd-result-box.exato {
+            display: flex;
+            background: #e8f5ee;
+            border: 1.5px solid #27ae60;
+        }
+        .pd-status {
+            font-size: 11px; font-weight: 800;
+            letter-spacing: .08em; text-transform: uppercase;
+        }
+        .pd-result-box.passou .pd-status { color: #1a6b3c; }
+        .pd-result-box.faltou .pd-status { color: #c0392b; }
+        .pd-result-box.exato  .pd-status { color: #1a6b3c; }
+        .pd-diff {
+            font-family: 'DM Mono', monospace;
+            font-size: 20px; font-weight: 500;
+            margin-left: auto;
+        }
+        .pd-result-box.passou .pd-diff { color: #1a6b3c; }
+        .pd-result-box.faltou .pd-diff { color: #c0392b; }
+        .pd-result-box.exato  .pd-diff { color: #1a6b3c; }
+        .pd-sub {
+            font-size: 10px; color: #6b7a8d;
+            font-family: 'DM Mono', monospace;
+            width: 100%; padding-top: 4px;
+            border-top: 1px dashed rgba(0,0,0,.1);
+            margin-top: 4px;
+        }
+
+        /* ─── RESULTADO ─── */
+        .result-box {
+            background: #1c2b3a; color: #ffffff;
+            border-radius: 10px; padding: 20px;
+            margin-top: 8px; transition: background .3s;
+        }
+        .result-box.bloqueado { background: #c0392b; }
+        .tara-row {
+            display: flex; justify-content: space-around;
+            font-size: 10px; font-weight: 700;
+            color: rgba(255,255,255,.6);
+            padding-bottom: 14px; margin-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,.1); text-align: center;
+        }
+        .tara-val {
+            display: block; font-family: 'DM Mono', monospace;
+            font-size: 13px; font-weight: 500;
+            color: rgba(255,255,255,.85); margin-top: 4px;
+        }
+        .liq-label {
+            font-size: 9px; font-weight: 800; letter-spacing: .1em;
+            text-transform: uppercase; color: rgba(255,255,255,.5); text-align: center;
+        }
+        .liq-total {
+            font-size: 32px; font-family: 'DM Mono', monospace;
+            font-weight: 500; text-align: center; margin-top: 6px; color: #ffffff;
+        }
+        .toggle-details { text-align: center; font-size: 18px; margin-top: 10px; cursor: pointer; opacity: .6; user-select: none; }
+        body.no-detalhes .toggle-details { display: none; }
+        .details-panel {
+            max-height: 0; overflow: hidden;
+            transition: max-height .4s ease, opacity .4s ease, margin-top .3s ease;
+            opacity: 0; margin-top: 0;
+        }
+        .details-panel.open { max-height: 220px; opacity: 1; margin-top: 12px; }
+        .details-inner {
+            background: rgba(0,0,0,.25); padding: 12px 14px; border-radius: 8px;
+            font-size: 11px; line-height: 1.8; color: rgba(255,255,255,.75);
+            font-family: 'DM Mono', monospace; border: 1px solid rgba(255,255,255,.08);
+        }
+        .details-inner strong { color: #f5c76e; }
+
+        /* ─── FIXED FOOTER ─── */
+        .btn-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #ffffff; border-top: 1px solid #dde3ea;
+            padding: 12px 16px; display: grid;
+            grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+            box-shadow: 0 -4px 16px rgba(0,0,0,.08); z-index: 100;
+        }
+        .action-btn {
+            padding: 14px; border: none; border-radius: 8px;
+            font-weight: 800; font-size: 11px; font-family: 'Sora', sans-serif;
+            cursor: pointer; text-transform: uppercase; letter-spacing: .06em;
+            transition: opacity .2s, transform .1s;
+        }
+        .action-btn:active  { transform: scale(.97); }
+        .action-btn:disabled{ opacity: .4; cursor: not-allowed; }
+        .btn-clear  { background: #fdf2f1; color: #c0392b;   border: 1px solid #f5c6c3; }
+        .btn-new    { background: #e8f2fd; color: #2563b0;      border: 1px solid #bdd4f5; }
+        .btn-print  { background: #e8f5ee; color: #1a6b3c; border: 1px solid #a8d5bc; }
+        .btn-print.blocked { background: #fdf2f1; color: #c0392b; border-color: #f5c6c3; }
+
+        /* ─── MODALS ─── */
+        .modal-backdrop {
+            display: none; position: fixed; z-index: 2000; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0,0,0,.92); justify-content: center;
+            align-items: center; flex-direction: column; gap: 16px;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal-backdrop img { max-width: 92%; max-height: 78vh; border-radius: 10px; border: 2px solid rgba(255,255,255,.2); }
+        .btn-close-modal {
+            padding: 10px 24px; background: #c0392b; color: #ffffff;
+            border: none; border-radius: 7px; font-weight: 800;
+            font-family: 'Sora', sans-serif; font-size: 12px; cursor: pointer; letter-spacing: .05em;
+        }
+        .modal-overlay {
+            display: none; position: fixed; z-index: 1001; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0,0,0,.8); justify-content: center;
+            align-items: flex-start; padding-top: 8vh;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #ffffff; padding: 24px; width: 90%;
+            max-width: 480px; border-radius: 14px; max-height: 82vh; overflow-y: auto;
+        }
+        .modal-box h2 { color: #1a6b3c; margin-bottom: 16px; font-size: 1rem; }
+        .help-item { margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+        .btn-close {
+            width: 100%; padding: 14px; background: #1c2b3a; color: #ffffff;
+            border: none; border-radius: 8px; font-weight: 800; font-family: 'Sora', sans-serif;
+            cursor: pointer; margin-top: 16px; letter-spacing: .06em; text-transform: uppercase;
+        }
+        .btn-del-item {
+            background: transparent; border: 1px solid #c0392b; color: #c0392b;
+            font-size: 9px; font-weight: 800; font-family: 'Sora', sans-serif;
+            cursor: pointer; padding: 2px 6px; border-radius: 4px;
+            text-transform: uppercase; letter-spacing: .05em; margin-left: 8px; vertical-align: middle;
+        }
+        .loading-overlay {
+            display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(255,255,255,.85); z-index: 3000;
+            justify-content: center; align-items: center;
+            flex-direction: column; gap: 12px; font-weight: 700; color: #1c2b3a; font-size: 14px;
+        }
+        .loading-overlay.open { display: flex; }
+        .spinner {
+            width: 36px; height: 36px; border: 3px solid #dde3ea;
+            border-top-color: #1a6b3c; border-radius: 50%; animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input.input-invalido { border-color: #c0392b !important; background: #fff5f5 !important; box-shadow: 0 0 0 3px rgba(192,57,43,.12) !important; }
+        input.input-invalido + .confirmador { color: #c0392b; }
+        input.input-invalido + .confirmador::before { content: '⚠ Valor inválido'; color: #c0392b; }
+
+        /* ─── DRAWER ACTION BUTTONS (Backup/Carregar) ─── */
+        .btn-drawer-action {
+            flex: 1;
+            padding: 11px 10px;
+            background: #1c2b3a;
+            border: none;
+            border-radius: 7px;
+            color: #ffffff;
+            font-size: 11px; font-weight: 700;
+            font-family: 'Sora', sans-serif;
+            cursor: pointer;
+            letter-spacing: .04em;
+            text-align: center;
+            transition: opacity .2s;
+        }
+        .btn-drawer-action:hover { opacity: .82; }
+
+        /* ─── PESO DESEJADO PANEL (dentro do result-box) ─── */
+        .pd-panel {
+            max-height: 0; overflow: hidden;
+            transition: max-height .4s ease, opacity .4s ease, margin-bottom .3s ease;
+            opacity: 0; margin-bottom: 0;
+        }
+        .pd-panel.open { max-height: 220px; opacity: 1; margin-bottom: 12px; }
+        .toggle-pd {
+            text-align: center; font-size: 18px;
+            margin-bottom: 10px; cursor: pointer; opacity: .6; user-select: none;
+        }
+        .pd-panel .details-inner input[type="text"] {
+            background: rgba(255,255,255,.12);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,.25);
+            font-family: 'DM Mono', monospace;
+            font-size: 15px; font-weight: 500;
+            border-radius: 7px; padding: 9px 11px; width: 100%;
+            box-sizing: border-box;
+        }
+        .pd-panel .details-inner input[type="text"]:focus {
+            outline: none; border-color: rgba(255,255,255,.65);
+            box-shadow: 0 0 0 3px rgba(255,255,255,.1);
+        }
+        .pd-panel .confirmador { color: rgba(255,255,255,.55); font-size: 9px; }
+        .pd-panel .pd-result-box {
+            margin-top: 10px; border-radius: 6px;
+            padding: 8px 12px; align-items: center;
+            flex-wrap: wrap; gap: 8px; display: none;
+        }
+        .pd-panel .pd-result-box.passou,
+        .pd-panel .pd-result-box.exato  { display: flex; background: rgba(39,174,96,.22); border: 1px solid rgba(39,174,96,.5); }
+        .pd-panel .pd-result-box.faltou { display: flex; background: rgba(192,57,43,.22); border: 1px solid rgba(192,57,43,.5); }
+        .pd-panel .pd-result-box.passou .pd-status { color: #5ddb8a; }
+        .pd-panel .pd-result-box.exato  .pd-status { color: #5ddb8a; }
+        .pd-panel .pd-result-box.faltou .pd-status { color: #e8847a; }
+        .pd-panel .pd-result-box .pd-diff { color: #ffffff; font-size: 18px; }
+        .pd-panel .pd-result-box .pd-sub { color: rgba(255,255,255,.55); width: 100%; border-top-color: rgba(255,255,255,.1); }
+
+        /* ─── CALCULADORA DE VALIDADE ─── */
+        #validity-screen {
+            display: none;
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: 600;
+            background: #f0f3f6;
+            overflow-y: auto;
+            padding: 12px 12px 40px;
+        }
+        .validity-header {
+            background: #1c2b3a;
+            padding: 16px 20px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .validity-header h1 {
+            color: #ffffff;
+            font-size: .95rem;
+            font-weight: 800;
+            letter-spacing: .10em;
+            text-transform: uppercase;
+            flex: 1;
+        }
+        .validity-header h1 span { color: #27ae60; }
+        .btn-back-validity {
+            width: 38px; height: 38px;
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: #ffffff;
+            transition: background .2s; flex-shrink: 0;
+        }
+        .btn-back-validity:hover { background: rgba(255,255,255,.2); }
+        .validity-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 40px 20px 20px;
+            gap: 32px;
+        }
+        .validity-input-wrap {
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .validity-hint {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #6b7a8d;
+        }
+        #validity-input {
+            width: 100%;
+            text-align: center;
+            font-family: 'DM Mono', monospace;
+            font-size: 2.8rem;
+            font-weight: 500;
+            padding: 20px 16px;
+            border: 2px solid #dde3ea;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #1c2b3a;
+            letter-spacing: .08em;
+            transition: border-color .2s, box-shadow .2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+        #validity-input:focus {
+            outline: none;
+            border-color: #27ae60;
+            box-shadow: 0 0 0 4px rgba(39,174,96,.15);
+        }
+        .validity-result {
+            width: 100%;
+            max-width: 380px;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 10px;
+            padding: 28px 20px;
+            background: #ffffff;
+            border: 1px solid #dde3ea;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            transition: background .3s, border-color .3s;
+        }
+        .validity-result.res-ok {
+            background: #e8f5ee;
+            border-color: #27ae60;
+        }
+        .validity-result.res-today {
+            background: #fff8ed;
+            border-color: #c96a00;
+        }
+        .validity-result.res-expired {
+            background: #fdf2f1;
+            border-color: #c0392b;
+        }
+        .val-res-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .res-ok    .val-res-label { color: #1a6b3c; }
+        .res-today .val-res-label { color: #c96a00; }
+        .res-expired .val-res-label { color: #c0392b; }
+        .val-res-number {
+            font-family: 'DM Mono', monospace;
+            font-size: 5rem;
+            font-weight: 500;
+            line-height: 1;
+        }
+        .res-ok    .val-res-number { color: #1a6b3c; }
+        .res-today .val-res-number { color: #c96a00; }
+        .res-expired .val-res-number { color: #c0392b; }
+        .val-res-suffix {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+        .res-ok    .val-res-suffix { color: #1a6b3c; }
+        .res-today .val-res-suffix { color: #c96a00; }
+        .res-expired .val-res-suffix { color: #c0392b; }
+        .val-res-waiting { font-size: 13px; color: #6b7a8d; font-weight: 600; }
+        /* ─── MENU ITEM VALIDADE ─── */
+        .btn-validity-menu {
+            width: 100%;
+            padding: 12px 14px;
+            background: #e8f5ee;
+            border: 1.5px solid #27ae60;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Sora', sans-serif;
+            color: #1a6b3c;
+            cursor: pointer;
+            text-align: left;
+            letter-spacing: .04em;
+            transition: background .2s, box-shadow .2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-validity-menu:hover {
+            background: #d0ead8;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+
+        /* ─── PRINT -- RESET ─── */
+        #print-area { display: none; }
+
+        /* ═══════════════════════════════════════
+           V10 · UPGRADES
+           ═══════════════════════════════════════ */
+
+        /* ─── TOAST ─── */
+        #toast-container {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 9000; display: flex; flex-direction: column-reverse; gap: 8px;
+            pointer-events: none; width: 92%; max-width: 400px;
+        }
+        .toast {
+            padding: 11px 16px; border-radius: 10px; font-size: 12px; font-weight: 700;
+            font-family: 'Sora', sans-serif; color: #ffffff;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.3); pointer-events: all;
+            animation: toast-in .25s ease; letter-spacing: .02em; line-height: 1.4;
+        }
+        .toast-icon { font-size: 14px; flex-shrink: 0; }
+        .toast.toast-out { animation: toast-out .25s ease forwards; }
+        .toast.success { background: #1a6b3c; }
+        .toast.error   { background: #c0392b; }
+        .toast.warning { background: #c96a00; }
+        .toast.info    { background: #1c2b3a; }
+        @keyframes toast-in  { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes toast-out { from { opacity:1; transform:translateY(0); }   to { opacity:0; transform:translateY(14px); } }
+
+        /* ─── CONFIRM MODAL ─── */
+        .confirm-overlay {
+            display: none; position: fixed; top:0; right:0; bottom:0; left:0;
+            z-index: 8000; background: rgba(0,0,0,.72);
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .confirm-overlay.open { display: flex; }
+        .confirm-box {
+            background: #ffffff; border-radius: 16px; padding: 28px 22px 20px;
+            width: 100%; max-width: 330px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.35);
+        }
+        .confirm-icon { font-size: 2rem; text-align: center; display: block; margin-bottom: 8px; }
+        .confirm-msg {
+            font-size: 14px; font-weight: 600; color: #1c2b3a;
+            line-height: 1.55; margin-bottom: 22px; text-align: center;
+        }
+        .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .confirm-btns button {
+            padding: 13px; border: none; border-radius: 9px;
+            font-size: 12px; font-weight: 800; font-family: 'Sora', sans-serif;
+            cursor: pointer; text-transform: uppercase; letter-spacing: .05em;
+            transition: opacity .2s;
+        }
+        .confirm-btns button:active { opacity: .8; }
+        .btn-confirm-cancel { background: #f0f3f6; color: #6b7a8d; }
+        .btn-confirm-ok     { background: #c0392b; color: #ffffff; }
+        .btn-confirm-ok.is-green { background: #1a6b3c; }
+        .btn-confirm-ok.is-amber { background: #c96a00; }
+
+        /* ─── PALLET COLLAPSE ─── */
+        .pallet-toggle-bar {
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; user-select: none; flex: 1; min-width: 0;
+        }
+        .pallet-summary {
+            font-size: 10px; font-family: 'DM Mono', monospace;
+            font-weight: 500; color: #6b7a8d; white-space: nowrap; margin-left: 4px;
+        }
+        .pallet-collapse-icon {
+            font-size: 13px; opacity: .45; margin-left: auto; flex-shrink: 0;
+            transition: transform .3s ease; padding-right: 4px;
+        }
+        .pallet-block.collapsed .pallet-grid { display: none; }
+        .pallet-block.collapsed .pallet-collapse-icon { transform: rotate(-90deg); }
+        .pallet-block.collapsed { padding-bottom: 6px; }
+
+        /* ─── CLEAR BUTTON ─── */
+        .input-clear-wrap { position: relative; display: flex; align-items: center; }
+        .input-clear-wrap input { padding-right: 30px !important; width: 100%; }
+        .btn-clear-field {
+            position: absolute; right: 7px; background: none; border: none;
+            color: #6b7a8d; font-size: 12px; cursor: pointer; padding: 4px;
+            line-height: 1; border-radius: 4px; opacity: 0;
+            transition: opacity .15s; pointer-events: none;
+        }
+        .input-clear-wrap:hover .btn-clear-field { opacity: .45; pointer-events: all; }
+        .input-clear-wrap:focus-within .btn-clear-field { opacity: .7; pointer-events: all; }
+
+        /* ─── COMPACT MODE ─── */
+        body.compact .fw-pcx,
+        body.compact .fw-pemb,
+        body.compact .fw-qemb { display: none !important; }
+        body.compact .fw-bto,
+        body.compact .fw-pal { grid-column: span 4 !important; }
+        body.compact .fw-qcx { grid-column: span 4 !important; }
+
+        /* ─── UNDO BUTTON ─── */
+        .btn-undo {
+            width: 34px; height: 34px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 7px; color: #ffffff; font-size: 17px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background .2s, opacity .2s; flex-shrink: 0;
+            opacity: .3; line-height: 1;
+        }
+        .btn-undo:hover { background: rgba(255,255,255,.18); }
+        .btn-undo.active { opacity: 1; }
+
+        /* ═══════════════════════════════════════════════════
+           PRINT STYLES -- LAUDO REDESENHADO (3 por página)
+           ═══════════════════════════════════════════════════ */
+        @media print {
+            @page { size: A4 portrait; margin: 10mm 10mm 10mm 10mm; }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                font-family: 'Sora', 'Arial', sans-serif;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Oculta tudo da app */
+            .card, .btn-bar, .tabs-bar, .modal-backdrop,
+            .modal-overlay, .loading-overlay,
+            .drawer-overlay, .side-drawer { display: none !important; }
+
+            #print-area { display: block !important; width: 100%; }
+
+            /* ── PÁGINA ── */
+            .print-page {
+                page-break-after: always;
+                display: flex;
+                flex-direction: column;
+                gap: 5mm;
+                /* Altura real da área imprimível A4 com margin 10mm = 277mm */
+            }
+            .print-page:last-child { page-break-after: avoid; }
+
+            /* ── CABEÇALHO (só aparece na primeira página) ── */
+            .print-cabecalho {
+                border-bottom: 3px solid #1a6b3c;
+                padding-bottom: 4mm;
+                margin-bottom: 2mm;
+            }
+            .print-cab-titulo {
+                font-size: 18pt;
+                font-weight: 900;
+                color: #1c2b3a !important;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-cab-titulo span { color: #1a6b3c !important; }
+            .print-cab-meta {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                gap: 3mm;
+                margin-top: 3mm;
+            }
+            .print-cab-cell {
+                background: #f0f3f6 !important;
+                border-radius: 3mm;
+                padding: 2mm 3mm;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-cab-cell-label {
+                display: block;
+                font-size: 6pt;
+                font-weight: 800;
+                letter-spacing: .1em;
+                text-transform: uppercase;
+                color: #6b7a8d !important;
+                margin-bottom: 1mm;
+            }
+            .print-cab-cell-val {
+                display: block;
+                font-size: 9pt;
+                font-weight: 700;
+                color: #1c2b3a !important;
+            }
+
+            /* ── CONTAINER DOS SLOTS (3 por página) ── */
+            .print-slots {
+                display: flex;
+                flex-direction: column;
+                gap: 4mm;
+                flex: 1;
+            }
+
+            /* ── SLOT DE PRODUTO ── */
+            .print-slot {
+                flex: 1;
+                border: 1.5px solid #1c2b3a;
+                border-radius: 3mm;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+            }
+
+            /* Header do slot */
+            .slot-header {
+                background: #1c2b3a !important;
+                color: white !important;
+                padding: 2.5mm 4mm;
+                display: flex;
+                align-items: center;
+                gap: 3mm;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .slot-num {
+                background: #27ae60 !important;
+                color: white !important;
+                font-size: 7pt;
+                font-weight: 900;
+                padding: 1mm 2.5mm;
+                border-radius: 2mm;
+                letter-spacing: .05em;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                white-space: nowrap;
+            }
+            .slot-nome {
+                font-size: 10pt;
+                font-weight: 800;
+                color: white !important;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                flex: 1;
+            }
+            .slot-val-badge {
+                font-size: 7pt;
+                color: rgba(255,255,255,.7) !important;
+                font-family: 'DM Mono', monospace;
+                white-space: nowrap;
+            }
+
+            /* Body do slot: foto + tabela de dados */
+            .slot-body {
+                display: flex;
+                flex: 1;
+                gap: 0;
+            }
+
+            /* Coluna da foto */
+            .slot-foto-col {
+                width: 28mm;
+                flex-shrink: 0;
+                border-right: 1px solid #dde3ea;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2mm;
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .slot-foto {
+                width: 24mm;
+                height: 24mm;
+                object-fit: cover;
+                border-radius: 2mm;
+                border: 1px solid #dde3ea;
+                display: block;
+            }
+            .slot-foto-placeholder {
+                width: 24mm;
+                height: 24mm;
+                border-radius: 2mm;
+                border: 1px dashed #c0c8d0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 6pt;
+                color: #aaa !important;
+                text-align: center;
+                background: white !important;
+            }
+
+            /* Coluna de dados */
+            .slot-dados-col {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Tabela de dados */
+            .slot-tabela {
+                flex: 1;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                border-bottom: 1px solid #eee;
+            }
+            .slot-tabela-col {
+                padding: 1.5mm 3mm;
+            }
+            .slot-tabela-col:first-child {
+                border-right: 1px solid #eee;
+            }
+            .slot-row {
+                display: flex;
+                align-items: baseline;
+                padding: 1mm 0;
+                border-bottom: 1px solid #f0f3f6;
+                gap: 2mm;
+            }
+            .slot-row:last-child { border-bottom: none; }
+            .slot-row-label {
+                font-size: 6.5pt;
+                font-weight: 800;
+                color: #6b7a8d !important;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                white-space: nowrap;
+                flex-shrink: 0;
+                min-width: 18mm;
+            }
+            .slot-row-val {
+                font-size: 8pt;
+                font-weight: 600;
+                color: #1c2b3a !important;
+                font-family: 'DM Mono', monospace;
+                margin-left: auto;
+            }
+
+            /* Footer do slot: Líquido + Peso Desejado */
+            .slot-footer {
+                background: #1c2b3a !important;
+                color: white !important;
+                padding: 2mm 4mm;
+                display: flex;
+                align-items: center;
+                gap: 4mm;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .slot-liq-label {
+                font-size: 7pt;
+                font-weight: 800;
+                color: rgba(255,255,255,.6) !important;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+            }
+            .slot-liq-val {
+                font-size: 15pt;
+                font-weight: 700;
+                color: #27ae60 !important;
+                font-family: 'DM Mono', monospace;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .slot-pd-area {
+                margin-left: auto;
+                text-align: right;
+            }
+            .slot-pd-label {
+                font-size: 6pt;
+                color: rgba(255,255,255,.5) !important;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                display: block;
+            }
+            .slot-pd-diff {
+                font-size: 9pt;
+                font-weight: 700;
+                font-family: 'DM Mono', monospace;
+            }
+            .slot-pd-diff.passou { color: #27ae60 !important; }
+            .slot-pd-diff.faltou { color: #e74c3c !important; }
+            .slot-pd-diff.exato  { color: #27ae60 !important; }
+
+            /* Assinaturas -- só na última página */
+            .print-sig-area {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 8mm;
+                padding-top: 6mm;
+                border-top: 2px solid #1a6b3c;
+            }
+            .print-sig-box {
+                border-top: 2px solid #1c2b3a;
+                width: 40%;
+                text-align: center;
+                padding-top: 3mm;
+                font-size: 9pt;
+                font-weight: 700;
+                color: #1c2b3a !important;
+            }
+
+            /* Slot vazio (placeholder) */
+            .print-slot.empty {
+                border: 1.5px dashed #dde3ea;
+                background: #f8f9fa !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .slot-empty-label {
+                font-size: 9pt;
+                color: #c0c8d0 !important;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+            }
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 520px) {
+            .tara-row { font-size: 9px; }
+            .liq-total { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Confirm Modal -->
+<div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+        <span class="confirm-icon" id="confirm-icon">⚠</span>
+        <p class="confirm-msg" id="confirm-msg"></p>
+        <div class="confirm-btns">
+            <button class="btn-confirm-cancel" id="confirm-cancel">Cancelar</button>
+            <button class="btn-confirm-ok" id="confirm-ok">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <span id="loading-msg">Carregando...</span>
+</div>
+
+<!-- Modal: Foto -->
+<div class="modal-backdrop" id="modal-foto">
+    <img id="foto-expandida" src="" alt="Foto ampliada">
+    <button class="btn-close-modal" onclick="fecharModalFoto()">✕ FECHAR</button>
+</div>
+
+<!-- Modal: Ajuda -->
+<div class="modal-overlay" id="modal-ajuda">
+    <div class="modal-box">
+        <h2>📋 Dossiê de Segurança</h2>
+        <div class="help-item"><b>🔴 Alerta Vermelho:</b> Peso Líquido negativo. Requer autorização para avançar ao nível Laranja.</div>
+        <div class="help-item"><b>🟠 Alerta Laranja:</b> Tara excede 45% do peso bruto, ou autorização de nível 1 pendente. Requer liberação final.</div>
+        <div class="help-item"><b>🟢 Padrão:</b> Peso consistente e liberado para impressão.</div>
+        <div class="help-item"><b>⚖ Máscara KG (P.Bruto / P.Pallet):</b> Digite "80" → <b>80,000 kg</b>. Entrada direta em quilos.</div>
+        <div class="help-item"><b>🔢 Máscara Gramagem (P.Caixa / P.Emb):</b> Progressivo em gramas. "1234" → <b>1,234 kg</b>.</div>
+        <div class="help-item"><b>🎯 Peso Desejado:</b> Informe o peso alvo. O sistema mostra se passou ou faltou em relação ao Líquido.</div>
+        <div class="help-item"><b>📄 PDF (3 por página):</b> O laudo distribui automaticamente até 3 produtos por folha A4.</div>
+        <div class="help-item"><b>💾 Auto-save:</b> IndexedDB primário + localStorage fallback.</div>
+        <div class="help-item"><b>📸 Fotos:</b> Redimensionadas para 600px/JPEG 60%.</div>
+        <button class="btn-close" onclick="fecharModalAjuda()">Entendi, fechar</button>
+    </div>
+</div>
+
+<!-- Drawer Overlay -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="fecharDrawer()"></div>
+
+<!-- Side Drawer -->
+<div class="side-drawer" id="side-drawer">
+    <div class="drawer-header">
+        <h2>Menu <span>Config.</span></h2>
+        <button class="btn-close-drawer" onclick="fecharDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+        <div class="drawer-section">
+            <span class="drawer-section-title">💾 Dados da Sessão</span>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-drawer-action" onclick="gerarBackupManual();">⬇ Backup</button>
+                <button class="btn-drawer-action" onclick="document.getElementById('file-import').click();">⬆ Carregar</button>
+            </div>
+            <input type="file" id="file-import" style="display:none" accept=".json" onchange="importarBackup(event)">
+        </div>
+        <div class="drawer-section">
+            <span class="drawer-section-title">👤 Identificação</span>
+            <div class="drawer-field">
+                <label class="drawer-label">Conferente</label>
+                <input type="text" id="conferente" class="drawer-input" placeholder="Nome do conferente">
+            </div>
+            <div class="drawer-field">
+                <label class="drawer-label">Fornecedor</label>
+                <input type="text" id="fornecedor" class="drawer-input" placeholder="Nome do fornecedor">
+            </div>
+            <div class="drawer-field">
+                <label class="drawer-label">Data da Pesagem</label>
+                <input type="date" id="data-pesagem" class="drawer-input">
+            </div>
+            <div class="drawer-field" style="margin-top:6px;">
+                <button class="btn-validity-menu" onclick="showScreen('validity-screen'); fecharDrawer();">
+                    📅 Calculadora de Validade
+                </button>
+            </div>
+        </div>
+        <div class="drawer-section">
+            <span class="drawer-section-title">⚙ Recursos Ativos</span>
+            <label class="toggle-item" for="cfg-alerts">
+                <div class="toggle-info"><span class="toggle-label">Sistema de alertas</span><span class="toggle-desc">Erros e marcações visuais de tara</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-alerts" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-autocomplete">
+                <div class="toggle-info"><span class="toggle-label">Auto-completar</span><span class="toggle-desc">Pallet 1 propaga para os demais</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-autocomplete" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-autosave">
+                <div class="toggle-info"><span class="toggle-label">Auto-save duplo</span><span class="toggle-desc">IndexedDB + localStorage</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-autosave" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-confirmador">
+                <div class="toggle-info"><span class="toggle-label">Confirmador visual</span><span class="toggle-desc">Textos de leitura em g, kg, t</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-confirmador" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-avulsos">
+                <div class="toggle-info"><span class="toggle-label">Itens avulsos</span><span class="toggle-desc">Seção de itens fora do pallet</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-avulsos" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-camera">
+                <div class="toggle-info"><span class="toggle-label">Captura de fotos</span><span class="toggle-desc">Botões de câmera por pallet</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-camera" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-detalhes">
+                <div class="toggle-info"><span class="toggle-label">Painel de detalhes</span><span class="toggle-desc">Acordeão com resumo dos cálculos</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-detalhes" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-compact">
+                <div class="toggle-info"><span class="toggle-label">Modo compacto</span><span class="toggle-desc">Oculta P.Caixa, P.Emb e Emb/Cx</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-compact" onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+        </div>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-help-drawer" onclick="abrirModalAjuda()">❓ Dossiê de Segurança -- Como os cálculos funcionam</button>
+    </div>
+</div>
+
+<!-- Main Card -->
+<div class="card">
+    <div class="app-header">
+        <div class="header-top">
+            <button class="btn-hamburger" onclick="abrirDrawer()" aria-label="Menu configurações">
+                <span></span><span></span><span></span>
+            </button>
+            <button class="btn-undo" id="btn-undo" onclick="desfazer()" title="Desfazer (Ctrl+Z)">↩</button>
+            <h1>Conferência de <span>Pesagem</span></h1>
+            <span class="header-save" id="save-indicator">✔ Salvo</span>
+        </div>
+    </div>
+
+    <div class="tabs-bar" id="tabs-list"></div>
+
+    <div class="card-body">
+        <!-- Produto + Validade Global -->
+        <div class="form-section">
+            <div class="grid-produto">
+                <div class="validade-global-wrap">
+                    <label class="field-label">📅 Validade (Global)</label>
+                    <input type="date" id="validade-global">
+                </div>
+                <div>
+                    <label class="field-label">
+                        Produto
+                        <button class="btn-del-item" id="btn-del-item">✖ Excluir Item</button>
+                    </label>
+                    <div class="input-clear-wrap">
+                        <input type="text" id="produto" placeholder="Nome do produto...">
+                        <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pallets -->
+        <div id="container-pallets"></div>
+        <button class="btn-add-pallet" id="btn-add-pallet">＋ Adicionar Pallet</button>
+
+        <!-- Avulsos -->
+        <div class="avulsos-section">
+            <div class="avulsos-header" onclick="toggleAvulsos()">
+                <span class="section-tag">📦 Itens Avulsos (fora do pallet)</span>
+                <span class="avulsos-toggle-icon" id="seta-avulsos">▼</span>
+            </div>
+            <div class="avulsos-body" id="avulsos-body">
+                <div class="avulsos-grid">
+                    <div>
+                        <label class="field-label">Qtd Cx</label>
+                        <div class="input-clear-wrap">
+                            <input type="number" id="avulso-qcx" inputmode="numeric" placeholder="0">
+                            <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label">Qtd Emb</label>
+                        <div class="input-clear-wrap">
+                            <input type="number" id="avulso-qemb" inputmode="numeric" placeholder="0">
+                            <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                        </div>
+                    </div>
+                    <div class="col-full">
+                        <label class="field-label">Peso Bruto (kg)</label>
+                        <div class="input-clear-wrap">
+                            <input type="text" inputmode="decimal" id="avulso-peso" placeholder="0,000">
+                            <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                        </div>
+                        <span class="confirmador" id="conf-avulso-peso"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ RESULTADO + PESO DESEJADO INTEGRADO ═══ -->
+        <div class="result-box" id="result-box">
+
+            <!-- ▲ Painel Peso Desejado (abre para cima) -->
+            <div class="pd-panel" id="pd-panel">
+                <div class="details-inner">
+                    <strong>🎯 PESO DESEJADO</strong><br>
+                    <div style="margin-top:10px;">
+                        <div class="input-clear-wrap">
+                            <input type="text" id="peso-desejado" inputmode="decimal" placeholder="0,000 kg">
+                            <button class="btn-clear-field" data-action="clear-field" tabindex="-1" style="color:rgba(255,255,255,.6)">✕</button>
+                        </div>
+                        <span class="confirmador" id="conf-pd"></span>
+                    </div>
+                    <div class="pd-result-box" id="pd-result-box">
+                        <span class="pd-status" id="pd-status"></span>
+                        <span class="pd-diff"   id="pd-diff"></span>
+                        <span class="pd-sub"    id="pd-sub"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="toggle-pd" onclick="togglePesoDesejado()">
+                <span id="seta-pd">🔼</span>
+            </div>
+
+            <div class="tara-row">
+                <div>Papelão (Cx)<span class="tara-val" id="res-tara-cx">0,000 kg</span></div>
+                <div>Plástico (Emb)<span class="tara-val" id="res-tara-emb">0,000 kg</span></div>
+                <div>Tara Total<span class="tara-val" id="res-tara-total">0,000 kg</span></div>
+            </div>
+            <div class="liq-label">Líquido Consolidado (Pallets + Avulsos)</div>
+            <div class="liq-total" id="res-liquido">0,000 Kg</div>
+
+            <!-- ▼ Painel Diagnóstico (abre para baixo) -->
+            <div class="toggle-details" onclick="toggleDetalhes()">
+                <span id="seta-detalhes">🔽</span>
+            </div>
+            <div class="details-panel" id="details-panel">
+                <div class="details-inner">
+                    <strong>📊 DIAGNÓSTICO TOTAL DA CARGA</strong><br>
+                    Peso Bruto Somado: <strong id="det-bruto">0,000</strong> kg<br>
+                    Peso Total de Pallets (Madeira): <strong id="det-madeira">0,000</strong> kg<br>
+                    Total de Unidades (Caixas): <strong id="det-qcx">0</strong> un<br>
+                    Total de Unidades (Embalagens/Fardos): <strong id="det-qemb">0</strong> un
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calculadora de Validade Screen -->
+<section id="validity-screen">
+    <div class="card" style="max-width:520px; margin:0 auto;">
+        <div class="validity-header">
+            <button class="btn-back-validity" onclick="showScreen('main-screen')" aria-label="Voltar">&#8592;</button>
+            <h1>Calculadora de <span>Validade</span></h1>
+        </div>
+        <div class="validity-body">
+            <div class="validity-input-wrap">
+                <span class="validity-hint">Digite DDMMAA ou DDMMAAAA</span>
+                <input
+                    type="text"
+                    id="validity-input"
+                    placeholder="00/00/00"
+                    maxlength="10"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    oninput="calcularValidade(this)"
+                >
+            </div>
+            <div class="validity-result" id="validity-result">
+                <span class="val-res-waiting">Aguardando entrada...</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Fixed Bottom Bar -->
+<div class="btn-bar">
+    <button class="action-btn btn-clear"  onclick="confirmarLimpeza()">Limpar Tudo</button>
+    <button class="action-btn btn-new"    onclick="novoProduto()">+ Novo Item</button>
+    <button class="action-btn btn-print"  id="btn-imprimir" onclick="gerarLaudo()">PDF + Backup</button>
+</div>
+
+<!-- Print Area -->
+<div id="print-area"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   CONFERÊNCIA DE PESAGEM -- V8
+   ────────────────────────────────────────────────────────────────────
+   Novidades V8:
+     • Laudo PDF completamente redesenhado (3 produtos/página, A4)
+     • Feature "Peso Desejado": input + comparação em tempo real
+     • pesoDesejado salvo por produto no state
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ══ CAMADA 0 · CONFIG ══ */
+
+const CONFIG_KEY = 'pesagem_config_v8';
+const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, compact:false };
+
+function salvarConfig()  { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig)); } catch {} }
+function carregarConfig(){ try { const s = localStorage.getItem(CONFIG_KEY); if(s) Object.assign(appConfig, JSON.parse(s)); } catch {} }
+
+function sincronizarCheckboxes() {
+    document.getElementById('cfg-alerts').checked      = appConfig.alerts;
+    document.getElementById('cfg-autocomplete').checked= appConfig.autocomplete;
+    document.getElementById('cfg-autosave').checked    = appConfig.autosave;
+    document.getElementById('cfg-confirmador').checked = appConfig.confirmador;
+    document.getElementById('cfg-avulsos').checked     = appConfig.avulsos;
+    document.getElementById('cfg-camera').checked      = appConfig.camera;
+    document.getElementById('cfg-detalhes').checked    = appConfig.detalhes;
+    document.getElementById('cfg-compact').checked     = appConfig.compact;
+}
+
+function aplicarConfig() {
+    appConfig.alerts       = document.getElementById('cfg-alerts').checked;
+    appConfig.autocomplete = document.getElementById('cfg-autocomplete').checked;
+    appConfig.autosave     = document.getElementById('cfg-autosave').checked;
+    appConfig.confirmador  = document.getElementById('cfg-confirmador').checked;
+    appConfig.avulsos      = document.getElementById('cfg-avulsos').checked;
+    appConfig.camera       = document.getElementById('cfg-camera').checked;
+    appConfig.detalhes     = document.getElementById('cfg-detalhes').checked;
+    appConfig.compact      = document.getElementById('cfg-compact').checked;
+
+    document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
+    document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
+    document.body.classList.toggle('no-camera',        !appConfig.camera);
+    document.body.classList.toggle('no-detalhes',      !appConfig.detalhes);
+    document.body.classList.toggle('compact',           appConfig.compact);
+
+    if (!appConfig.detalhes) document.getElementById('details-panel').classList.remove('open');
+    salvarConfig();
+    calcular(true);
+}
+
+/* ══ CAMADA 1 · DADOS ══ */
+
+const FORMATO_3 = { minimumFractionDigits: 3, maximumFractionDigits: 3 };
+
+const state = { conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
+
+function criarProduto() {
+    return {
+        nome: '', validade: '', totalLiq: '0,000 Kg',
+        pesoDesejado: '',                  // ← NOVO
+        avulsos: { qcx:'', qemb:'', peso:'' },
+        pallets: [criarPallet()]
+    };
+}
+
+function criarPallet(base = {}) {
+    return { bto:'', pal:'', pcx:'', qcx:'', pemb:'', qemb:'', foto:'',
+             override_red:false, override_orange:false, collapsed:false, ...base };
+}
+
+state.produtos = [criarProduto()];
+
+/* ══ CAMADA 2 · NEGÓCIOS ══ */
+
+function parseSeguro(v) {
+    const s = String(v ?? '').trim();
+    if (s === '') return { valor:0, valido:true };
+    const norm = s.replace(/\./g,'').replace(',','.');
+    if (!/^\d+(\.\d*)?$/.test(norm)) return { valor:0, valido:false };
+    const n = parseFloat(norm);
+    if (isNaN(n) || n < 0) return { valor:0, valido:false };
+    return { valor:n, valido:true };
+}
+
+function calcularResultadoPallet(pd) {
+    const rBto  = parseSeguro(pd.bto);
+    const rPal  = parseSeguro(pd.pal);
+    const rPcx  = parseSeguro(pd.pcx);
+    const rPemb = parseSeguro(pd.pemb);
+    const qcx   = Math.max(0, parseInt(pd.qcx)  || 0);
+    const qemb  = Math.max(0, parseInt(pd.qemb) || 0);
+
+    const valido = rBto.valido && rPal.valido && rPcx.valido && rPemb.valido;
+    const inputsInvalidos = { bto:!rBto.valido, pal:!rPal.valido, pcx:!rPcx.valido, pemb:!rPemb.valido };
+
+    const taraCx    = rPcx.valor  * qcx;
+    const taraEmb   = rPemb.valor * qemb * qcx;
+    const taraMad   = rPal.valor;
+    const taraTotal = taraMad + taraCx + taraEmb;
+    const liqPallet = rBto.valor - taraTotal;
+    const percTara  = rBto.valor > 0 ? taraTotal / rBto.valor : 0;
+
+    return { bto:rBto.valor, taraMad, taraCx, taraEmb, taraTotal, liqPallet, percTara,
+             valido, inputsInvalidos, qcx, qemb,
+             pcxKg: rPcx.valor, pembKg: rPemb.valor };
+}
+
+function determinarEstadoPallet(res, overrides) {
+    if (!res.valido)   return 'INVALIDO';
+    if (res.bto === 0) return 'OK';
+    if (res.liqPallet < 0 && !overrides.override_red) return 'VERMELHO';
+    if ((res.liqPallet < 0 && overrides.override_red && !overrides.override_orange)
+     || (res.percTara >= 0.45 && !overrides.override_orange)) return 'LARANJA';
+    return 'OK';
+}
+
+function calcularResultadosGlobais() {
+    const produto = state.produtos[state.idAtivo];
+    const pal1    = produto.pallets[0];
+    const pcxRef  = parseSeguro(pal1?.pcx  || '').valor;
+    const pembRef = parseSeguro(pal1?.pemb || '').valor;
+
+    let liqTotal=0, taraCxTotal=0, taraEmbTotal=0, taraMadTotal=0;
+    let somaBruto=0, somaQcx=0, somaQemb=0;
+    let temAlerta = false;
+
+    const resultadosPallets = produto.pallets.map((pd, idx) => {
+        const res    = calcularResultadoPallet(pd);
+        const estado = determinarEstadoPallet(res, pd);
+        if (estado !== 'OK' && estado !== 'INVALIDO' && res.bto > 0) temAlerta = true;
+        liqTotal     += res.liqPallet;
+        taraCxTotal  += res.taraCx;
+        taraEmbTotal += res.taraEmb;
+        taraMadTotal += res.taraMad;
+        somaBruto    += res.bto;
+        somaQcx      += res.qcx;
+        somaQemb     += res.qemb * res.qcx;
+        return { ...res, estado, idx };
+    });
+
+    const av      = produto.avulsos;
+    const aQcx    = Math.max(0, parseInt(av.qcx)  || 0);
+    const aQemb   = Math.max(0, parseInt(av.qemb) || 0);
+    const aPeso   = parseSeguro(av.peso).valor;
+    const aTaraCx = aQcx  * pcxRef;
+    const aTaraEmb= aQemb * pembRef;
+    liqTotal     += aPeso - aTaraCx - aTaraEmb;
+    taraCxTotal  += aTaraCx;
+    taraEmbTotal += aTaraEmb;
+    somaBruto    += aPeso;
+    somaQcx      += aQcx;
+    somaQemb     += aQemb;
+
+    let bloqueioGlobal = temAlerta;
+    if (!bloqueioGlobal) {
+        loop: for (const prod of state.produtos) {
+            for (const pl of prod.pallets) {
+                const r = calcularResultadoPallet(pl);
+                const e = determinarEstadoPallet(r, pl);
+                if (e !== 'OK' && e !== 'INVALIDO' && r.bto > 0) { bloqueioGlobal = true; break loop; }
+            }
+        }
+    }
+
+    return {
+        resultadosPallets,
+        avulsos: { peso:aPeso, taraCx:aTaraCx, taraEmb:aTaraEmb, qcx:aQcx, qemb:aQemb },
+        totais:  { liqTotal, taraCxTotal, taraEmbTotal, taraMadTotal, somaBruto, somaQcx, somaQemb },
+        bloqueioGlobal
+    };
+}
+
+function estadoAbaProduto(produto) {
+    let temLaranja = false;
+    for (const pl of produto.pallets) {
+        const res = calcularResultadoPallet(pl);
+        const est = determinarEstadoPallet(res, pl);
+        if (est === 'VERMELHO') return 'VERMELHO';
+        if (est === 'LARANJA')  temLaranja = true;
+    }
+    return temLaranja ? 'LARANJA' : 'OK';
+}
+
+/* ══ CAMADA 3 · PERSISTÊNCIA ══ */
+
+let idb = null;
+const IDB_NAME  = 'CofreConferenciaDB_V8';
+const IDB_STORE = 'autosave';
+const LS_KEY    = 'pesagem_fallback_v8';
+
+function iniciarIDB() {
+    return new Promise(resolve => {
+        try {
+            const req = indexedDB.open(IDB_NAME, 1);
+            req.onupgradeneeded = e => {
+                if (!e.target.result.objectStoreNames.contains(IDB_STORE))
+                    e.target.result.createObjectStore(IDB_STORE, { keyPath:'id' });
+            };
+            req.onsuccess = e => { idb = e.target.result; resolve(true); };
+            req.onerror   = ()  => resolve(false);
+        } catch { resolve(false); }
+    });
+}
+
+function persistir() {
+    if (!appConfig.autosave) return;
+    const dados = exportarEstado();
+    const json  = JSON.stringify(dados);
+    if (idb) {
+        try {
+            const tx = idb.transaction(IDB_STORE, 'readwrite');
+            tx.objectStore(IDB_STORE).put({ id:'estado', data:dados });
+            tx.oncomplete = () => { try { localStorage.removeItem(LS_KEY); } catch {} };
+            tx.onerror    = () => _salvarLocalStorage(json);
+            return;
+        } catch(e) { console.warn('[IDB]', e.message); }
+    }
+    _salvarLocalStorage(json);
+}
+
+function _salvarLocalStorage(json) {
+    try { localStorage.setItem(LS_KEY, json); } catch(e) { console.warn('[LS]', e.message); }
+}
+
+async function carregar() {
+    if (idb) {
+        try {
+            const r = await new Promise(res => {
+                const tx = idb.transaction(IDB_STORE, 'readonly');
+                const req = tx.objectStore(IDB_STORE).get('estado');
+                req.onsuccess = e => res(e.target.result?.data ?? null);
+                req.onerror   = ()  => res(null);
+            });
+            if (r) return r;
+        } catch {}
+    }
+    try { const ls = localStorage.getItem(LS_KEY); if (ls) return JSON.parse(ls); } catch {}
+    return null;
+}
+
+function exportarEstado() {
+    return { versao:'V8', conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
+}
+
+function importarEstado(raw) {
+    if (!raw || !Array.isArray(raw.produtos)) throw new Error('Formato inválido');
+    state.conferente  = raw.conferente  || '';
+    state.fornecedor  = raw.fornecedor  || '';
+    state.dataPesagem = raw.dataPesagem || '';
+    state.produtos = raw.produtos.map(p => ({
+        ...criarProduto(), ...p,
+        validade:      p.validade      || p.pallets?.[0]?.val || '',
+        pesoDesejado:  p.pesoDesejado  || '',
+        avulsos: { qcx:'', qemb:'', peso:'', ...(p.avulsos || {}) },
+        pallets: (p.pallets || [criarPallet()]).map(pl => criarPallet(pl))
+    }));
+    state.idAtivo = 0;
+}
+
+/* ══ CAMADA 4 · RENDERIZAÇÃO ══ */
+
+function renderizarTudo() {
+    const p = state.produtos[state.idAtivo];
+    document.getElementById('conferente').value    = state.conferente;
+    document.getElementById('fornecedor').value    = state.fornecedor;
+    document.getElementById('data-pesagem').value  = state.dataPesagem || _dataHoje();
+    document.getElementById('validade-global').value = p.validade;
+    document.getElementById('produto').value         = p.nome;
+    document.getElementById('avulso-qcx').value      = p.avulsos.qcx;
+    document.getElementById('avulso-qemb').value     = p.avulsos.qemb;
+    document.getElementById('avulso-peso').value     = p.avulsos.peso;
+    document.getElementById('peso-desejado').value   = p.pesoDesejado || '';
+    reconciliarPallets(p.pallets);
+    atualizarAbas();
+    calcular(true);
+    // Re-bind Enter nav after DOM update
+    setTimeout(() => { setupEnterNav(); atualizarBotaoUndo(); }, 0);
+}
+
+function _dataHoje() { return new Date().toISOString().split('T')[0]; }
+
+function reconciliarPallets(pallets) {
+    const container = document.getElementById('container-pallets');
+    const blocos    = Array.from(container.querySelectorAll('.pallet-block'));
+    for (let i = blocos.length - 1; i >= pallets.length; i--) blocos[i].remove();
+    pallets.forEach((pal, i) => {
+        const num      = i + 1;
+        const existente = document.getElementById(`pallet-block-${num}`);
+        if (existente) {
+            _setValorSemFoco(existente.querySelector('.bto-in'),  pal.bto);
+            _setValorSemFoco(existente.querySelector('.pal-in'),  pal.pal);
+            _setValorSemFoco(existente.querySelector('.pcx-in'),  pal.pcx);
+            _setValorSemFoco(existente.querySelector('.qbox-in'), pal.qcx);
+            _setValorSemFoco(existente.querySelector('.pemb-in'), pal.pemb);
+            _setValorSemFoco(existente.querySelector('.qemb-in'), pal.qemb);
+            const preview = existente.querySelector('.img-preview');
+            if (preview && preview.dataset.base !== (pal.foto || '')) {
+                preview.src = pal.foto || ''; preview.dataset.base = pal.foto || '';
+                preview.style.display = pal.foto ? 'block' : 'none';
+                const label = existente.querySelector('.btn-camera');
+                if (label) {
+                    label.classList.toggle('has-photo', !!pal.foto);
+                    const nodes = label.childNodes;
+                    if (nodes[0]) nodes[0].textContent = pal.foto ? '✅ Foto Anexada' : '📸 Foto';
+                }
+            }
+        } else {
+            container.insertAdjacentHTML('beforeend', htmlPallet(num, pal));
+        }
+    });
+}
+
+function _setValorSemFoco(el, valor) { if (el && document.activeElement !== el) el.value = valor ?? ''; }
+
+function _setText(seletorOuEl, valor) {
+    const el = typeof seletorOuEl === 'string' ? document.querySelector(seletorOuEl) : seletorOuEl;
+    if (el) el.innerText = String(valor);
+}
+
+function _aplicarEstadoPallet(bloco, num, estado, percTara, silencioso) {
+    bloco.classList.remove('has-error', 'is-warning');
+    if (!appConfig.alerts) return;
+    const txt = document.getElementById(`alerta-txt-${num}`);
+    const btn = document.getElementById(`alerta-btn-${num}`);
+    if (estado === 'VERMELHO') {
+        bloco.classList.add('has-error');
+        if (txt) txt.innerText = '🛑 LÍQUIDO NEGATIVO';
+        if (btn) btn.innerText = '🚨 Autorizar → Nível Laranja';
+        if (!silencioso) vibrarForte();
+    } else if (estado === 'LARANJA') {
+        bloco.classList.add('is-warning');
+        if (txt) txt.innerText = percTara >= 0.45 ? '🟠 TARA ELEVADA (>45%)' : '🟠 Autorização Nível 2 Pendente';
+        if (btn) btn.innerText = '⚠ Liberar → Nível Padrão';
+        if (!silencioso) vibrarLeve();
+    }
+}
+
+function _marcarInputsInvalidos(bloco, invalidos) {
+    if (!appConfig.alerts) { bloco.querySelectorAll('.input-invalido').forEach(el => el.classList.remove('input-invalido')); return; }
+    ['.bto-in','.pal-in','.pcx-in','.pemb-in'].forEach((sel, i) => {
+        const chave = ['bto','pal','pcx','pemb'][i];
+        const el = bloco.querySelector(sel);
+        if (el) el.classList.toggle('input-invalido', invalidos[chave]);
+    });
+}
+
+function atualizarAbas() {
+    const lista = document.getElementById('tabs-list');
+    lista.innerHTML = '';
+    state.produtos.forEach((p, i) => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn${i === state.idAtivo ? ' active' : ''}`;
+        const est = estadoAbaProduto(p);
+        if (est === 'VERMELHO') btn.classList.add('tab-error');
+        else if (est === 'LARANJA') btn.classList.add('tab-warning');
+        const liq = p.totalLiq && p.totalLiq !== '0,000 Kg' ? ` · ${p.totalLiq}` : '';
+        btn.innerText = p.nome ? `${p.nome}${liq}` : `Item ${i+1}${liq}`;
+        btn.onclick   = () => carregarItem(i);
+        lista.appendChild(btn);
+    });
+}
+
+function htmlPallet(num, pal) {
+    const temFoto = !!pal.foto;
+    const colaps  = pal.collapsed ? 'collapsed' : '';
+    return `
+    <div class="pallet-block ${colaps}" data-id="${num}" id="pallet-block-${num}">
+        <div class="pallet-header">
+            <div class="pallet-toggle-bar" data-action="toggle-collapse" data-num="${num}">
+                <span class="pallet-title">📦 Pallet ${num}</span>
+                <span class="pallet-summary" id="pallet-summary-${num}"></span>
+                <span class="pallet-collapse-icon">▼</span>
+            </div>
+            ${num > 1 ? `<button class="btn-remove" data-action="remove-pallet" data-idx="${num - 1}">🗑 Remover</button>` : ''}
+        </div>
+        <div class="pallet-grid">
+            <div class="fw-bto" style="grid-column:span 2">
+                <label class="field-label">P. Bruto (kg)</label>
+                <div class="input-clear-wrap">
+                    <input type="text" inputmode="decimal" class="bto-in" value="${pal.bto}" placeholder="0,000"
+                           data-ev="kg-input" data-ev-blur="format-kg">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+                <span class="confirmador"></span>
+            </div>
+            <div class="fw-pal" style="grid-column:span 2">
+                <label class="field-label">P. Pallet (kg)</label>
+                <div class="input-clear-wrap">
+                    <input type="text" inputmode="decimal" class="pal-in" value="${pal.pal}" placeholder="0,000"
+                           data-ev="kg-input" data-ev-blur="format-kg">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+                <span class="confirmador"></span>
+            </div>
+            <div class="fw-pcx" style="grid-column:span 2">
+                <label class="field-label">P. Caixa (g→kg)</label>
+                <div class="input-clear-wrap">
+                    <input type="text" inputmode="numeric" class="pcx-in" value="${pal.pcx}" placeholder="0"
+                           data-ev="gram-input" data-ev-change="autocomplete">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+                <span class="confirmador"></span>
+            </div>
+            <div class="fw-qcx" style="grid-column:span 2">
+                <label class="field-label">Qtd Cx</label>
+                <div class="input-clear-wrap">
+                    <input type="number" inputmode="numeric" class="qbox-in" value="${pal.qcx}" placeholder="0"
+                           data-ev="qty-input" data-ev-change="autocomplete">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+            </div>
+            <div class="fw-pemb" style="grid-column:span 2">
+                <label class="field-label">P. Emb (g→kg)</label>
+                <div class="input-clear-wrap">
+                    <input type="text" inputmode="numeric" class="pemb-in" value="${pal.pemb}" placeholder="0"
+                           data-ev="gram-input" data-ev-change="autocomplete">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+                <span class="confirmador"></span>
+            </div>
+            <div class="fw-qemb" style="grid-column:span 2">
+                <label class="field-label">Emb/Cx</label>
+                <div class="input-clear-wrap">
+                    <input type="number" inputmode="numeric" class="qemb-in" value="${pal.qemb}" placeholder="0"
+                           data-ev="qty-input" data-ev-change="autocomplete">
+                    <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                </div>
+            </div>
+            <div class="pallet-alert" id="alerta-${num}">
+                <span id="alerta-txt-${num}"></span>
+                <button class="btn-auth" id="alerta-btn-${num}" data-action="autorizar" data-num="${num}"></button>
+            </div>
+            <div class="pallet-footer">
+                <div class="footer-outputs">
+                    <div class="outputs-row">
+                        <div class="output-chip">Tara Cx<span class="chip-val out-tcx">0,000</span></div>
+                        <div class="output-chip">Tara Emb<span class="chip-val out-temb">0,000</span></div>
+                        <div class="output-chip chip-liq">Líq. Pallet<span class="chip-val out-liq">0,000</span></div>
+                    </div>
+                    <label class="btn-camera ${temFoto ? 'has-photo' : ''}">
+                        ${temFoto ? '✅ Foto Anexada' : '📸 Foto'}
+                        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="processarFoto(this)">
+                    </label>
+                </div>
+                <div class="footer-photo">
+                    <img src="${pal.foto || ''}" class="img-preview"
+                         style="display:${temFoto ? 'block' : 'none'}"
+                         data-action="ver-foto" data-base="${pal.foto || ''}">
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+/* ══ CAMADA 5 · CONTROLE ══ */
+
+let _timerCalculo = null;
+function agendarCalculo()     { clearTimeout(_timerCalculo); _timerCalculo = setTimeout(calcular, 250); }
+function agendarSincronizacao(){ clearTimeout(_timerCalculo); _timerCalculo = setTimeout(() => { lerFormularioParaState(); calcular(); }, 250); }
+
+function calcular(silencioso = false) {
+    lerFormularioParaState();
+    const resultados = calcularResultadosGlobais();
+    const { resultadosPallets, avulsos, totais, bloqueioGlobal } = resultados;
+
+    resultadosPallets.forEach(res => {
+        const num   = res.idx + 1;
+        const bloco = document.getElementById(`pallet-block-${num}`);
+        if (!bloco) return;
+        _setText(bloco.querySelector('.out-tcx'),  res.taraCx.toLocaleString('pt-BR', FORMATO_3));
+        _setText(bloco.querySelector('.out-temb'), res.taraEmb.toLocaleString('pt-BR', FORMATO_3));
+        _setText(bloco.querySelector('.out-liq'),  res.liqPallet.toLocaleString('pt-BR', FORMATO_3));
+        // Pallet summary (shown when collapsed)
+        const summaryEl = document.getElementById(`pallet-summary-${num}`);
+        if (summaryEl) summaryEl.textContent = res.bto > 0 ? `· ${res.liqPallet.toLocaleString('pt-BR', FORMATO_3)} kg` : '';
+        bloco.querySelectorAll('input').forEach(inp => {
+            const conf = inp.nextElementSibling;
+            if (!conf?.classList.contains('confirmador')) return;
+            if (!appConfig.confirmador) { conf.innerText = ''; return; }
+            const { valor } = parseSeguro(inp.value);
+            conf.innerText = valor > 0 ? formatarLeitura(valor) : '';
+        });
+        _marcarInputsInvalidos(bloco, res.inputsInvalidos);
+        _aplicarEstadoPallet(bloco, num, res.estado, res.percTara, silencioso);
+    });
+
+    const confAvulso = document.getElementById('conf-avulso-peso');
+    if (confAvulso) confAvulso.innerText = (appConfig.confirmador && avulsos.peso > 0) ? formatarLeitura(avulsos.peso) : '';
+
+    const t = totais;
+    _setText('#res-tara-cx',    `${t.taraCxTotal.toLocaleString('pt-BR', FORMATO_3)} kg`);
+    _setText('#res-tara-emb',   `${t.taraEmbTotal.toLocaleString('pt-BR', FORMATO_3)} kg`);
+    _setText('#res-tara-total', `${(t.taraCxTotal + t.taraEmbTotal + t.taraMadTotal).toLocaleString('pt-BR', FORMATO_3)} kg`);
+    _setText('#res-liquido',    `${t.liqTotal.toLocaleString('pt-BR', FORMATO_3)} Kg`);
+    _setText('#det-bruto',      t.somaBruto.toLocaleString('pt-BR', FORMATO_3));
+    _setText('#det-madeira',    t.taraMadTotal.toLocaleString('pt-BR', FORMATO_3));
+    _setText('#det-qcx',        t.somaQcx);
+    _setText('#det-qemb',       t.somaQemb);
+
+    // ── Peso Desejado ──
+    atualizarPesoDesejado(t.liqTotal);
+
+    const effectiveBloqueio = appConfig.alerts && bloqueioGlobal;
+    const btnImprimir = document.getElementById('btn-imprimir');
+    const resultBox   = document.getElementById('result-box');
+    btnImprimir.disabled  = effectiveBloqueio;
+    btnImprimir.innerText = effectiveBloqueio ? '⚠ Pendente Liberação' : 'PDF + Backup';
+    btnImprimir.classList.toggle('blocked', effectiveBloqueio);
+    resultBox.classList.toggle('bloqueado', effectiveBloqueio);
+
+    state.produtos[state.idAtivo].totalLiq = `${t.liqTotal.toLocaleString('pt-BR', FORMATO_3)} Kg`;
+    atualizarAbas();
+    persistir();
+    if (!silencioso) mostrarIndicadorSalvo('✔ Salvo');
+}
+
+function lerFormularioParaState() {
+    state.conferente  = document.getElementById('conferente').value;
+    state.fornecedor  = document.getElementById('fornecedor').value;
+    state.dataPesagem = document.getElementById('data-pesagem').value;
+
+    const p = state.produtos[state.idAtivo];
+    p.validade     = document.getElementById('validade-global').value;
+    p.nome         = document.getElementById('produto').value;
+    p.pesoDesejado = document.getElementById('peso-desejado').value;   // ← NOVO
+    p.avulsos = {
+        qcx:  document.getElementById('avulso-qcx').value,
+        qemb: document.getElementById('avulso-qemb').value,
+        peso: document.getElementById('avulso-peso').value
+    };
+    p.pallets = Array.from(document.querySelectorAll('.pallet-block')).map((bloco, i) => {
+        const existente = p.pallets[i] || criarPallet();
+        return {
+            ...existente,
+            bto:  bloco.querySelector('.bto-in').value,
+            pal:  bloco.querySelector('.pal-in').value,
+            pcx:  bloco.querySelector('.pcx-in').value,
+            qcx:  bloco.querySelector('.qbox-in').value,
+            pemb: bloco.querySelector('.pemb-in').value,
+            qemb: bloco.querySelector('.qemb-in').value,
+            foto: bloco.querySelector('.img-preview')?.dataset.base || '',
+            collapsed: bloco.classList.contains('collapsed')
+        };
+    });
+}
+
+/* ══ PESO DESEJADO ══ */
+
+/**
+ * atualizarPesoDesejado(liqKg?)
+ * Pode ser chamada sem argumento (lê liqTotal do DOM) ou com valor direto.
+ */
+function atualizarPesoDesejado(liqKg) {
+    const pdEl     = document.getElementById('peso-desejado');
+    const boxEl    = document.getElementById('pd-result-box');
+    const statusEl = document.getElementById('pd-status');
+    const diffEl   = document.getElementById('pd-diff');
+    const subEl    = document.getElementById('pd-sub');
+    const confEl   = document.getElementById('conf-pd');
+
+    if (!pdEl || !boxEl) return;
+
+    // Atualiza confirmador
+    if (confEl && appConfig.confirmador) {
+        const { valor: vPD } = parseSeguro(pdEl.value);
+        confEl.innerText = vPD > 0 ? formatarLeitura(vPD) : '';
+    } else if (confEl) {
+        confEl.innerText = '';
+    }
+
+    const { valor: desejado, valido } = parseSeguro(pdEl.value);
+    if (!valido || desejado === 0) { boxEl.className = 'pd-result-box'; return; }
+
+    // Se não foi passado liqKg, lê do texto do DOM
+    let liq = liqKg;
+    if (liq === undefined) {
+        const txt = document.getElementById('res-liquido')?.innerText || '0';
+        liq = parseSeguro(txt.replace(' Kg','').replace(' kg','')).valor;
+    }
+
+    const diff    = liq - desejado;
+    const absDiff = Math.abs(diff);
+    const diffStr = absDiff.toLocaleString('pt-BR', FORMATO_3);
+    const liqStr  = liq.toLocaleString('pt-BR', FORMATO_3);
+    const desStr  = desejado.toLocaleString('pt-BR', FORMATO_3);
+
+    if (absDiff < 0.0005) {
+        boxEl.className   = 'pd-result-box exato';
+        statusEl.innerText= '✓ PESO EXATO!';
+        diffEl.innerText  = '0,000 kg';
+        subEl.innerText   = `Líquido: ${liqStr} kg  ←  Desejado: ${desStr} kg`;
+    } else if (diff > 0) {
+        boxEl.className   = 'pd-result-box passou';
+        statusEl.innerText= '▲ PASSOU';
+        diffEl.innerText  = `+${diffStr} kg`;
+        subEl.innerText   = `Líquido: ${liqStr} kg  ←  Desejado: ${desStr} kg`;
+    } else {
+        boxEl.className   = 'pd-result-box faltou';
+        statusEl.innerText= '▼ FALTOU';
+        diffEl.innerText  = `${diffStr} kg`;
+        subEl.innerText   = `Líquido: ${liqStr} kg  ←  Desejado: ${desStr} kg`;
+    }
+    // CSS class handles display inside .pd-panel
+}
+
+/* ══ MÁSCARAS DE INPUT ══ */
+
+function onInputKg(el) {
+    limparOverride(el);
+    if (appConfig.confirmador) {
+        const { valor } = parseSeguro(el.value);
+        // confirmador may be sibling of input or sibling of the wrap div
+        const wrap = el.closest('.input-clear-wrap');
+        const conf = wrap ? wrap.nextElementSibling : el.nextElementSibling;
+        if (conf?.classList.contains('confirmador')) conf.innerText = valor > 0 ? formatarLeitura(valor) : '';
+    }
+    agendarCalculo();
+}
+
+function onInputGramagem(el) {
+    limparOverride(el);
+    const digits = el.value.replace(/\D/g, '');
+    const gramas = parseInt(digits || '0');
+    const kg     = gramas / 1000;
+    el.value = gramas > 0 ? kg.toFixed(3).replace('.', ',') : '';
+    if (appConfig.confirmador) {
+        const wrap = el.closest('.input-clear-wrap');
+        const conf = wrap ? wrap.nextElementSibling : el.nextElementSibling;
+        if (conf?.classList.contains('confirmador')) conf.innerText = gramas > 0 ? formatarLeitura(kg) : '';
+    }
+    agendarCalculo();
+}
+
+/* ══ CAMADA 6 · FEATURES ══ */
+
+function adicionarPallet() {
+    lerFormularioParaState();
+    const pallets = state.produtos[state.idAtivo].pallets;
+    const ref = pallets[0] || criarPallet();
+    pallets.push(criarPallet({ pcx:ref.pcx, pemb:ref.pemb, qemb:ref.qemb }));
+    salvarHistorico();
+    renderizarTudo();
+}
+function removerPallet(idx) {
+    mostrarConfirm('Remover este pallet?', '🗑', () => {
+        lerFormularioParaState();
+        salvarHistorico();
+        state.produtos[state.idAtivo].pallets.splice(idx, 1);
+        renderizarTudo();
+        toast('Pallet removido', 'info');
+    });
+}
+function novoProduto() {
+    const valGlobal = document.getElementById('validade-global').value;
+    const bloco1    = document.querySelector('.pallet-block[data-id="1"]');
+    const temBto    = parseSeguro(bloco1?.querySelector('.bto-in').value || '').valor > 0;
+    if (!valGlobal || !temBto) {
+        toast('Preencha a Validade e o Peso Bruto do Pallet 1 antes de criar novo item.', 'warning');
+        return;
+    }
+    lerFormularioParaState();
+    salvarHistorico();
+    state.produtos.push(criarProduto());
+    state.idAtivo = state.produtos.length - 1;
+    renderizarTudo();
+}
+function excluirItemAtual() {
+    if (state.produtos.length === 1) { toast('Não é possível excluir o único item.', 'warning'); return; }
+    mostrarConfirm('Apagar este produto inteiro?', '⚠', () => {
+        salvarHistorico();
+        state.produtos.splice(state.idAtivo, 1);
+        state.idAtivo = 0;
+        renderizarTudo();
+        toast('Item excluído', 'info');
+    }, 'error');
+}
+function carregarItem(idx) { lerFormularioParaState(); state.idAtivo = idx; renderizarTudo(); }
+function autorizarPallet(num) {
+    const palObj = state.produtos[state.idAtivo].pallets[num - 1];
+    const res    = calcularResultadoPallet(palObj);
+    if (res.liqPallet < 0 && !palObj.override_red) palObj.override_red    = true;
+    else                                             palObj.override_orange = true;
+    calcular(true);
+}
+function limparOverride(el) {
+    const bloco = el.closest('.pallet-block');
+    if (!bloco) return;
+    const idx = parseInt(bloco.dataset.id) - 1;
+    const pal = state.produtos[state.idAtivo].pallets[idx];
+    if (pal) { pal.override_red = false; pal.override_orange = false; }
+}
+function autoCompletar(input) {
+    if (!appConfig.autocomplete) return;
+    const bloco = input.closest('.pallet-block');
+    if (!bloco || bloco.dataset.id !== '1') return;
+    const classe = Array.from(input.classList).find(c => ['pcx-in','pemb-in','qemb-in'].includes(c));
+    if (!classe) return;
+    document.querySelectorAll(`.pallet-block:not([data-id="1"]) .${classe}`).forEach(el => {
+        el.value = input.value;
+        const idx = parseInt(el.closest('.pallet-block').dataset.id) - 1;
+        const pal = state.produtos[state.idAtivo].pallets[idx];
+        if (pal) { pal.override_red = false; pal.override_orange = false; }
+    });
+    agendarCalculo();
+}
+function formatarInput(el) {
+    const { valor, valido } = parseSeguro(el.value);
+    if (el.value.trim() === '') { el.classList.remove('input-invalido'); }
+    else if (valido) { el.value = valor.toLocaleString('pt-BR', FORMATO_3); el.classList.remove('input-invalido'); }
+    else { el.classList.add('input-invalido'); }
+    agendarCalculo();
+}
+function formatarLeitura(v) {
+    if (v >= 1000) return `➔ ${(v / 1000).toFixed(2).replace('.', ',')} t`;
+    if (v >= 1)    return `➔ ${v.toFixed(3).replace('.', ',')} kg`;
+    return `➔ ${(v * 1000).toFixed(0)} g`;
+}
+
+/* ─── Fotos ─── */
+
+function processarFoto(inp) {
+    if (!inp.files?.[0]) return;
+    const objUrl = URL.createObjectURL(inp.files[0]);
+    const img    = new Image();
+    img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        const canvas  = document.createElement('canvas');
+        const escala  = 600 / img.width;
+        canvas.width  = 600;
+        canvas.height = img.height * escala;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
+        const footer  = inp.closest('.pallet-footer');
+        const preview = footer.querySelector('.img-preview');
+        preview.src = base64; preview.style.display = 'block'; preview.dataset.base = base64;
+        const label = inp.closest('.btn-camera');
+        label.classList.add('has-photo');
+        label.innerHTML = `✅ Foto Anexada <input type="file" accept="image/*" capture="environment" style="display:none" onchange="processarFoto(this)">`;
+        lerFormularioParaState(); persistir(); mostrarIndicadorSalvo('📸 Foto Salva');
+    };
+    img.src = objUrl;
+}
+function abrirModalFoto(src) { document.getElementById('foto-expandida').src = src; document.getElementById('modal-foto').classList.add('open'); }
+function fecharModalFoto()   { document.getElementById('modal-foto').classList.remove('open'); }
+
+/* ─── Backup ─── */
+
+function gerarNomeArquivo() {
+    const forn = (state.fornecedor || 'FORN').toUpperCase().replace(/\s+/g,'.');
+    const conf = (state.conferente || 'CONF').toUpperCase().replace(/\s+/g,'.');
+    const agora = new Date();
+    const data  = agora.toLocaleDateString('pt-BR').replace(/\//g,'.');
+    const hora  = `${String(agora.getHours()).padStart(2,'0')}h${String(agora.getMinutes()).padStart(2,'0')}`;
+    return `${forn}-${conf}-${data}-${hora}`;
+}
+function gerarBackupManual() {
+    lerFormularioParaState();
+    const blob = new Blob([JSON.stringify(exportarEstado())], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `${gerarNomeArquivo()}.json`;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 150);
+}
+function importarBackup(e) {
+    const arquivo = e.target.files?.[0]; if (!arquivo) return;
+    mostrarLoading('Carregando backup...');
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try { importarEstado(JSON.parse(ev.target.result)); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
+        catch(err) { toast(`❌ Falha ao carregar backup: ${err.message}`, 'error'); }
+        finally { esconderLoading(); e.target.value = ''; }
+    };
+    reader.onerror = () => { esconderLoading(); toast('❌ Erro ao ler o arquivo.', 'error'); };
+    reader.readAsText(arquivo);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   GERAÇÃO DO LAUDO -- V8 (3 produtos por página A4)
+   ════════════════════════════════════════════════════════════════════ */
+
+function gerarLaudo() {
+    if (document.getElementById('btn-imprimir').disabled) return;
+    lerFormularioParaState();
+
+    const nome = gerarNomeArquivo();
+
+    /* ── Coleta produtos válidos ── */
+    const produtosValidos = state.produtos.filter(p =>
+        p.nome || (p.pallets[0] && parseSeguro(p.pallets[0].bto).valor > 0)
+    );
+
+    /* ── Data + Hora formatada ── */
+    const agora = new Date();
+    const horaEmissao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const dataPesagemFmt = state.dataPesagem
+        ? new Date(state.dataPesagem + 'T12:00:00').toLocaleDateString('pt-BR')
+        : agora.toLocaleDateString('pt-BR');
+    const dataHora = `${dataPesagemFmt} · Emitido às ${horaEmissao}`;
+
+    /* ── Helpers de formatação ── */
+    const fmt3 = v => v.toLocaleString('pt-BR', FORMATO_3);
+    const fmtVal = v => v ? v.split('-').reverse().join('/') : '--';
+    const fmtG   = v => {
+        if (!v || parseSeguro(v).valor === 0) return '--';
+        const kg = parseSeguro(v).valor;
+        return kg < 1 ? `${(kg * 1000).toFixed(0)} g` : `${fmt3(kg)} kg`;
+    };
+    const fmtKg  = v => {
+        const kg = parseSeguro(v).valor;
+        return kg > 0 ? `${fmt3(kg)} kg` : '--';
+    };
+
+    /* ── Gera o HTML de um slot de produto ── */
+    function htmlSlot(prod, globalIdx) {
+        if (!prod) {
+            return `<div class="print-slot empty"><span class="slot-empty-label">-- Slot vazio --</span></div>`;
+        }
+
+        // Calcula totais do produto
+        let somaBto=0, somaPal=0, somaQcx=0, somaQemb=0;
+        let pcxRef='', pembRef='';
+        let primeiraFoto = '';
+
+        prod.pallets.forEach((pl, i) => {
+            const bto = parseSeguro(pl.bto).valor;
+            const pal = parseSeguro(pl.pal).valor;
+            const qcx = Math.max(0, parseInt(pl.qcx) || 0);
+            const qemb= Math.max(0, parseInt(pl.qemb)|| 0);
+            if (bto > 0) somaBto += bto;
+            if (pal > 0) somaPal += pal;
+            somaQcx  += qcx;
+            somaQemb += qemb * qcx;
+            if (i === 0) { pcxRef = pl.pcx; pembRef = pl.pemb; }
+            if (!primeiraFoto && pl.foto) primeiraFoto = pl.foto;
+        });
+
+        // Resultado global do produto (re-calcula)
+        const pal1   = prod.pallets[0];
+        const pcxKg  = parseSeguro(pal1?.pcx  || '').valor;
+        const pembKg = parseSeguro(pal1?.pemb || '').valor;
+        const av     = prod.avulsos;
+        const aQcx   = Math.max(0, parseInt(av.qcx)  || 0);
+        const aQemb  = Math.max(0, parseInt(av.qemb) || 0);
+        const aPeso  = parseSeguro(av.peso).valor;
+
+        let liqTotal = 0;
+        prod.pallets.forEach(pl => {
+            const r = calcularResultadoPallet(pl);
+            liqTotal += r.liqPallet;
+        });
+        liqTotal += aPeso - (aQcx * pcxKg) - (aQemb * pembKg);
+
+        // Peso Desejado: calcula diferença
+        let pdHtml = '';
+        const { valor: desejado } = parseSeguro(prod.pesoDesejado || '');
+        if (desejado > 0) {
+            const diff    = liqTotal - desejado;
+            const absDiff = Math.abs(diff);
+            const cls     = Math.abs(diff) < 0.0005 ? 'exato' : (diff > 0 ? 'passou' : 'faltou');
+            const sign    = cls === 'exato' ? '' : (diff > 0 ? '+' : '');
+            const diffStr = cls === 'exato' ? 'EXATO' : `${sign}${fmt3(Math.abs(diff))} kg`;
+            pdHtml = `
+            <div class="slot-pd-area">
+                <span class="slot-pd-label">Meta: ${fmt3(desejado)} kg</span>
+                <span class="slot-pd-diff ${cls}">${diffStr}</span>
+            </div>`;
+        }
+
+        // Foto
+        const fotoHtml = primeiraFoto
+            ? `<img src="${primeiraFoto}" class="slot-foto" alt="Foto">`
+            : `<div class="slot-foto-placeholder">SEM<br>FOTO</div>`;
+
+        // Avulsos: só mostra linhas se preenchidos
+        const temAvulso = aPeso > 0 || aQcx > 0 || aQemb > 0;
+        const avulsosRows = temAvulso ? `
+            <div class="slot-row"><span class="slot-row-label">P/B Avulso</span><span class="slot-row-val">${fmtKg(av.peso)}</span></div>
+            ${aQcx > 0  ? `<div class="slot-row"><span class="slot-row-label">Qtd CX Av.</span><span class="slot-row-val">${aQcx} un</span></div>` : ''}
+            ${aQemb > 0 ? `<div class="slot-row"><span class="slot-row-label">Qtd EMB Av.</span><span class="slot-row-val">${aQemb} un</span></div>` : ''}
+        ` : '';
+
+        // Pallets (por pallet) -- coluna esquerda da tabela
+        const palletsColEsq = prod.pallets
+            .filter(pl => parseSeguro(pl.bto).valor > 0)
+            .map((pl, i) => {
+                const r = calcularResultadoPallet(pl);
+                return `
+                <div class="slot-row">
+                    <span class="slot-row-label">Pallet ${i+1} P/B</span>
+                    <span class="slot-row-val">${fmtKg(pl.bto)}</span>
+                </div>
+                <div class="slot-row">
+                    <span class="slot-row-label">Pallet ${i+1} P/P</span>
+                    <span class="slot-row-val">${fmtKg(pl.pal)}</span>
+                </div>`;
+            }).join('');
+
+        // Coluna direita -- pesos unitários e totais
+        const temPcx  = parseSeguro(pcxRef).valor > 0;
+        const temPemb = parseSeguro(pembRef).valor > 0;
+
+        const colDirHtml = `
+            ${temPcx  ? `<div class="slot-row"><span class="slot-row-label">P/CX</span><span class="slot-row-val">${fmtG(pcxRef)}</span></div>` : ''}
+            ${temPemb ? `<div class="slot-row"><span class="slot-row-label">P/EMB</span><span class="slot-row-val">${fmtG(pembRef)}</span></div>` : ''}
+            ${somaQcx > 0  ? `<div class="slot-row"><span class="slot-row-label">Total CX</span><span class="slot-row-val">${somaQcx} un</span></div>` : ''}
+            ${somaQemb > 0 ? `<div class="slot-row"><span class="slot-row-label">Total EMB</span><span class="slot-row-val">${somaQemb} un</span></div>` : ''}
+            ${avulsosRows}
+        `;
+
+        return `
+        <div class="print-slot">
+            <div class="slot-header">
+                <span class="slot-num">ITEM ${globalIdx + 1}</span>
+                <span class="slot-nome">${prod.nome || 'Produto sem nome'}</span>
+                <span class="slot-val-badge">VAL ${fmtVal(prod.validade)}</span>
+            </div>
+            <div class="slot-body">
+                <div class="slot-foto-col">${fotoHtml}</div>
+                <div class="slot-dados-col">
+                    <div class="slot-tabela">
+                        <div class="slot-tabela-col">${palletsColEsq}</div>
+                        <div class="slot-tabela-col">${colDirHtml}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="slot-footer">
+                <div>
+                    <span class="slot-liq-label">Peso Líquido Total</span>
+                    <span class="slot-liq-val">${fmt3(liqTotal)} kg</span>
+                </div>
+                ${pdHtml}
+            </div>
+        </div>`;
+    }
+
+    /* ── Agrupa em páginas de 3 ── */
+    const SLOTS_POR_PAGINA = 3;
+    const paginas = [];
+    for (let i = 0; i < Math.max(produtosValidos.length, 1); i += SLOTS_POR_PAGINA) {
+        paginas.push(produtosValidos.slice(i, i + SLOTS_POR_PAGINA));
+    }
+
+    /* ── Monta o HTML completo ── */
+    let html = '';
+    paginas.forEach((grupo, pi) => {
+        // Preenche a última página com slots vazios até 3
+        while (grupo.length < SLOTS_POR_PAGINA) grupo.push(null);
+
+        const cabecalhoHtml = pi === 0 ? `
+        <div class="print-cabecalho">
+            <div class="print-cab-titulo">LAUDO DE <span>PESAGEM</span></div>
+            <div class="print-cab-meta">
+                <div class="print-cab-cell">
+                    <span class="print-cab-cell-label">Conferente</span>
+                    <span class="print-cab-cell-val">${(state.conferente || '--').toUpperCase()}</span>
+                </div>
+                <div class="print-cab-cell">
+                    <span class="print-cab-cell-label">Fornecedor</span>
+                    <span class="print-cab-cell-val">${(state.fornecedor || '--').toUpperCase()}</span>
+                </div>
+                <div class="print-cab-cell">
+                    <span class="print-cab-cell-label">Data / Hora</span>
+                    <span class="print-cab-cell-val">${dataHora}</span>
+                </div>
+                <div class="print-cab-cell">
+                    <span class="print-cab-cell-label">Referência</span>
+                    <span class="print-cab-cell-val" style="font-size:7pt;">${nome}</span>
+                </div>
+            </div>
+        </div>` : '';
+
+        // Assinaturas só na última página
+        const sigHtml = pi === paginas.length - 1 ? `
+        <div class="print-sig-area">
+            <div class="print-sig-box">Assinatura Conferente</div>
+            <div class="print-sig-box">Assinatura Prevenção</div>
+        </div>` : '';
+
+        // Índice global do produto (posição real no array total)
+        const indiceBase = pi * SLOTS_POR_PAGINA;
+        const slotsHtml = grupo.map((prod, j) => {
+            const idxGlobal = indiceBase + j;
+            return prod ? htmlSlot(prod, idxGlobal) : htmlSlot(null, idxGlobal);
+        }).join('');
+
+        html += `
+        <div class="print-page">
+            ${cabecalhoHtml}
+            <div class="print-slots">
+                ${slotsHtml}
+            </div>
+            ${sigHtml}
+        </div>`;
+    });
+
+    document.getElementById('print-area').innerHTML = html;
+    gerarBackupManual();
+    setTimeout(() => window.print(), 800);
+}
+
+/* ─── Limpar tudo ─── */
+
+function confirmarLimpeza() {
+    mostrarConfirm('ATENÇÃO: Isso apagará TODOS os dados. Tem certeza?', '🗑', () => {
+        esconderLoading();
+        try {
+            if (idb) { idb.close(); idb = null; }
+            try { localStorage.removeItem(LS_KEY); } catch {}
+            const req = indexedDB.deleteDatabase(IDB_NAME);
+            req.onsuccess = () => location.reload();
+            req.onerror   = () => location.reload();
+            req.onblocked = () => setTimeout(() => location.reload(), 300);
+        } catch { location.reload(); }
+    }, 'error');
+}
+
+/* ─── Drawer ─── */
+
+function abrirDrawer()  { document.getElementById('side-drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function fecharDrawer() { document.getElementById('side-drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); document.body.style.overflow = ''; }
+
+/* ─── Inicialização ─── */
+
+window.addEventListener('DOMContentLoaded', async () => {
+    // Failsafe: esconde loading após 5s independente do que aconteça
+    const failsafe = setTimeout(() => esconderLoading(), 5000);
+    mostrarLoading('Iniciando...');
+    try {
+        carregarConfig(); sincronizarCheckboxes();
+        document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
+        document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
+        document.body.classList.toggle('no-camera',        !appConfig.camera);
+        document.body.classList.toggle('no-detalhes',      !appConfig.detalhes);
+        const dpEl = document.getElementById('data-pesagem');
+        if (dpEl && !dpEl.value) dpEl.value = _dataHoje();
+        await iniciarIDB();
+        const salvo = await carregar();
+        if (salvo) {
+            try { importarEstado(salvo); mostrarIndicadorSalvo('Banco Restaurado!'); }
+            catch(e) { console.warn('Dados corrompidos, iniciando do zero:', e.message); }
+        }
+        renderizarTudo();
+    } catch(e) { console.warn('Erro na inicialização:', e); renderizarTudo(); }
+    finally { clearTimeout(failsafe); esconderLoading(); }
+});
+
+/* ─── UI Auxiliar ─── */
+
+let _timerIndicador = null;
+function mostrarIndicadorSalvo(texto = '✔ Salvo') {
+    const el = document.getElementById('save-indicator');
+    if (!el) return;
+    el.innerText = texto; el.style.opacity = '1';
+    clearTimeout(_timerIndicador);
+    _timerIndicador = setTimeout(() => { el.style.opacity = '0'; }, 1600);
+}
+function toggleAvulsos() {
+    const body = document.getElementById('avulsos-body');
+    const seta = document.getElementById('seta-avulsos');
+    const aberto = body.classList.toggle('open');
+    seta.textContent = aberto ? '▲' : '▼';
+    if (aberto) setTimeout(() => document.getElementById('avulso-qcx')?.focus(), 350);
+}
+function togglePesoDesejado() {
+    const painel = document.getElementById('pd-panel');
+    const seta   = document.getElementById('seta-pd');
+    const aberto = painel.classList.toggle('open');
+    seta.innerText = aberto ? '🔽' : '🔼';
+    if (aberto) setTimeout(() => document.getElementById('peso-desejado')?.focus(), 350);
+}
+function toggleDetalhes() {
+    if (!appConfig.detalhes) return;
+    const painel = document.getElementById('details-panel');
+    const seta   = document.getElementById('seta-detalhes');
+    const aberto = painel.classList.toggle('open');
+    seta.innerText = aberto ? '🔼' : '🔽';
+}
+function abrirModalAjuda()  { document.getElementById('modal-ajuda').classList.add('open'); }
+function fecharModalAjuda() { document.getElementById('modal-ajuda').classList.remove('open'); }
+function mostrarLoading(msg = 'Carregando...') {
+    const el = document.getElementById('loading'); const txt = document.getElementById('loading-msg');
+    if (txt) txt.innerText = msg; if (el) el.classList.add('open');
+}
+function esconderLoading() { const el = document.getElementById('loading'); if (el) el.classList.remove('open'); }
+function vibrarForte() { if (appConfig.alerts) navigator.vibrate?.([500, 100, 500]); }
+function vibrarLeve()  { if (appConfig.alerts) navigator.vibrate?.(200); }
+
+/* ══ CALCULADORA DE VALIDADE ══ */
+
+function showScreen(screenId) {
+    const validityScreen = document.getElementById('validity-screen');
+    const mainCard       = document.querySelector('.card');
+    const btnBar         = document.querySelector('.btn-bar');
+
+    if (screenId === 'validity-screen') {
+        if (mainCard) mainCard.style.display = 'none';
+        if (btnBar)   btnBar.style.display   = 'none';
+        validityScreen.style.display = 'block';
+        // Limpa input e resultado ao abrir
+        const inp = document.getElementById('validity-input');
+        const res = document.getElementById('validity-result');
+        if (inp) { inp.value = ''; inp.focus(); }
+        if (res) { res.className = 'validity-result'; res.innerHTML = '<span class="val-res-waiting">Aguardando entrada...</span>'; }
+    } else {
+        validityScreen.style.display = 'none';
+        if (mainCard) mainCard.style.display = '';
+        if (btnBar)   btnBar.style.display   = '';
+    }
+}
+
+function calcularValidade(input) {
+    const digits = input.value.replace(/\D/g, '');
+    const res    = document.getElementById('validity-result');
+
+    /* ── Máscara visual ── */
+    if (digits.length >= 5) {
+        input.value = digits.replace(/^(\d{2})(\d{2})(\d{0,4}).*/, '$1/$2/$3');
+    } else if (digits.length >= 3) {
+        input.value = digits.replace(/^(\d{2})(\d{0,2}).*/, '$1/$2');
+    } else {
+        input.value = digits;
+    }
+
+    /* ── Limpa resultado enquanto digita ── */
+    if (digits.length === 0) {
+        res.className = 'validity-result';
+        res.innerHTML = '<span class="val-res-waiting">Aguardando entrada...</span>';
+        return;
+    }
+    if (digits.length !== 6 && digits.length !== 8) return;
+
+    /* ── Parse da data ── */
+    const dia = parseInt(digits.substring(0, 2));
+    const mes = parseInt(digits.substring(2, 4)) - 1;
+    let   ano = parseInt(digits.substring(4));
+    if (digits.length === 6) ano += 2000;
+
+    const dataVenc = new Date(ano, mes, dia);
+    const hoje     = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    /* ── Valida data ── */
+    if (
+        dataVenc.getDate()  !== dia  ||
+        dataVenc.getMonth() !== mes  ||
+        ano < 1000
+    ) {
+        vibrarForte();
+        res.className = 'validity-result res-expired';
+        res.innerHTML = '<span class="val-res-label">Data inválida</span><span class="val-res-number" style="font-size:2rem;">⚠</span><span class="val-res-suffix">Verifique o valor digitado</span>';
+        return;
+    }
+
+    const diffMs   = dataVenc - hoje;
+    const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias > 0) {
+        vibrarLeve();
+        res.className = 'validity-result res-ok';
+        res.innerHTML = `
+            <span class="val-res-label">Faltam</span>
+            <span class="val-res-number">${diffDias}</span>
+            <span class="val-res-suffix">dias para vencer</span>
+        `;
+    } else if (diffDias === 0) {
+        vibrarLeve();
+        res.className = 'validity-result res-today';
+        res.innerHTML = `
+            <span class="val-res-label">Atenção</span>
+            <span class="val-res-number" style="font-size:3rem;">HOJE</span>
+            <span class="val-res-suffix">Vence hoje!</span>
+        `;
+    } else {
+        vibrarForte();
+        res.className = 'validity-result res-expired';
+        res.innerHTML = `
+            <span class="val-res-label">Vencido há</span>
+            <span class="val-res-number">${Math.abs(diffDias)}</span>
+            <span class="val-res-suffix">dias</span>
+        `;
+    }
+}
+
+// ServiceWorker desativado (requer sw.js separado)
+
+/* ══════════════════════════════════════════════════════════
+   V10 · ENGINE: Toast · Confirm Modal · Undo · Event Delegation · Enter Nav
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── TOAST ─── */
+function toast(msg, tipo = 'info', duracao = 3000) {
+    const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+    const cont = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${tipo}`;
+    el.innerHTML = `<span class="toast-icon">${icons[tipo]||'ℹ️'}</span><span>${msg}</span>`;
+    cont.prepend(el);
+    const remover = () => {
+        el.classList.add('toast-out');
+        setTimeout(() => el.remove(), 260);
+    };
+    el.addEventListener('click', remover);
+    setTimeout(remover, duracao);
+}
+
+/* ─── CONFIRM MODAL ─── */
+let _confirmCallback = null;
+function mostrarConfirm(msg, icon = '⚠', cb, estilo = 'error') {
+    document.getElementById('confirm-msg').textContent  = msg;
+    document.getElementById('confirm-icon').textContent = icon;
+    const okBtn = document.getElementById('confirm-ok');
+    okBtn.className = `btn-confirm-ok${estilo === 'error' ? '' : ' is-' + estilo}`;
+    _confirmCallback = cb;
+    document.getElementById('confirm-overlay').classList.add('open');
+}
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('confirm-ok').addEventListener('click', () => {
+        document.getElementById('confirm-overlay').classList.remove('open');
+        if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+    });
+    document.getElementById('confirm-cancel').addEventListener('click', () => {
+        document.getElementById('confirm-overlay').classList.remove('open');
+        _confirmCallback = null;
+    });
+});
+
+/* ─── UNDO / HISTÓRICO ─── */
+const MAX_HIST = 10;
+let _historico = [];
+
+function salvarHistorico() {
+    try {
+        const snap = JSON.stringify(exportarEstado());
+        _historico.push(snap);
+        if (_historico.length > MAX_HIST) _historico.shift();
+        atualizarBotaoUndo();
+    } catch {}
+}
+
+function desfazer() {
+    if (_historico.length === 0) return;
+    try {
+        importarEstado(JSON.parse(_historico.pop()));
+        renderizarTudo();
+        atualizarBotaoUndo();
+        toast('Ação desfeita', 'info', 1800);
+    } catch(e) { toast('Erro ao desfazer', 'error'); }
+}
+
+function atualizarBotaoUndo() {
+    const btn = document.getElementById('btn-undo');
+    if (!btn) return;
+    btn.classList.toggle('active', _historico.length > 0);
+    btn.title = _historico.length > 0 ? `Desfazer (${_historico.length} passo${_historico.length > 1 ? 's' : ''})` : 'Sem histórico';
+}
+
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); desfazer(); }
+});
+
+/* ─── ENTER → próximo campo ─── */
+function setupEnterNav() {
+    document.getElementById('container-pallets')?.addEventListener('keydown', avançarCampo);
+    document.querySelector('.avulsos-body')?.addEventListener('keydown', avançarCampo);
+    document.querySelector('.pd-panel')?.addEventListener('keydown', avançarCampo);
+}
+
+function avançarCampo(e) {
+    if (e.key !== 'Enter') return;
+    const focusable = 'input:not([type=file]):not([type=checkbox]):not([style*="display:none"])';
+    const todos = Array.from(document.querySelectorAll(focusable)).filter(el => el.offsetParent !== null);
+    const idx   = todos.indexOf(e.target);
+    if (idx >= 0 && idx < todos.length - 1) { e.preventDefault(); todos[idx + 1].focus(); }
+}
+
+/* ─── EVENT DELEGATION ─── */
+document.addEventListener('input', e => {
+    const t = e.target;
+    const ev = t.dataset?.ev;
+    if (!ev) {
+        // Static inputs (não gerados por template)
+        if (t.id === 'validade-global' || t.id === 'produto') agendarCalculo();
+        if (['conferente','fornecedor','data-pesagem'].includes(t.id)) agendarSincronizacao();
+        if (t.id === 'avulso-qcx' || t.id === 'avulso-qemb') agendarCalculo();
+        if (t.id === 'avulso-peso') { onInputKg(t); }
+        if (t.id === 'peso-desejado') { onInputKg(t); atualizarPesoDesejado(); }
+        return;
+    }
+    if (ev === 'kg-input')   { onInputKg(t); }
+    if (ev === 'gram-input') { onInputGramagem(t); }
+    if (ev === 'qty-input')  { limparOverride(t); agendarCalculo(); }
+});
+
+document.addEventListener('blur', e => {
+    const t = e.target;
+    if (!t.dataset) return;
+    if (t.dataset.evBlur === 'format-kg') formatarInput(t);
+    if (t.id === 'avulso-peso' || t.id === 'peso-desejado') {
+        formatarInput(t);
+        if (t.id === 'peso-desejado') atualizarPesoDesejado();
+    }
+}, true);
+
+document.addEventListener('change', e => {
+    const t = e.target;
+    if (!t.dataset) return;
+    if (t.dataset.evChange === 'autocomplete') autoCompletar(t);
+});
+
+document.addEventListener('click', e => {
+    const t = e.target.closest('[data-action]');
+    if (!t) return;
+    const action = t.dataset.action;
+
+    if (action === 'clear-field') {
+        const input = t.previousElementSibling || t.parentElement?.querySelector('input');
+        if (input) {
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        }
+        return;
+    }
+    if (action === 'toggle-collapse') {
+        const num   = parseInt(t.dataset.num);
+        const bloco = document.getElementById(`pallet-block-${num}`);
+        if (bloco) {
+            lerFormularioParaState();
+            const pal = state.produtos[state.idAtivo].pallets[num - 1];
+            if (pal) pal.collapsed = !bloco.classList.contains('collapsed');
+            bloco.classList.toggle('collapsed');
+        }
+        return;
+    }
+    if (action === 'remove-pallet') { removerPallet(parseInt(t.dataset.idx)); return; }
+    if (action === 'autorizar')     { autorizarPallet(parseInt(t.dataset.num)); return; }
+    if (action === 'ver-foto')      { abrirModalFoto(t.dataset.base); return; }
+    if (action === 'btn-add-pallet' || t.id === 'btn-add-pallet') { adicionarPallet(); return; }
+    if (action === 'btn-del-item'   || t.id === 'btn-del-item')   { excluirItemAtual(); return; }
+});
+
+// Bind static buttons (não gerados dinamicamente)
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-add-pallet')?.addEventListener('click', adicionarPallet);
+    document.getElementById('btn-del-item')?.addEventListener('click', excluirItemAtual);
+    setupEnterNav();
+    // Aplica compact mode se estava ativo
+    document.body.classList.toggle('compact', !!appConfig.compact);
+});
+</script>
+</body>
+</html>
