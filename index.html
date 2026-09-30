@@ -1,4 +1,4 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -9,16 +9,40 @@
     <title>CONFERÊNCIA DE PESAGEM</title>
     
     <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0056b3">
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <script>
+  let _swReg = null;
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Calculadora Pronta para Uso Offline!'))
-        .catch(err => console.log('Erro ao registrar:', err));
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        _swReg = reg;
+        if (reg.waiting && navigator.serviceWorker.controller) avisarNovaVersao(reg.waiting);
+        reg.addEventListener('updatefound', () => {
+          const novo = reg.installing;
+          novo && novo.addEventListener('statechange', () => {
+            if (novo.state === 'installed' && navigator.serviceWorker.controller) avisarNovaVersao(novo);
+          });
+        });
+      }).catch(() => {});
+      let recarregando = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!recarregando) { recarregando = true; location.reload(); }
+      });
     });
+  }
+  function avisarNovaVersao(sw) {
+    if (document.getElementById('banner-update')) return;
+    const b = document.createElement('div');
+    b.id = 'banner-update';
+    b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#1c2b3a;color:#fff;padding:12px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;font:600 13px Sora,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.3)';
+    b.innerHTML = '<span style="flex:1">🔄 Nova versão disponível</span><button style="background:#27ae60;color:#fff;border:0;border-radius:7px;padding:8px 14px;font-weight:700">Atualizar</button>';
+    b.querySelector('button').onclick = () => sw.postMessage('SKIP_WAITING');
+    document.body.appendChild(b);
+  }
+  function verificarAtualizacao() {
+    if (!_swReg) { toast('Atualização indisponível neste navegador.', 'warning'); return; }
+    _swReg.update().then(() => toast('Verificação concluída.', 'info')).catch(() => toast('Sem conexão.', 'warning'));
   }
 </script>
 
@@ -1321,7 +1345,27 @@
                 <button class="btn-drawer-action" onclick="gerarBackupManual();">⬇ Backup</button>
                 <button class="btn-drawer-action" onclick="document.getElementById('file-import').click();">⬆ Carregar</button>
             </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn-drawer-action" onclick="exportarCSV();">📊 Excel/CSV</button>
+                <button class="btn-drawer-action" onclick="compartilharResumo();">📤 Compartilhar</button>
+            </div>
             <input type="file" id="file-import" style="display:none" accept=".json" onchange="importarBackup(event)">
+        </div>
+        <div class="drawer-section">
+            <span class="drawer-section-title">🧰 Ferramentas</span>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button class="btn-drawer-action" onclick="abrirPainel()">📈 Painel da carga</button>
+                <button class="btn-drawer-action" onclick="abrirNF()">🧾 Comparar NF</button>
+                <button class="btn-drawer-action" onclick="abrirAmostragem()">⚖ Amostragem</button>
+                <button class="btn-drawer-action" onclick="abrirPerfis()">🏷 Perfis de tara</button>
+                <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
+                <button class="btn-drawer-action" onclick="definirPIN()">🔐 PIN supervisor</button>
+                <button class="btn-drawer-action" onclick="abrirProdutos()">📦 Produtos</button>
+                <button class="btn-drawer-action" onclick="lerCodigoBarras()">📷 Ler código</button>
+                <button class="btn-drawer-action" onclick="alternarTema()">🌙 Modo escuro</button>
+                <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
+                <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
+            </div>
         </div>
         <div class="drawer-section">
             <span class="drawer-section-title">👤 Identificação</span>
@@ -1345,6 +1389,14 @@
         </div>
         <div class="drawer-section">
             <span class="drawer-section-title">⚙ Recursos Ativos</span>
+            <div class="drawer-field">
+                <label class="drawer-label">Tolerância de tara (alerta laranja, %)</label>
+                <input type="number" id="cfg-tol" class="drawer-input" min="1" max="100" step="1" value="45" inputmode="decimal" onchange="aplicarConfig()">
+            </div>
+            <div class="drawer-field">
+                <label class="drawer-label">Validade mínima aceita (dias, 0 = desligado)</label>
+                <input type="number" id="cfg-valmin" class="drawer-input" min="0" step="1" value="0" inputmode="numeric" onchange="definirValMin(this.value)">
+            </div>
             <label class="toggle-item" for="cfg-alerts">
                 <div class="toggle-info"><span class="toggle-label">Sistema de alertas</span><span class="toggle-desc">Erros e marcações visuais de tara</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-alerts" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
@@ -1380,6 +1432,7 @@
         </div>
     </div>
     <div class="drawer-footer">
+        <button class="btn-drawer-action" style="width:100%;margin-bottom:8px" onclick="verificarAtualizacao()">🔄 Verificar atualização</button>
         <button class="btn-help-drawer" onclick="abrirModalAjuda()">❓ Dossiê de Segurança -- Como os cálculos funcionam</button>
     </div>
 </div>
@@ -1558,7 +1611,7 @@
 /* ══ CAMADA 0 · CONFIG ══ */
 
 const CONFIG_KEY = 'pesagem_config_v8';
-const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, compact:false };
+const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, compact:false, tolTara:45 };
 
 function salvarConfig()  { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig)); } catch {} }
 function carregarConfig(){ try { const s = localStorage.getItem(CONFIG_KEY); if(s) Object.assign(appConfig, JSON.parse(s)); } catch {} }
@@ -1572,6 +1625,7 @@ function sincronizarCheckboxes() {
     document.getElementById('cfg-camera').checked      = appConfig.camera;
     document.getElementById('cfg-detalhes').checked    = appConfig.detalhes;
     document.getElementById('cfg-compact').checked     = appConfig.compact;
+    document.getElementById('cfg-tol').value           = appConfig.tolTara;
 }
 
 function aplicarConfig() {
@@ -1583,6 +1637,8 @@ function aplicarConfig() {
     appConfig.camera       = document.getElementById('cfg-camera').checked;
     appConfig.detalhes     = document.getElementById('cfg-detalhes').checked;
     appConfig.compact      = document.getElementById('cfg-compact').checked;
+    const tol = parseFloat(String(document.getElementById('cfg-tol').value).replace(',', '.'));
+    appConfig.tolTara      = (tol > 0 && tol <= 100) ? tol : 45;
 
     document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
     document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
@@ -1657,7 +1713,7 @@ function determinarEstadoPallet(res, overrides) {
     if (res.bto === 0) return 'OK';
     if (res.liqPallet < 0 && !overrides.override_red) return 'VERMELHO';
     if ((res.liqPallet < 0 && overrides.override_red && !overrides.override_orange)
-     || (res.percTara >= 0.45 && !overrides.override_orange)) return 'LARANJA';
+     || (res.percTara >= appConfig.tolTara / 100 && !overrides.override_orange)) return 'LARANJA';
     return 'OK';
 }
 
@@ -1876,7 +1932,7 @@ function _aplicarEstadoPallet(bloco, num, estado, percTara, silencioso) {
         if (!silencioso) vibrarForte();
     } else if (estado === 'LARANJA') {
         bloco.classList.add('is-warning');
-        if (txt) txt.innerText = percTara >= 0.45 ? '🟠 TARA ELEVADA (>45%)' : '🟠 Autorização Nível 2 Pendente';
+        if (txt) txt.innerText = percTara >= appConfig.tolTara / 100 ? `🟠 TARA ELEVADA (>${appConfig.tolTara}%)` : '🟠 Autorização Nível 2 Pendente';
         if (btn) btn.innerText = '⚠ Liberar → Nível Padrão';
         if (!silencioso) vibrarLeve();
     }
@@ -2306,6 +2362,7 @@ function gerarBackupManual() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `${gerarNomeArquivo()}.json`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 150);
+    try { localStorage.setItem('pesagem_ultimo_backup', String(Date.now())); } catch {}
 }
 function importarBackup(e) {
     const arquivo = e.target.files?.[0]; if (!arquivo) return;
@@ -2518,8 +2575,8 @@ function gerarLaudo() {
         // Assinaturas só na última página
         const sigHtml = pi === paginas.length - 1 ? `
         <div class="print-sig-area">
-            <div class="print-sig-box">Assinatura Conferente</div>
-            <div class="print-sig-box">Assinatura Prevenção</div>
+            <div style="width:40%"><div style="height:14mm;text-align:center">${_sigImg('conf')}</div><div class="print-sig-box" style="width:100%">Assinatura Conferente</div></div>
+            <div style="width:40%"><div style="height:14mm;text-align:center">${_sigImg('prev')}</div><div class="print-sig-box" style="width:100%">Assinatura Prevenção</div></div>
         </div>` : '';
 
         // Índice global do produto (posição real no array total)
@@ -2539,6 +2596,7 @@ function gerarLaudo() {
         </div>`;
     });
 
+    html += _anexoFotos(produtosValidos);
     document.getElementById('print-area').innerHTML = html;
     gerarBackupManual();
     setTimeout(() => window.print(), 800);
@@ -2893,6 +2951,404 @@ document.addEventListener('DOMContentLoaded', () => {
     // Aplica compact mode se estava ativo
     document.body.classList.toggle('compact', !!appConfig.compact);
 });
+
+/* ══ V9 · EXPORTAR / COMPARTILHAR / LEMBRETE DE BACKUP ══ */
+
+function _baixarArquivo(nome, conteudo, tipo) {
+    const blob = new Blob([conteudo], { type: tipo });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nome;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 150);
+}
+
+function exportarCSV() {
+    lerFormularioParaState();
+    const n = v => String(Number(v).toFixed(3)).replace('.', ',');
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const linhas = [['Fornecedor','Conferente','Data','Produto','Validade','Pallet','Bruto (kg)','Tara madeira','Tara caixas','Tara embalagens','Tara total','Liquido (kg)','% Tara','Estado'].join(';')];
+    const estados = { OK:'OK', VERMELHO:'Bloqueado', LARANJA:'Atencao', INVALIDO:'Invalido' };
+    state.produtos.forEach((p, i) => {
+        p.pallets.forEach((pd, j) => {
+            const r = calcularResultadoPallet(pd);
+            if (!(r.bto > 0)) return;
+            linhas.push([q(state.fornecedor), q(state.conferente), q(state.dataPesagem), q(p.nome || `Produto ${i+1}`), q(p.validade), j+1,
+                n(r.bto), n(r.taraMad), n(r.taraCx), n(r.taraEmb), n(r.taraTotal), n(r.liqPallet),
+                (r.percTara * 100).toFixed(1).replace('.', ','), estados[determinarEstadoPallet(r, pd)] || ''].join(';'));
+        });
+    });
+    if (linhas.length === 1) { toast('Nenhum pallet com peso bruto para exportar.', 'warning'); return; }
+    _baixarArquivo(`${gerarNomeArquivo()}.csv`, '\uFEFF' + linhas.join('\r\n'), 'text/csv;charset=utf-8');
+    toast('📊 Planilha exportada!', 'success');
+}
+
+function _resumoTexto() {
+    lerFormularioParaState();
+    const idOrig = state.idAtivo;
+    const fmt = v => v.toLocaleString('pt-BR', FORMATO_3);
+    let txt = `CONFERÊNCIA DE PESAGEM\nFornecedor: ${state.fornecedor || '--'}\nConferente: ${state.conferente || '--'}\nData: ${state.dataPesagem ? state.dataPesagem.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR')}\n`;
+    state.produtos.forEach((p, i) => {
+        state.idAtivo = i;
+        const t = calcularResultadosGlobais().totais;
+        if (t.somaBruto > 0) txt += `\n• ${p.nome || 'Produto ' + (i+1)}${p.validade ? ' (val. ' + p.validade + ')' : ''}\n  Bruto ${fmt(t.somaBruto)} kg | Tara ${fmt(t.taraMadTotal + t.taraCxTotal + t.taraEmbTotal)} kg | Líquido ${fmt(t.liqTotal)} kg`;
+    });
+    state.idAtivo = idOrig;
+    return txt;
+}
+
+async function compartilharResumo() {
+    const texto = _resumoTexto();
+    try {
+        if (navigator.share) { await navigator.share({ title: 'Conferência de Pesagem', text: texto }); return; }
+        await navigator.clipboard.writeText(texto);
+        toast('📋 Resumo copiado!', 'success');
+    } catch (e) { if (e.name !== 'AbortError') toast('Não foi possível compartilhar.', 'error'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        try {
+            const ultimo = parseInt(localStorage.getItem('pesagem_ultimo_backup') || '0');
+            const temDados = state.produtos.some(p => p.nome || p.pallets.some(pl => pl.bto));
+            const dias = ultimo ? Math.floor((Date.now() - ultimo) / 864e5) : null;
+            if (temDados && (dias === null || dias >= 7))
+                toast(dias === null ? '💾 Você ainda não fez backup. Menu ▸ Backup.' : `💾 Faz ${dias} dias sem backup. Menu ▸ Backup.`, 'warning', 6000);
+        } catch {}
+    }, 2500);
+});
+
+/* ══ V10 · FERRAMENTAS ══ */
+const _INP = 'width:100%;padding:10px;border:1px solid #dde3ea;border-radius:8px;font:500 14px "DM Mono",monospace;margin:4px 0 10px';
+const _BTN = 'background:#1a6b3c;color:#fff;border:0;border-radius:8px;padding:10px 14px;font:700 12px Sora,sans-serif;cursor:pointer';
+const _BTN2 = 'background:#f0f3f6;color:#1c2b3a;border:1px solid #dde3ea;border-radius:8px;padding:8px 12px;font:600 12px Sora,sans-serif;cursor:pointer';
+const _kg = v => v.toLocaleString('pt-BR', FORMATO_3);
+const _num = v => { const n = parseFloat(String(v).trim().replace(/\./g, '').replace(',', '.')); return isNaN(n) ? null : n; };
+const _lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { toast('Sem espaço para salvar.', 'error'); } };
+
+function _modal(titulo, corpo) {
+    fecharDrawer();
+    document.getElementById('modal-v10')?.remove();
+    const o = document.createElement('div');
+    o.id = 'modal-v10';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:flex-end;justify-content:center';
+    o.innerHTML = `<div style="background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px;font-family:Sora,sans-serif;color:#1c2b3a"><div style="display:flex;align-items:center;margin-bottom:12px"><b style="flex:1;font-size:.95rem">${titulo}</b><button onclick="document.getElementById('modal-v10').remove()" style="border:0;background:#f0f3f6;border-radius:8px;width:32px;height:32px;font-size:16px">✕</button></div><div id="modal-v10-body">${corpo}</div></div>`;
+    o.addEventListener('click', e => { if (e.target === o) o.remove(); });
+    document.body.appendChild(o);
+}
+const _fecharModal = () => document.getElementById('modal-v10')?.remove();
+const _corpo = h => { document.getElementById('modal-v10-body').innerHTML = h; };
+
+function _totaisProdutos() {
+    lerFormularioParaState();
+    const orig = state.idAtivo;
+    const r = state.produtos.map((p, i) => {
+        state.idAtivo = i;
+        const t = calcularResultadosGlobais().totais;
+        return { nome: p.nome || `Produto ${i+1}`, bruto: t.somaBruto, tara: t.taraMadTotal + t.taraCxTotal + t.taraEmbTotal, liq: t.liqTotal, estado: estadoAbaProduto(p), desejado: _num(p.pesoDesejado || '') };
+    });
+    state.idAtivo = orig;
+    return r.filter(x => x.bruto > 0);
+}
+
+/* 19 · Painel da carga */
+function abrirPainel() {
+    const L = _totaisProdutos();
+    const sem = { OK:'🟢', LARANJA:'🟠', VERMELHO:'🔴' };
+    let h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font:500 12px \'DM Mono\',monospace"><tr style="text-align:left;color:#6b7a8d"><th></th><th>Produto</th><th>Bruto</th><th>Tara</th><th>Líquido</th></tr>';
+    let B = 0, T = 0, Q = 0;
+    L.forEach(x => { B += x.bruto; T += x.tara; Q += x.liq;
+        h += `<tr style="border-top:1px solid #dde3ea"><td>${sem[x.estado] || '🟢'}</td><td style="padding:8px 4px">${x.nome}</td><td>${_kg(x.bruto)}</td><td>${_kg(x.tara)}</td><td><b>${_kg(x.liq)}</b></td></tr>`; });
+    h += `<tr style="border-top:2px solid #1c2b3a;font-weight:800"><td></td><td style="padding:8px 4px">TOTAL</td><td>${_kg(B)}</td><td>${_kg(T)}</td><td>${_kg(Q)}</td></tr></table></div>`;
+    if (!L.length) h = '<p>Nenhum produto com peso bruto ainda.</p>';
+    _modal('📈 Painel da carga (kg)', h);
+}
+
+/* 7 · Comparar com NF */
+function abrirNF() {
+    _modal('🧾 Comparar com a nota fiscal', `<label>Peso líquido da NF (kg)</label><input id="nf-peso" style="${_INP}" inputmode="decimal" placeholder="Ex.: 1.250,000"><label>Tolerância (%)</label><input id="nf-tol" style="${_INP}" inputmode="decimal" value="1"><button style="${_BTN}" onclick="calcularNF()">Comparar</button><div id="nf-res" style="margin-top:14px"></div>`);
+}
+function calcularNF() {
+    const nf = _num(document.getElementById('nf-peso').value), tol = _num(document.getElementById('nf-tol').value) ?? 1;
+    const res = document.getElementById('nf-res');
+    if (!nf || nf <= 0) { res.innerHTML = '<span style="color:#c0392b">Informe o peso da NF.</span>'; return; }
+    const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0), dif = liq - nf, perc = dif / nf * 100, ok = Math.abs(perc) <= tol;
+    res.innerHTML = `<div style="padding:14px;border-radius:10px;background:${ok ? '#e8f5ee' : '#fdf2f1'};font:500 13px 'DM Mono',monospace;line-height:1.8">Conferido: <b>${_kg(liq)} kg</b><br>NF: <b>${_kg(nf)} kg</b><br>Diferença: <b>${dif >= 0 ? '+' : ''}${_kg(dif)} kg (${perc.toFixed(2).replace('.', ',')}%)</b><br>${ok ? '🟢 Dentro da tolerância' : (dif < 0 ? '🔴 Falta de mercadoria' : '🟠 Sobra acima da tolerância')}</div>`;
+}
+
+/* 6 · Amostragem */
+function abrirAmostragem() {
+    _modal('⚖ Amostragem de peças', `<label>Pesos (kg) separados por espaço, ; ou linha</label><textarea id="am-pesos" rows="4" style="${_INP}" placeholder="0,250 0,248 0,255 ..."></textarea><label>Gramagem alvo (kg, opcional)</label><input id="am-alvo" style="${_INP}" inputmode="decimal" placeholder="0,250"><button style="${_BTN}" onclick="calcularAmostra()">Calcular</button><div id="am-res" style="margin-top:14px"></div>`);
+}
+function calcularAmostra() {
+    const v = document.getElementById('am-pesos').value.split(/[\s;]+/).map(_num).filter(x => x !== null && x > 0);
+    const res = document.getElementById('am-res'), alvo = _num(document.getElementById('am-alvo').value);
+    if (v.length < 2) { res.innerHTML = '<span style="color:#c0392b">Informe ao menos 2 pesos.</span>'; return; }
+    const m = v.reduce((a, b) => a + b, 0) / v.length, dp = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1));
+    const fora = v.filter(x => Math.abs(x - m) / m > 0.10);
+    let h = `Peças: <b>${v.length}</b><br>Média: <b>${_kg(m)} kg</b><br>Mín / Máx: <b>${_kg(Math.min(...v))} / ${_kg(Math.max(...v))}</b><br>Desvio: <b>${_kg(dp)} kg (${(dp / m * 100).toFixed(1).replace('.', ',')}%)</b><br>`;
+    if (alvo) { const d = (m - alvo) / alvo * 100; h += `Média vs alvo: <b>${d >= 0 ? '+' : ''}${d.toFixed(1).replace('.', ',')}%</b> ${Math.abs(d) <= 5 ? '🟢' : '🟠'}<br>`; }
+    h += fora.length ? `🟠 ${fora.length} peça(s) a mais de 10% da média: ${fora.map(_kg).join(', ')}` : '🟢 Nenhuma peça discrepante';
+    res.innerHTML = `<div style="padding:14px;border-radius:10px;background:#f0f3f6;font:500 13px 'DM Mono',monospace;line-height:1.8">${h}</div>`;
+}
+
+/* 1 · Perfis de tara */
+function abrirPerfis() {
+    const P = _lsGet('pesagem_perfis_tara', []);
+    let h = P.length ? P.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.nome}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'} · ${x.qemb || '-'}/cx</span></div><button style="${_BTN}" onclick="aplicarPerfil(${i})">Aplicar</button><button style="${_BTN2}" onclick="excluirPerfil(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum perfil salvo.</p>';
+    h += `<div style="margin-top:14px"><b style="font-size:12px">Novo perfil</b><input id="pf-nome" style="${_INP}" placeholder="Nome (ex.: PBR + caixa plástica)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pf-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pf-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pf-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pf-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px"><button style="${_BTN}" onclick="salvarPerfil()">Salvar</button><button style="${_BTN2}" onclick="salvarPerfil(true)">Copiar do Pallet 1</button></div></div>`;
+    _modal('🏷 Perfis de tara', h);
+}
+function salvarPerfil(doPallet1) {
+    let x;
+    if (doPallet1) { lerFormularioParaState(); const pl = state.produtos[state.idAtivo].pallets[0]; x = { pal: pl.pal, pcx: pl.pcx, pemb: pl.pemb, qemb: pl.qemb }; }
+    else x = { pal: pf('pal'), pcx: pf('pcx'), pemb: pf('pemb'), qemb: pf('qemb') };
+    function pf(k) { return document.getElementById('pf-' + k).value.trim(); }
+    x.nome = pf('nome') || 'Perfil ' + (_lsGet('pesagem_perfis_tara', []).length + 1);
+    const P = _lsGet('pesagem_perfis_tara', []); P.push(x); _lsSet('pesagem_perfis_tara', P); abrirPerfis();
+}
+function excluirPerfil(i) { const P = _lsGet('pesagem_perfis_tara', []); P.splice(i, 1); _lsSet('pesagem_perfis_tara', P); abrirPerfis(); }
+function aplicarPerfil(i) {
+    const x = _lsGet('pesagem_perfis_tara', [])[i]; if (!x) return;
+    lerFormularioParaState();
+    state.produtos[state.idAtivo].pallets.forEach(pl => { ['pal', 'pcx', 'pemb', 'qemb'].forEach(k => { if (x[k] !== '') pl[k] = x[k]; }); });
+    renderizarTudo(); _fecharModal(); toast(`🏷 Perfil "${x.nome}" aplicado ao produto atual.`, 'success');
+}
+
+/* 12 · Histórico + 14 · Auditoria */
+function abrirHistorico() {
+    const H = _lsGet('pesagem_historico', []), A = _lsGet('pesagem_auditoria', []);
+    let h = `<button style="${_BTN}" onclick="salvarNoHistorico()">Salvar conferência atual</button><div style="margin-top:10px">` + (H.length ? H.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.titulo}</b><br><span style="color:#6b7a8d">${x.quando}</span></div><button style="${_BTN}" onclick="abrirDoHistorico(${i})">Abrir</button><button style="${_BTN2}" onclick="excluirDoHistorico(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>') + '</div>';
+    if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${a.quando} · ${a.prod} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
+    _modal('🗂 Histórico de conferências', h);
+}
+function salvarNoHistorico() {
+    const est = JSON.parse(JSON.stringify((lerFormularioParaState(), exportarEstado())));
+    est.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; }));
+    const H = _lsGet('pesagem_historico', []);
+    H.unshift({ titulo: `${state.fornecedor || 'Sem fornecedor'} · ${state.produtos.length} produto(s)`, quando: new Date().toLocaleString('pt-BR'), estado: est });
+    _lsSet('pesagem_historico', H.slice(0, 15)); abrirHistorico(); toast('🗂 Salvo no histórico (sem fotos).', 'success');
+}
+function abrirDoHistorico(i) {
+    const x = _lsGet('pesagem_historico', [])[i]; if (!x) return;
+    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos.', '🗂', () => { importarEstado(x.estado); renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success'); }, 'warning');
+}
+function excluirDoHistorico(i) { const H = _lsGet('pesagem_historico', []); H.splice(i, 1); _lsSet('pesagem_historico', H); abrirHistorico(); }
+
+/* 13 · PIN do supervisor */
+function definirPIN() {
+    if (appConfig.pin && prompt('PIN atual:') !== appConfig.pin) { toast('PIN incorreto.', 'error'); return; }
+    const novo = prompt('Novo PIN de 4 a 6 dígitos (deixe vazio para remover):');
+    if (novo === null) return;
+    if (novo !== '' && !/^\d{4,6}$/.test(novo)) { toast('Use de 4 a 6 dígitos.', 'error'); return; }
+    appConfig.pin = novo; salvarConfig(); toast(novo ? '🔐 PIN definido.' : 'PIN removido.', 'success');
+}
+const _autorizarOriginal = autorizarPallet;
+autorizarPallet = function (num) {
+    if (appConfig.pin && prompt('PIN do supervisor:') !== appConfig.pin) { toast('🔐 PIN incorreto. Autorização negada.', 'error'); vibrarForte(); return; }
+    const pr = state.produtos[state.idAtivo];
+    const A = _lsGet('pesagem_auditoria', []);
+    A.unshift({ quando: new Date().toLocaleString('pt-BR'), prod: pr.nome || `Produto ${state.idAtivo + 1}`, pallet: num, tipo: pr.pallets[num - 1]?.override_red ? 'nível 2' : 'nível 1' });
+    _lsSet('pesagem_auditoria', A.slice(0, 50));
+    _autorizarOriginal(num);
+};
+
+/* ══ V11 · PRODUTOS, CÓDIGO, VOZ, TEMA, VALIDADE MÍNIMA ══ */
+const _semAcento = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const _cadastro = () => _lsGet('pesagem_produtos', []);
+
+/* 20 · Modo escuro */
+function _aplicarTema(escuro) { document.documentElement.classList.toggle('dark', escuro); }
+function alternarTema() {
+    const escuro = !document.documentElement.classList.contains('dark');
+    _aplicarTema(escuro); _lsSet('pesagem_tema', escuro ? 'escuro' : 'claro'); fecharDrawer();
+}
+(function () {
+    const st = document.createElement('style');
+    st.textContent = 'html.dark{filter:invert(1) hue-rotate(180deg);background:#fff}html.dark img,html.dark video,html.dark canvas{filter:invert(1) hue-rotate(180deg)}';
+    document.head.appendChild(st);
+    const t = _lsGet('pesagem_tema', null);
+    _aplicarTema(t ? t === 'escuro' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches));
+})();
+
+/* 15 · Validade mínima */
+function definirValMin(v) { appConfig.valMin = Math.max(0, parseInt(v) || 0); salvarConfig(); _checarValidade(); }
+function _checarValidade() {
+    const el = document.getElementById('validade-global'); if (!el) return;
+    el.style.outline = ''; if (!el.value || !appConfig.valMin) return;
+    const dias = Math.ceil((new Date(el.value + 'T12:00:00') - new Date()) / 864e5);
+    if (dias < appConfig.valMin) { el.style.outline = '2px solid #c0392b'; vibrarForte(); toast(`📅 Validade com ${dias} dia(s): abaixo do mínimo de ${appConfig.valMin}.`, 'error', 5000); }
+    else el.style.outline = '2px solid #27ae60';
+}
+
+/* 2 · Cadastro de produtos */
+function _atualizarDatalist() {
+    let dl = document.getElementById('lista-produtos');
+    if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-produtos'; document.body.appendChild(dl); document.getElementById('produto').setAttribute('list', 'lista-produtos'); }
+    dl.innerHTML = _cadastro().map(x => `<option value="${String(x.nome).replace(/"/g, '&quot;')}"></option>`).join('');
+}
+function _aplicarCadastro(x) {
+    lerFormularioParaState();
+    if (x.forn && !state.fornecedor) state.fornecedor = x.forn;
+    const pr = state.produtos[state.idAtivo]; pr.nome = x.nome;
+    pr.pallets.forEach(pl => ['pal', 'pcx', 'pemb', 'qemb'].forEach(k => { if (x[k] && !pl[k]) pl[k] = x[k]; }));
+    renderizarTudo();
+}
+function abrirProdutos() {
+    const C = _cadastro();
+    let h = C.length ? C.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.nome}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">${x.codigo ? '#' + x.codigo + ' · ' : ''}Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'}</span></div><button style="${_BTN}" onclick="usarProduto(${i})">Usar</button><button style="${_BTN2}" onclick="excluirProduto(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum produto cadastrado.</p>';
+    h += `<div style="margin-top:14px"><b style="font-size:12px">Novo produto</b><input id="pd-nome" style="${_INP}" placeholder="Nome"><input id="pd-codigo" style="${_INP}" placeholder="Código de barras (opcional)" inputmode="numeric"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pd-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pd-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pd-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pd-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarProduto()">Salvar</button><button style="${_BTN2}" onclick="salvarProduto(true)">Do produto atual</button><button style="${_BTN2}" onclick="document.getElementById('pd-csv').click()">Importar CSV</button></div><input type="file" id="pd-csv" accept=".csv,.txt" style="display:none" onchange="importarProdutosCSV(event)"><p style="font-size:11px;color:#6b7a8d;margin-top:8px">CSV com cabeçalho: nome;codigo;pal;pcx;pemb;qemb;forn</p></div>`;
+    _modal('📦 Produtos cadastrados', h);
+}
+function salvarProduto(doAtual) {
+    const g = k => document.getElementById('pd-' + k).value.trim(); let x;
+    if (doAtual) { lerFormularioParaState(); const pr = state.produtos[state.idAtivo], pl = pr.pallets[0]; x = { nome: pr.nome, codigo: g('codigo'), pal: pl.pal, pcx: pl.pcx, pemb: pl.pemb, qemb: pl.qemb, forn: state.fornecedor }; }
+    else x = { nome: g('nome'), codigo: g('codigo'), pal: g('pal'), pcx: g('pcx'), pemb: g('pemb'), qemb: g('qemb'), forn: '' };
+    if (!x.nome) { toast('Informe o nome do produto.', 'warning'); return; }
+    const C = _cadastro().filter(c => _semAcento(c.nome) !== _semAcento(x.nome)); C.push(x); C.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos();
+}
+function usarProduto(i) { const x = _cadastro()[i]; if (x) { _aplicarCadastro(x); _fecharModal(); toast(`📦 ${x.nome} aplicado.`, 'success'); } }
+function excluirProduto(i) { const C = _cadastro(); C.splice(i, 1); _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos(); }
+function importarProdutosCSV(e) {
+    const f = e.target.files?.[0]; if (!f) return; const r = new FileReader();
+    r.onload = ev => {
+        const L = String(ev.target.result).replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim()); if (L.length < 2) { toast('CSV vazio.', 'error'); return; }
+        const sep = L[0].includes(';') ? ';' : ',', H = L[0].split(sep).map(_semAcento);
+        const col = (...n) => H.findIndex(h => n.includes(h));
+        const ix = { nome: col('nome', 'produto'), codigo: col('codigo', 'cod', 'ean'), pal: col('pal', 'pallet'), pcx: col('pcx', 'caixa'), pemb: col('pemb', 'embalagem'), qemb: col('qemb'), forn: col('forn', 'fornecedor') };
+        if (ix.nome < 0) { toast('Falta a coluna "nome" ou "produto".', 'error'); return; }
+        const C = _cadastro(); let n = 0;
+        L.slice(1).forEach(l => { const c = l.split(sep).map(v => v.trim().replace(/^"|"$/g, '')); const x = {}; Object.keys(ix).forEach(k => x[k] = ix[k] >= 0 ? (c[ix[k]] || '') : '');
+            if (!x.nome) return; const j = C.findIndex(o => _semAcento(o.nome) === _semAcento(x.nome)); if (j >= 0) C[j] = x; else C.push(x); n++; });
+        _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos(); toast(`📦 ${n} produto(s) importado(s).`, 'success');
+    };
+    r.readAsText(f); e.target.value = '';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        _atualizarDatalist();
+        const v = document.getElementById('cfg-valmin'); if (v) v.value = appConfig.valMin || 0;
+        document.getElementById('validade-global')?.addEventListener('change', _checarValidade);
+        document.getElementById('produto')?.addEventListener('change', e => { const x = _cadastro().find(c => _semAcento(c.nome) === _semAcento(e.target.value)); if (x) _aplicarCadastro(x); });
+    }, 0);
+});
+
+/* 3 · Leitor de código de barras */
+let _streamCod = null;
+function _pararCamera() { _streamCod?.getTracks().forEach(t => t.stop()); _streamCod = null; }
+async function lerCodigoBarras() {
+    if (!('BarcodeDetector' in window)) { fecharDrawer(); toast('Leitor não suportado neste navegador (use Chrome no Android).', 'warning', 5000); return; }
+    _modal('📷 Aponte para o código', '<video id="cod-video" playsinline muted style="width:100%;border-radius:10px;background:#000"></video><p id="cod-msg" style="font-size:12px;color:#6b7a8d;margin-top:8px">Procurando código...</p>');
+    try {
+        _streamCod = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const v = document.getElementById('cod-video'); v.srcObject = _streamCod; await v.play();
+        const det = new BarcodeDetector();
+        const loop = async () => {
+            if (!document.getElementById('cod-video')) { _pararCamera(); return; }
+            try { const r = await det.detect(v); if (r.length) { _pararCamera(); _codigoLido(r[0].rawValue); return; } } catch {}
+            setTimeout(loop, 300);
+        }; loop();
+    } catch { _fecharModal(); toast('Sem acesso à câmera.', 'error'); }
+}
+function _codigoLido(cod) {
+    _fecharModal(); vibrarLeve();
+    const x = _cadastro().find(c => String(c.codigo).trim() === String(cod).trim());
+    if (x) { _aplicarCadastro(x); toast(`📦 ${x.nome} (#${cod})`, 'success'); }
+    else { document.getElementById('produto').value = cod; lerFormularioParaState(); atualizarAbas(); toast(`Código ${cod} não cadastrado. Cadastre em 📦 Produtos.`, 'warning', 5000); }
+}
+
+/* 4 · Ditado de pesos por voz */
+(function () {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
+    let alvo = null;
+    document.addEventListener('focusin', e => { if (e.target.matches('input:not([type=file]):not([type=date]):not([type=checkbox]),textarea') && !e.target.closest('#modal-v10')) alvo = e.target; });
+    const b = document.createElement('button'); b.id = 'btn-voz'; b.textContent = '🎤'; b.setAttribute('aria-label', 'Ditar valor');
+    b.style.cssText = 'position:fixed;right:14px;bottom:112px;width:48px;height:48px;border-radius:50%;border:0;background:#1a6b3c;color:#fff;font-size:20px;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:400';
+    b.addEventListener('pointerdown', e => e.preventDefault());
+    b.addEventListener('click', () => {
+        if (!alvo) { toast('Toque antes em um campo de peso.', 'info'); return; }
+        const r = new SR(); r.lang = 'pt-BR'; r.interimResults = false; b.style.background = '#c0392b';
+        r.onresult = ev => {
+            const t = ev.results[0][0].transcript.toLowerCase().replace(/\s*(vírgula|virgula|ponto)\s*/g, ',').replace(/(\d)\s+(?=\d)/g, '$1');
+            const m = t.match(/\d+(?:,\d+)?/);
+            if (!m) { toast(`Não entendi: "${t}"`, 'warning'); return; }
+            alvo.value = m[0]; alvo.dispatchEvent(new Event('input', { bubbles: true })); alvo.focus();
+        };
+        r.onerror = () => toast('Microfone indisponível.', 'error');
+        r.onend = () => { b.style.background = '#1a6b3c'; };
+        r.start();
+    });
+    document.body.appendChild(b);
+})();
+
+/* ══ V12 · ASSINATURAS, ANEXO DE FOTOS, CARGAS ══ */
+
+/* 9 · Assinatura na tela */
+const _sigImg = k => { const d = _lsGet('pesagem_assinaturas', {})[k]; return d ? `<img src="${d}" style="max-height:14mm;max-width:100%">` : ''; };
+function abrirAssinaturas() {
+    const nomes = { conf: 'Conferente', prev: 'Prevenção' };
+    _modal('✍ Assinaturas do laudo', Object.keys(nomes).map(k => `<b style="font-size:12px">${nomes[k]}</b><canvas id="sg-${k}" width="480" height="160" style="width:100%;height:120px;border:1px dashed #6b7a8d;border-radius:8px;touch-action:none;background:#fff;margin-top:4px"></canvas><div style="margin:6px 0 14px"><button style="${_BTN2}" onclick="limparAssinatura('${k}')">Limpar</button></div>`).join('') + `<button style="${_BTN}" onclick="salvarAssinaturas()">Salvar assinaturas</button>`);
+    const salvas = _lsGet('pesagem_assinaturas', {});
+    Object.keys(nomes).forEach(k => {
+        const c = document.getElementById('sg-' + k), x = c.getContext('2d'); let des = false;
+        x.lineWidth = 2.5; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#111';
+        if (salvas[k]) { const im = new Image(); im.onload = () => x.drawImage(im, 0, 0, c.width, c.height); im.src = salvas[k]; }
+        const pt = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
+        c.addEventListener('pointerdown', e => { des = true; c.setPointerCapture(e.pointerId); x.beginPath(); x.moveTo(...pt(e)); });
+        c.addEventListener('pointermove', e => { if (des) { x.lineTo(...pt(e)); x.stroke(); } });
+        ['pointerup', 'pointercancel'].forEach(ev => c.addEventListener(ev, () => { des = false; }));
+    });
+}
+function limparAssinatura(k) { const c = document.getElementById('sg-' + k), x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height); }
+function salvarAssinaturas() {
+    const out = {};
+    ['conf', 'prev'].forEach(k => {
+        const c = document.getElementById('sg-' + k), vazio = document.createElement('canvas'); vazio.width = c.width; vazio.height = c.height;
+        out[k] = c.toDataURL('image/png') === vazio.toDataURL('image/png') ? '' : c.toDataURL('image/png');
+    });
+    _lsSet('pesagem_assinaturas', out); _fecharModal(); toast('✍ Assinaturas salvas. Saem no próximo laudo.', 'success');
+}
+
+/* 10 · Anexo fotográfico no laudo */
+function _anexoFotos(produtos) {
+    const F = []; let comFoto = 0;
+    produtos.forEach(p => { let t = 0; p.pallets.forEach((pl, i) => { if (pl.foto) { t++; F.push({ src: pl.foto, leg: `${p.nome || 'Produto'} · Pallet ${i + 1}` }); } }); if (t) comFoto++; });
+    if (F.length <= comFoto) return '';
+    return `<div class="print-page" style="padding:8mm"><div style="font:800 11pt Sora,sans-serif;margin-bottom:5mm;color:#1c2b3a">ANEXO FOTOGRÁFICO</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm">${F.map(f => `<figure style="margin:0;break-inside:avoid"><img src="${f.src}" style="width:100%;height:62mm;object-fit:cover;border:1px solid #dde3ea;border-radius:2mm"><figcaption style="font:600 8pt Sora,sans-serif;margin-top:1mm">${f.leg}</figcaption></figure>`).join('')}</div></div>`;
+}
+
+/* 16 · Várias cargas (IndexedDB próprio, com fotos) */
+const _cdb = () => new Promise((ok, er) => { const r = indexedDB.open('PesagemCargasDB', 1); r.onupgradeneeded = () => r.result.createObjectStore('cargas', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => er(r.error); });
+const _cTx = async (modo, fn) => { const db = await _cdb(); return new Promise((ok, er) => { const tx = db.transaction('cargas', modo), rq = fn(tx.objectStore('cargas')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = () => er(tx.error); }); };
+const _temDados = () => state.produtos.some(p => p.nome || p.pallets.some(pl => pl.bto));
+
+function _estadoVazio() { state.fornecedor = ''; state.dataPesagem = ''; state.produtos = [criarProduto()]; state.idAtivo = 0; }
+async function _estacionarAtual(titulo) {
+    lerFormularioParaState();
+    const c = { id: Date.now(), titulo: titulo || (state.fornecedor || 'Carga sem nome'), quando: new Date().toLocaleString('pt-BR'), estado: JSON.parse(JSON.stringify(exportarEstado())) };
+    await _cTx('readwrite', st => st.put(c));
+}
+async function abrirCargas() {
+    let L = []; try { L = (await _cTx('readonly', st => st.getAll())) || []; } catch { toast('Armazenamento indisponível.', 'error'); return; }
+    L.sort((a, b) => b.id - a.id);
+    let h = `<button style="${_BTN}" onclick="novaCarga()">➕ Guardar esta e começar nova carga</button><p style="font-size:11px;color:#6b7a8d;margin:8px 0">"Abrir" troca para a carga escolhida; a atual é guardada automaticamente.</p>`;
+    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.titulo}</b><br><span style="color:#6b7a8d">${x.quando} · ${x.estado.produtos.length} produto(s)</span></div><button style="${_BTN}" onclick="abrirCarga(${x.id})">Abrir</button><button style="${_BTN2}" onclick="excluirCarga(${x.id})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhuma carga guardada.</p>';
+    _modal('🚚 Cargas em andamento', h);
+}
+async function novaCarga() {
+    lerFormularioParaState();
+    if (!_temDados()) { toast('A carga atual está vazia.', 'info'); return; }
+    const t = prompt('Nome da carga (placa, doca ou NF):', state.fornecedor || ''); if (t === null) return;
+    await _estacionarAtual(t.trim()); _estadoVazio(); renderizarTudo(); _fecharModal(); toast('🚚 Carga guardada. Nova carga iniciada.', 'success');
+}
+async function abrirCarga(id) {
+    const x = await _cTx('readonly', st => st.get(id)); if (!x) return;
+    lerFormularioParaState();
+    if (_temDados()) await _estacionarAtual();
+    await _cTx('readwrite', st => st.delete(id));
+    importarEstado(x.estado); renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
+}
+async function excluirCarga(id) { mostrarConfirm('Excluir esta carga guardada?', '🗑', async () => { await _cTx('readwrite', st => st.delete(id)); abrirCargas(); }); }
 </script>
 </body>
 </html>
