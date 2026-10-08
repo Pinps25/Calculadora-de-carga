@@ -307,6 +307,10 @@
             border-color: rgba(39,174,96,.35); background: #e8f5ee;
         }
         #validade-global:focus { border-color: #27ae60; }
+        #validade-txt {
+            border-color: rgba(39,174,96,.35); background: #e8f5ee;
+        }
+        #validade-txt:focus { border-color: #27ae60; }
 
         /* ─── CONFIRMADOR ─── */
         .confirmador {
@@ -1124,6 +1128,113 @@
             .print-sig-area { break-inside: avoid; margin-top: 7mm; }
         }
 
+                /* ═══ MODO ESCURO (só na tela; o laudo impresso nunca é afetado) ═══ */
+        @media screen {
+            html.dark { color-scheme: dark; }
+            html.dark body { background: #0f161d; color: #e6edf3; }
+            html.dark .card { background: #18222c; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+            html.dark .app-header, html.dark .drawer-header, html.dark .validity-header { background: #121b24; box-shadow: 0 1px 0 #1f2b37; }
+            html.dark .side-drawer { background: #151f29; }
+            html.dark .drawer-section, html.dark .tabs-bar, html.dark .drawer-footer, html.dark .toggle-item { border-color: #2c3a48; }
+            html.dark .drawer-section-title, html.dark .drawer-label, html.dark label.field-label, html.dark .toggle-desc,
+            html.dark .pallet-summary, html.dark .btn-clear-field, html.dark .validity-hint, html.dark .val-res-waiting, html.dark .pd-sub { color: #93a3b5; }
+            html.dark .toggle-label, html.dark .pd-title, html.dark .confirm-msg { color: #e6edf3; }
+            html.dark input, html.dark select, html.dark textarea, html.dark .drawer-input { background: #0f1720; color: #e6edf3; border-color: #2c3a48; }
+            html.dark input::placeholder, html.dark textarea::placeholder { color: #66788b; }
+            html.dark input:focus, html.dark select:focus, html.dark .drawer-input:focus { border-color: #3ddc84; box-shadow: 0 0 0 3px rgba(61,220,132,.18); }
+            html.dark .toggle-track { background: #2c3a48; }
+            html.dark .drawer-body::-webkit-scrollbar-thumb { background: #2c3a48; }
+            html.dark .btn-help-drawer { background: #1f2b37; color: #93a3b5; border-color: #2c3a48; }
+            html.dark .btn-help-drawer:hover { background: #153325; color: #4cd68a; border-color: #2e8b57; }
+            html.dark .btn-drawer-action { background: #2c3a48; color: #e6edf3; }
+            html.dark .tab-btn { color: #93a3b5; }
+            html.dark .tab-btn:hover { color: #e6edf3; }
+            html.dark .tab-btn.active { color: #4cd68a; border-bottom-color: #4cd68a; }
+            html.dark .tab-btn.tab-error { color: #ff8a80; }
+            html.dark .tab-btn.tab-warning { color: #ffb454; }
+            html.dark .form-section { background: #1f2b37; border-color: #2c3a48; }
+            html.dark #validade-global, html.dark #validade-txt { background: #153325; border-color: rgba(61,220,132,.4); color: #e6edf3; }
+            html.dark .validade-global-wrap .field-label { color: #4cd68a; }
+            html.dark .pallet-block { background: #1f2b37; border-color: #2c3a48; border-left-color: #27ae60; }
+            html.dark .pallet-block.has-error { background: #3a1f1d; color: #ff8a80; border-left-color: #c0392b; }
+            html.dark .pallet-block.is-warning { background: #3b2a14; color: #ffb454; border-left-color: #c96a00; }
+            html.dark .pallet-title { color: #4cd68a; }
+            html.dark .btn-remove { color: #ff8a80; border-color: #c0392b; }
+            html.dark .btn-remove:hover { background: #c0392b; color: #fff; }
+            html.dark .pallet-footer { border-top-color: #2c3a48; }
+            html.dark .output-chip { background: #18222c; border-color: #2c3a48; color: #93a3b5; }
+            html.dark .output-chip .chip-val { color: #e6edf3; }
+            html.dark .output-chip.chip-liq, html.dark .output-chip.chip-liq .chip-val { background: #153325; border-color: #2e8b57; color: #4cd68a; }
+            html.dark .output-chip.chip-liq .chip-val { background: transparent; }
+            html.dark .pallet-block.has-error .output-chip.chip-liq, html.dark .pallet-block.has-error .output-chip.chip-liq .chip-val { background: #3a1f1d; border-color: #c0392b; color: #ff8a80; }
+            html.dark .pallet-block.has-error .output-chip.chip-liq .chip-val, html.dark .pallet-block.is-warning .output-chip.chip-liq .chip-val { background: transparent; }
+            html.dark .pallet-block.is-warning .output-chip.chip-liq, html.dark .pallet-block.is-warning .output-chip.chip-liq .chip-val { background: #3b2a14; border-color: #c96a00; color: #ffb454; }
+            html.dark .btn-camera { background: #2c3a48; }
+            html.dark .btn-camera.has-photo { background: #1a6b3c; }
+            html.dark .img-preview { border-color: #2c3a48; }
+            html.dark .btn-add-pallet { color: #4cd68a; border-color: #2e8b57; }
+            html.dark .btn-add-pallet:hover { background: #153325; }
+            html.dark .avulsos-section { background: #2b2414; border-color: #6b4e12; border-left-color: #c96a00; }
+            html.dark .avulsos-header:hover { background: #3b2f17; }
+            html.dark .section-tag { color: #ffb454; }
+            html.dark .peso-desejado-wrap { background: #1f2b37; border-color: #3d5266; }
+            html.dark #peso-desejado { border-color: #3d5266; }
+            html.dark #peso-desejado:focus { border-color: #3ddc84; }
+            html.dark .pd-result-box.passou, html.dark .pd-result-box.exato { background: #153325; border-color: #2e8b57; }
+            html.dark .pd-result-box.faltou { background: #3a1f1d; border-color: #c0392b; }
+            html.dark .pd-result-box.passou .pd-status, html.dark .pd-result-box.exato .pd-status, html.dark .pd-result-box.passou .pd-diff, html.dark .pd-result-box.exato .pd-diff { color: #4cd68a; }
+            html.dark .pd-result-box.faltou .pd-status, html.dark .pd-result-box.faltou .pd-diff { color: #ff8a80; }
+            html.dark .pd-panel .pd-result-box.passou, html.dark .pd-panel .pd-result-box.exato { background: rgba(39,174,96,.22); border: 1px solid rgba(39,174,96,.5); }
+            html.dark .pd-panel .pd-result-box.faltou { background: rgba(192,57,43,.22); border: 1px solid rgba(192,57,43,.5); }
+            html.dark .pd-panel .pd-result-box.passou .pd-status, html.dark .pd-panel .pd-result-box.exato .pd-status { color: #5ddb8a; }
+            html.dark .pd-panel .pd-result-box.faltou .pd-status { color: #e8847a; }
+            html.dark .pd-panel .pd-result-box .pd-diff { color: #fff; }
+            html.dark .pd-panel .pd-result-box .pd-sub { color: rgba(255,255,255,.55); }
+            html.dark .pd-panel .details-inner input[type="text"] { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
+            html.dark .result-box { background: #0d141b; box-shadow: inset 0 0 0 1px #2c3a48; }
+            html.dark .result-box.bloqueado { background: #7a2620; box-shadow: none; }
+            html.dark .btn-bar { background: #121b24; border-top-color: #2c3a48; box-shadow: 0 -4px 16px rgba(0,0,0,.4); }
+            html.dark .btn-clear { background: #3a1f1d; color: #ff8a80; border-color: #6b2b27; }
+            html.dark .btn-new { background: #14283f; color: #7db3f0; border-color: #25456b; }
+            html.dark .btn-print { background: #153325; color: #4cd68a; border-color: #2e8b57; }
+            html.dark .btn-print.blocked { background: #3a1f1d; color: #ff8a80; border-color: #6b2b27; }
+            html.dark .modal-box, html.dark .confirm-box { background: #18222c; color: #e6edf3; }
+            html.dark .modal-box h2 { color: #4cd68a; }
+            html.dark .btn-close { background: #2c3a48; }
+            html.dark .btn-del-item { color: #ff8a80; border-color: #c0392b; }
+            html.dark .btn-confirm-cancel { background: #2c3a48; color: #c5d0db; }
+            html.dark .loading-overlay { background: rgba(15,22,29,.9); color: #e6edf3; }
+            html.dark .spinner { border-color: #2c3a48; border-top-color: #4cd68a; }
+            html.dark input.input-invalido { background: #3a1f1d !important; }
+            html.dark #validity-screen { background: #0f161d; }
+            html.dark #validity-input { background: #0f1720; border-color: #2c3a48; color: #e6edf3; }
+            html.dark .validity-result { background: #18222c; border-color: #2c3a48; }
+            html.dark .validity-result.res-ok { background: #153325; border-color: #2e8b57; }
+            html.dark .validity-result.res-today { background: #3b2a14; border-color: #c96a00; }
+            html.dark .validity-result.res-expired { background: #3a1f1d; border-color: #c0392b; }
+            html.dark .res-ok .val-res-label, html.dark .res-ok .val-res-number, html.dark .res-ok .val-res-suffix { color: #4cd68a; }
+            html.dark .res-today .val-res-label, html.dark .res-today .val-res-number, html.dark .res-today .val-res-suffix { color: #ffb454; }
+            html.dark .res-expired .val-res-label, html.dark .res-expired .val-res-number, html.dark .res-expired .val-res-suffix { color: #ff8a80; }
+            html.dark .btn-validity-menu { background: #153325; color: #4cd68a; border-color: #2e8b57; }
+            html.dark .btn-validity-menu:hover { background: #1c4630; }
+            /* ferramentas novas (estilos inline) */
+            html.dark #modal-v10 > div { background: #18222c !important; color: #e6edf3 !important; }
+            html.dark #modal-v10 [style*="#dde3ea"] { border-color: #2c3a48 !important; }
+            html.dark #modal-v10 [style*="background:#f0f3f6"] { background: #2c3a48 !important; color: #e6edf3 !important; }
+            html.dark #modal-v10 [style*="background:#e8f5ee"] { background: #153325 !important; color: #e6edf3 !important; }
+            html.dark #modal-v10 [style*="background:#fdf2f1"] { background: #3a1f1d !important; color: #e6edf3 !important; }
+            html.dark #modal-v10 input, html.dark #modal-v10 textarea { background: #0f1720 !important; color: #e6edf3 !important; border-color: #2c3a48 !important; }
+            html.dark #modal-v10 table td, html.dark #modal-v10 table th { color: #e6edf3; }
+            html.dark #modal-v10 th { color: #93a3b5 !important; }
+            html.dark #sug-box { background: #1b2530; border-color: #2c3a48; box-shadow: 0 10px 28px rgba(0,0,0,.6); }
+            html.dark .sg-row { border-bottom-color: #2c3a48; }
+            html.dark .sg-row:active { background: #153325; }
+            html.dark .sg-n { color: #e6edf3; }
+            html.dark .sg-n mark { color: #5ddb8a; }
+            html.dark .sg-d { color: #93a3b5; }
+        }
+
+        
         /* ─── RESPONSIVE ─── */
         @media (max-width: 520px) {
             .tara-row { font-size: 9px; }
@@ -1213,6 +1324,7 @@
                 <button class="btn-drawer-action" onclick="alternarTema()">🌙 Modo escuro</button>
                 <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
                 <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
+                <button class="btn-drawer-action" onclick="abrirAprendizado()">📚 Aprendizado</button>
             </div>
         </div>
         <div class="drawer-section">
@@ -1223,7 +1335,7 @@
             </div>
             <div class="drawer-field">
                 <label class="drawer-label">Fornecedor</label>
-                <input type="text" id="fornecedor" class="drawer-input" placeholder="Nome do fornecedor">
+                <input type="text" id="fornecedor" class="drawer-input" placeholder="Nome do fornecedor" autocomplete="off">
             </div>
             <div class="drawer-field">
                 <label class="drawer-label">Data da Pesagem</label>
@@ -1244,6 +1356,9 @@
             <div class="drawer-field">
                 <label class="drawer-label">Validade mínima aceita (dias, 0 = desligado)</label>
                 <input type="number" id="cfg-valmin" class="drawer-input" min="0" step="1" value="0" inputmode="numeric" onchange="definirValMin(this.value)">
+            </div>
+            <div class="drawer-field">
+                <label class="drawer-label" style="display:flex;gap:8px;align-items:center;text-transform:none"><input type="checkbox" id="cfg-tecfull" onchange="definirTeclado(this.checked)"> Teclado completo nos pesos (mostra o 🎤 do teclado do celular)</label>
             </div>
             <label class="toggle-item" for="cfg-alerts">
                 <div class="toggle-info"><span class="toggle-label">Sistema de alertas</span><span class="toggle-desc">Erros e marcações visuais de tara</span></div>
@@ -1306,7 +1421,7 @@
             <div class="grid-produto">
                 <div class="validade-global-wrap">
                     <label class="field-label">📅 Validade (Global)</label>
-                    <input type="date" id="validade-global">
+                    <input type="date" id="validade-global" style="display:none"><input type="text" id="validade-txt" inputmode="numeric" placeholder="dd/mm/aa" maxlength="10" autocomplete="off">
                 </div>
                 <div>
                     <label class="field-label">
@@ -1728,7 +1843,7 @@ function renderizarTudo() {
     setTimeout(() => { setupEnterNav(); atualizarBotaoUndo(); }, 0);
 }
 
-function _dataHoje() { return new Date().toISOString().split('T')[0]; }
+function _dataHoje() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
 function reconciliarPallets(pallets) {
     const container = document.getElementById('container-pallets');
@@ -2206,7 +2321,7 @@ function gerarNomeArquivo() {
 }
 function gerarBackupManual() {
     lerFormularioParaState();
-    const blob = new Blob([JSON.stringify(exportarEstado())], { type:'application/json' });
+    const blob = new Blob([JSON.stringify({ ...exportarEstado(), extras: _extrasBackup() })], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `${gerarNomeArquivo()}.json`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 150);
@@ -2217,7 +2332,7 @@ function importarBackup(e) {
     mostrarLoading('Carregando backup...');
     const reader = new FileReader();
     reader.onload = ev => {
-        try { importarEstado(JSON.parse(ev.target.result)); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
+        try { const raw = JSON.parse(ev.target.result); importarEstado(raw); _restaurarExtras(raw.extras); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
         catch(err) { toast(`❌ Falha ao carregar backup: ${err.message}`, 'error'); }
         finally { esconderLoading(); e.target.value = ''; }
     };
@@ -2338,7 +2453,7 @@ function gerarLaudo() {
         <div class="lp-slot">
             <div class="lp-head">
                 <span class="lp-num">ITEM ${globalIdx + 1}</span>
-                <span class="lp-nome">${prod.nome || 'Produto sem nome'}</span>
+                <span class="lp-nome">${_esc(prod.nome) || 'Produto sem nome'}</span>
             </div>
             <div class="lp-body">
                 ${fotoHtml}
@@ -2361,10 +2476,10 @@ function gerarLaudo() {
     <div class="print-cabecalho">
         <div class="print-cab-titulo">LAUDO DE <span>PESAGEM</span></div>
         <div class="print-cab-meta">
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Conferente</span><span class="print-cab-cell-val">${(state.conferente || '--').toUpperCase()}</span></div>
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${(state.fornecedor || '--').toUpperCase()}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Conferente</span><span class="print-cab-cell-val">${_esc((state.conferente || '--').toUpperCase())}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${_esc((state.fornecedor || '--').toUpperCase())}</span></div>
             <div class="print-cab-cell"><span class="print-cab-cell-label">Data / Hora</span><span class="print-cab-cell-val">${dataHora}</span></div>
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Referência</span><span class="print-cab-cell-val" style="font-size:7pt;">${nome}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Referência</span><span class="print-cab-cell-val" style="font-size:7pt;">${_esc(nome)}</span></div>
         </div>
     </div>`;
     const sigHtml = `
@@ -2377,6 +2492,7 @@ function gerarLaudo() {
     /* o último item viaja junto com as assinaturas, para a assinatura nunca ficar sozinha numa folha */
     let html = `<div class="lp-doc">${cabecalhoHtml}${todos.join('')}<div style="break-inside:avoid;page-break-inside:avoid">${ultimo}${sigHtml}</div></div>`;
 
+    _aprender();
     html += _anexoFotos(produtosValidos);
     document.getElementById('print-area').innerHTML = html;
     gerarBackupManual();
@@ -2387,6 +2503,7 @@ function gerarLaudo() {
 
 function confirmarLimpeza() {
     mostrarConfirm('ATENÇÃO: Isso apagará TODOS os dados. Tem certeza?', '🗑', () => {
+        _aprender(true); _pausaApr = true; _novoSid();
         esconderLoading();
         try {
             if (idb) { idb.close(); idb = null; }
@@ -2578,7 +2695,7 @@ function toast(msg, tipo = 'info', duracao = 3000) {
     const cont = document.getElementById('toast-container');
     const el = document.createElement('div');
     el.className = `toast ${tipo}`;
-    el.innerHTML = `<span class="toast-icon">${icons[tipo]||'ℹ️'}</span><span>${msg}</span>`;
+    el.innerHTML = `<span class="toast-icon">${icons[tipo]||'ℹ️'}</span><span>${_esc(msg)}</span>`;
     cont.prepend(el);
     const remover = () => {
         el.classList.add('toast-out');
@@ -2838,7 +2955,7 @@ function abrirPainel() {
     let h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font:500 12px \'DM Mono\',monospace"><tr style="text-align:left;color:#6b7a8d"><th></th><th>Produto</th><th>Bruto</th><th>Tara</th><th>Líquido</th></tr>';
     let B = 0, T = 0, Q = 0;
     L.forEach(x => { B += x.bruto; T += x.tara; Q += x.liq;
-        h += `<tr style="border-top:1px solid #dde3ea"><td>${sem[x.estado] || '🟢'}</td><td style="padding:8px 4px">${x.nome}</td><td>${_kg(x.bruto)}</td><td>${_kg(x.tara)}</td><td><b>${_kg(x.liq)}</b></td></tr>`; });
+        h += `<tr style="border-top:1px solid #dde3ea"><td>${sem[x.estado] || '🟢'}</td><td style="padding:8px 4px">${_esc(x.nome)}</td><td>${_kg(x.bruto)}</td><td>${_kg(x.tara)}</td><td><b>${_kg(x.liq)}</b></td></tr>`; });
     h += `<tr style="border-top:2px solid #1c2b3a;font-weight:800"><td></td><td style="padding:8px 4px">TOTAL</td><td>${_kg(B)}</td><td>${_kg(T)}</td><td>${_kg(Q)}</td></tr></table></div>`;
     if (!L.length) h = '<p>Nenhum produto com peso bruto ainda.</p>';
     _modal('📈 Painel da carga (kg)', h);
@@ -2875,7 +2992,7 @@ function calcularAmostra() {
 /* 1 · Perfis de tara */
 function abrirPerfis() {
     const P = _lsGet('pesagem_perfis_tara', []);
-    let h = P.length ? P.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.nome}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'} · ${x.qemb || '-'}/cx</span></div><button style="${_BTN}" onclick="aplicarPerfil(${i})">Aplicar</button><button style="${_BTN2}" onclick="excluirPerfil(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum perfil salvo.</p>';
+    let h = P.length ? P.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.nome)}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'} · ${x.qemb || '-'}/cx</span></div><button style="${_BTN}" onclick="aplicarPerfil(${i})">Aplicar</button><button style="${_BTN2}" onclick="excluirPerfil(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum perfil salvo.</p>';
     h += `<div style="margin-top:14px"><b style="font-size:12px">Novo perfil</b><input id="pf-nome" style="${_INP}" placeholder="Nome (ex.: PBR + caixa plástica)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pf-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pf-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pf-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pf-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px"><button style="${_BTN}" onclick="salvarPerfil()">Salvar</button><button style="${_BTN2}" onclick="salvarPerfil(true)">Copiar do Pallet 1</button></div></div>`;
     _modal('🏷 Perfis de tara', h);
 }
@@ -2898,20 +3015,20 @@ function aplicarPerfil(i) {
 /* 12 · Histórico + 14 · Auditoria */
 function abrirHistorico() {
     const H = _lsGet('pesagem_historico', []), A = _lsGet('pesagem_auditoria', []);
-    let h = `<button style="${_BTN}" onclick="salvarNoHistorico()">Salvar conferência atual</button><div style="margin-top:10px">` + (H.length ? H.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.titulo}</b><br><span style="color:#6b7a8d">${x.quando}</span></div><button style="${_BTN}" onclick="abrirDoHistorico(${i})">Abrir</button><button style="${_BTN2}" onclick="excluirDoHistorico(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>') + '</div>';
-    if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${a.quando} · ${a.prod} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
+    let h = `<button style="${_BTN}" onclick="salvarNoHistorico()">Salvar conferência atual</button><div style="margin-top:10px">` + (H.length ? H.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b><br><span style="color:#6b7a8d">${x.quando}</span></div><button style="${_BTN}" onclick="abrirDoHistorico(${i})">Abrir</button><button style="${_BTN2}" onclick="excluirDoHistorico(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>') + '</div>';
+    if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${a.quando} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
 function salvarNoHistorico() {
     const est = JSON.parse(JSON.stringify((lerFormularioParaState(), exportarEstado())));
-    est.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; }));
+    est.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); est.sid = _sid();
     const H = _lsGet('pesagem_historico', []);
     H.unshift({ titulo: `${state.fornecedor || 'Sem fornecedor'} · ${state.produtos.length} produto(s)`, quando: new Date().toLocaleString('pt-BR'), estado: est });
     _lsSet('pesagem_historico', H.slice(0, 15)); abrirHistorico(); toast('🗂 Salvo no histórico (sem fotos).', 'success');
 }
 function abrirDoHistorico(i) {
     const x = _lsGet('pesagem_historico', [])[i]; if (!x) return;
-    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos.', '🗂', () => { importarEstado(x.estado); renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success'); }, 'warning');
+    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos.', '🗂', () => { _aprender(true); importarEstado(x.estado); if (x.estado.sid) { try { localStorage.setItem('pesagem_sid', x.estado.sid); } catch {} } renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success'); }, 'warning');
 }
 function excluirDoHistorico(i) { const H = _lsGet('pesagem_historico', []); H.splice(i, 1); _lsSet('pesagem_historico', H); abrirHistorico(); }
 
@@ -2938,14 +3055,14 @@ const _semAcento = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f
 const _cadastro = () => _lsGet('pesagem_produtos', []);
 
 /* 20 · Modo escuro */
-function _aplicarTema(escuro) { document.documentElement.classList.toggle('dark', escuro); }
+function _aplicarTema(escuro) { document.documentElement.classList.toggle('dark', escuro); document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro ? '#121b24' : '#1a6b3c'); }
 function alternarTema() {
     const escuro = !document.documentElement.classList.contains('dark');
     _aplicarTema(escuro); _lsSet('pesagem_tema', escuro ? 'escuro' : 'claro'); fecharDrawer();
 }
 (function () {
     const st = document.createElement('style');
-    st.textContent = 'html.dark{filter:invert(1) hue-rotate(180deg);background:#fff}html.dark img,html.dark video,html.dark canvas{filter:invert(1) hue-rotate(180deg)}';
+    st.textContent = '';
     document.head.appendChild(st);
     const t = _lsGet('pesagem_tema', null);
     _aplicarTema(t ? t === 'escuro' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches));
@@ -2955,17 +3072,18 @@ function alternarTema() {
 function definirValMin(v) { appConfig.valMin = Math.max(0, parseInt(v) || 0); salvarConfig(); _checarValidade(); }
 function _checarValidade() {
     const el = document.getElementById('validade-global'); if (!el) return;
-    el.style.outline = ''; if (!el.value || !appConfig.valMin) return;
-    const dias = Math.ceil((new Date(el.value + 'T12:00:00') - new Date()) / 864e5);
-    if (dias < appConfig.valMin) { el.style.outline = '2px solid #c0392b'; vibrarForte(); toast(`📅 Validade com ${dias} dia(s): abaixo do mínimo de ${appConfig.valMin}.`, 'error', 5000); }
-    else el.style.outline = '2px solid #27ae60';
+    const tx = document.getElementById('validade-txt') || el;
+    tx.style.outline = ''; if (!el.value || !appConfig.valMin) return;
+    const dias = Math.round((new Date(el.value + 'T00:00:00') - new Date(_dataHoje() + 'T00:00:00')) / 864e5);
+    if (dias < appConfig.valMin) { tx.style.outline = '2px solid #c0392b'; vibrarForte(); toast(`📅 Validade com ${dias} dia(s): abaixo do mínimo de ${appConfig.valMin}.`, 'error', 5000); }
+    else tx.style.outline = '2px solid #27ae60';
 }
 
 /* 2 · Cadastro de produtos */
 function _atualizarDatalist() {
     let dl = document.getElementById('lista-produtos');
-    if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-produtos'; document.body.appendChild(dl); document.getElementById('produto').setAttribute('list', 'lista-produtos'); }
-    dl.innerHTML = _cadastro().map(x => `<option value="${String(x.nome).replace(/"/g, '&quot;')}"></option>`).join('');
+    if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-produtos'; document.body.appendChild(dl); }
+    dl.innerHTML = _nomesProdutos().map(n => `<option value="${String(n).replace(/"/g, '&quot;')}"></option>`).join('');
 }
 function _aplicarCadastro(x) {
     lerFormularioParaState();
@@ -2976,7 +3094,7 @@ function _aplicarCadastro(x) {
 }
 function abrirProdutos() {
     const C = _cadastro();
-    let h = C.length ? C.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.nome}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">${x.codigo ? '#' + x.codigo + ' · ' : ''}Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'}</span></div><button style="${_BTN}" onclick="usarProduto(${i})">Usar</button><button style="${_BTN2}" onclick="excluirProduto(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum produto cadastrado.</p>';
+    let h = C.length ? C.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.nome)}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">${x.codigo ? '#' + x.codigo + ' · ' : ''}Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'}</span></div><button style="${_BTN}" onclick="usarProduto(${i})">Usar</button><button style="${_BTN2}" onclick="excluirProduto(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum produto cadastrado.</p>';
     h += `<div style="margin-top:14px"><b style="font-size:12px">Novo produto</b><input id="pd-nome" style="${_INP}" placeholder="Nome"><input id="pd-codigo" style="${_INP}" placeholder="Código de barras (opcional)" inputmode="numeric"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pd-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pd-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pd-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pd-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarProduto()">Salvar</button><button style="${_BTN2}" onclick="salvarProduto(true)">Do produto atual</button><button style="${_BTN2}" onclick="document.getElementById('pd-csv').click()">Importar CSV</button></div><input type="file" id="pd-csv" accept=".csv,.txt" style="display:none" onchange="importarProdutosCSV(event)"><p style="font-size:11px;color:#6b7a8d;margin-top:8px">CSV com cabeçalho: nome;codigo;pal;pcx;pemb;qemb;forn</p></div>`;
     _modal('📦 Produtos cadastrados', h);
 }
@@ -3038,30 +3156,6 @@ function _codigoLido(cod) {
     else { document.getElementById('produto').value = cod; lerFormularioParaState(); atualizarAbas(); toast(`Código ${cod} não cadastrado. Cadastre em 📦 Produtos.`, 'warning', 5000); }
 }
 
-/* 4 · Ditado de pesos por voz */
-(function () {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
-    let alvo = null;
-    document.addEventListener('focusin', e => { if (e.target.matches('input:not([type=file]):not([type=date]):not([type=checkbox]),textarea') && !e.target.closest('#modal-v10')) alvo = e.target; });
-    const b = document.createElement('button'); b.id = 'btn-voz'; b.textContent = '🎤'; b.setAttribute('aria-label', 'Ditar valor');
-    b.style.cssText = 'position:fixed;right:14px;bottom:112px;width:48px;height:48px;border-radius:50%;border:0;background:#1a6b3c;color:#fff;font-size:20px;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:400';
-    b.addEventListener('pointerdown', e => e.preventDefault());
-    b.addEventListener('click', () => {
-        if (!alvo) { toast('Toque antes em um campo de peso.', 'info'); return; }
-        const r = new SR(); r.lang = 'pt-BR'; r.interimResults = false; b.style.background = '#c0392b';
-        r.onresult = ev => {
-            const t = ev.results[0][0].transcript.toLowerCase().replace(/\s*(vírgula|virgula|ponto)\s*/g, ',').replace(/(\d)\s+(?=\d)/g, '$1');
-            const m = t.match(/\d+(?:,\d+)?/);
-            if (!m) { toast(`Não entendi: "${t}"`, 'warning'); return; }
-            alvo.value = m[0]; alvo.dispatchEvent(new Event('input', { bubbles: true })); alvo.focus();
-        };
-        r.onerror = () => toast('Microfone indisponível.', 'error');
-        r.onend = () => { b.style.background = '#1a6b3c'; };
-        r.start();
-    });
-    document.body.appendChild(b);
-})();
-
 /* ══ V12 · ASSINATURAS, ANEXO DE FOTOS, CARGAS ══ */
 
 /* 9 · Assinatura na tela */
@@ -3095,7 +3189,7 @@ function _anexoFotos(produtos) {
     const F = []; let comFoto = 0;
     produtos.forEach(p => { let t = 0; p.pallets.forEach((pl, i) => { if (pl.foto) { t++; F.push({ src: pl.foto, leg: `${p.nome || 'Produto'} · Pallet ${i + 1}` }); } }); if (t) comFoto++; });
     if (F.length <= comFoto) return '';
-    return `<div style="break-before:page;page-break-before:always"><div style="font:800 11pt Sora,sans-serif;margin-bottom:5mm;color:#1c2b3a">ANEXO FOTOGRÁFICO</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm">${F.map(f => `<figure style="margin:0;break-inside:avoid"><img src="${f.src}" style="width:100%;height:62mm;object-fit:cover;border:1px solid #dde3ea;border-radius:2mm"><figcaption style="font:600 8pt Sora,sans-serif;margin-top:1mm">${f.leg}</figcaption></figure>`).join('')}</div></div>`;
+    return `<div style="break-before:page;page-break-before:always"><div style="font:800 11pt Sora,sans-serif;margin-bottom:5mm;color:#1c2b3a">ANEXO FOTOGRÁFICO</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm">${F.map(f => `<figure style="margin:0;break-inside:avoid"><img src="${f.src}" style="width:100%;height:62mm;object-fit:cover;border:1px solid #dde3ea;border-radius:2mm"><figcaption style="font:600 8pt Sora,sans-serif;margin-top:1mm">${_esc(f.leg)}</figcaption></figure>`).join('')}</div></div>`;
 }
 
 /* 16 · Várias cargas (IndexedDB próprio, com fotos) */
@@ -3106,30 +3200,297 @@ const _temDados = () => state.produtos.some(p => p.nome || p.pallets.some(pl => 
 function _estadoVazio() { state.fornecedor = ''; state.dataPesagem = ''; state.produtos = [criarProduto()]; state.idAtivo = 0; }
 async function _estacionarAtual(titulo) {
     lerFormularioParaState();
-    const c = { id: Date.now(), titulo: titulo || (state.fornecedor || 'Carga sem nome'), quando: new Date().toLocaleString('pt-BR'), estado: JSON.parse(JSON.stringify(exportarEstado())) };
+    const c = { sid: _sid(), id: Date.now(), titulo: titulo || (state.fornecedor || 'Carga sem nome'), quando: new Date().toLocaleString('pt-BR'), estado: JSON.parse(JSON.stringify(exportarEstado())) };
     await _cTx('readwrite', st => st.put(c));
 }
 async function abrirCargas() {
     let L = []; try { L = (await _cTx('readonly', st => st.getAll())) || []; } catch { toast('Armazenamento indisponível.', 'error'); return; }
     L.sort((a, b) => b.id - a.id);
     let h = `<button style="${_BTN}" onclick="novaCarga()">➕ Guardar esta e começar nova carga</button><p style="font-size:11px;color:#6b7a8d;margin:8px 0">"Abrir" troca para a carga escolhida; a atual é guardada automaticamente.</p>`;
-    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${x.titulo}</b><br><span style="color:#6b7a8d">${x.quando} · ${x.estado.produtos.length} produto(s)</span></div><button style="${_BTN}" onclick="abrirCarga(${x.id})">Abrir</button><button style="${_BTN2}" onclick="excluirCarga(${x.id})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhuma carga guardada.</p>';
+    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b><br><span style="color:#6b7a8d">${x.quando} · ${x.estado.produtos.length} produto(s)</span></div><button style="${_BTN}" onclick="abrirCarga(${x.id})">Abrir</button><button style="${_BTN2}" onclick="excluirCarga(${x.id})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhuma carga guardada.</p>';
     _modal('🚚 Cargas em andamento', h);
 }
 async function novaCarga() {
     lerFormularioParaState();
     if (!_temDados()) { toast('A carga atual está vazia.', 'info'); return; }
     const t = prompt('Nome da carga (placa, doca ou NF):', state.fornecedor || ''); if (t === null) return;
-    await _estacionarAtual(t.trim()); _estadoVazio(); renderizarTudo(); _fecharModal(); toast('🚚 Carga guardada. Nova carga iniciada.', 'success');
+    _aprender(true); _pausaApr = true;
+    await _estacionarAtual(t.trim()); _estadoVazio(); renderizarTudo(); _novoSid(); _pausaApr = false; _fecharModal(); toast('🚚 Carga guardada. Nova carga iniciada.', 'success');
 }
 async function abrirCarga(id) {
     const x = await _cTx('readonly', st => st.get(id)); if (!x) return;
-    lerFormularioParaState();
+    _aprender(true); lerFormularioParaState();
     if (_temDados()) await _estacionarAtual();
     await _cTx('readwrite', st => st.delete(id));
-    importarEstado(x.estado); renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
+    importarEstado(x.estado); if (x.sid) { try { localStorage.setItem('pesagem_sid', x.sid); } catch {} } renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
 }
 async function excluirCarga(id) { mostrarConfirm('Excluir esta carga guardada?', '🗑', async () => { await _cTx('readwrite', st => st.delete(id)); abrirCargas(); }); }
+
+/* ══ V15 · APRENDIZADO, DATA DIGITÁVEL, TECLADO ══ */
+
+/* Data digitável: 111227 → 11/12/2027 */
+const _vHid = () => document.getElementById('validade-global'), _vTxt = () => document.getElementById('validade-txt');
+function _isoDeDigitos(d) {
+    const dd = +d.slice(0, 2), mm = +d.slice(2, 4), yy = d.length === 8 ? +d.slice(4, 8) : 2000 + (+d.slice(4, 6));
+    const dt = new Date(yy, mm - 1, dd);
+    return (dt.getFullYear() === yy && dt.getMonth() === mm - 1 && dt.getDate() === dd) ? `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}` : null;
+}
+function _mascaraData(v) { const d = v.replace(/\D/g, '').slice(0, 8); let o = d.slice(0, 2); if (d.length > 2) o += '/' + d.slice(2, 4); if (d.length > 4) o += '/' + d.slice(4); return o; }
+function _syncValidadeTxt() { const h = _vHid(), t = _vTxt(); if (h && t) { t.value = h.value ? h.value.split('-').reverse().join('/') : ''; t.style.borderColor = ''; _checarValidade(); } }
+function _setValidadeHid(iso) { const h = _vHid(); if (h.value === iso) return; h.value = iso; h.dispatchEvent(new Event('input', { bubbles: true })); h.dispatchEvent(new Event('change', { bubbles: true })); }
+(function () {
+    const orig = renderizarTudo;
+    renderizarTudo = function () { orig.apply(this, arguments); _syncValidadeTxt(); };
+})();
+
+/* Aprendizado: fornecedor → produto → médias */
+const _APR = 'pesagem_aprendizado';
+const _aprBase = () => { const b = Object.assign({ f: {}, s: null, ia: {}, exp: 0 }, _lsGet(_APR, null) || {}); if (!b.s) { b.s = {}; if (Object.keys(b.f).length && !b.leg) b.leg = b.f; } return b; };
+let _pausaApr = false;
+function _esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function _sid() { try { let v = localStorage.getItem('pesagem_sid'); if (!v) { v = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); localStorage.setItem('pesagem_sid', v); } return v; } catch { return 'x'; } }
+function _novoSid() { try { localStorage.removeItem('pesagem_sid'); } catch {} }
+function _lev(a, b) { if (a === b) return 0; const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+function _chaveSimilar(obj, k) { if (!k || obj[k] || /\d/.test(k) || k.length < 5) return k; const lim = k.length >= 10 ? 2 : 1; let best = null, bd = 9; for (const o in obj) { if (/\d/.test(o)) continue; const d = _lev(k, o); if (d <= lim && d < bd) { best = o; bd = d; } } return best || k; }
+const _modaRec = a => { const c = {}; let b = null, n = 0; a.forEach(x => { c[x] = (c[x] || 0) + 1; }); a.forEach(x => { if (c[x] >= n) { n = c[x]; b = x; } }); return b; };
+function _reconstruir(B) {
+    B.f = B.leg ? JSON.parse(JSON.stringify(B.leg)) : {};
+    Object.values(B.s).sort((a, b) => a.t - b.t).forEach(o => {
+        const F = B.f[o.kf] = B.f[o.kf] || { nome: o.fn, p: {} };
+        const P = F.p[o.kp] = F.p[o.kp] || { nome: o.pn, n: 0, pcx: { s: 0, n: 0, min: 0, max: 0, am: [] }, pemb: {}, qemb: {}, pal: { s: 0, n: 0 } };
+        P.n++; P.ult = o.d; P.pe = P.pe || []; P.qe = P.qe || [];
+        o.pcx.forEach(cx => { const c = P.pcx; c.s += cx; c.n++; c.min = c.n === 1 ? cx : Math.min(c.min, cx); c.max = Math.max(c.max, cx); c.am.push(cx); if (c.am.length > 60) c.am.shift(); });
+        o.pemb.forEach(e => { const k = e.toFixed(4); P.pemb[k] = (P.pemb[k] || 0) + 1; });
+        o.qemb.forEach(q => { P.qemb[q] = (P.qemb[q] || 0) + 1; });
+        o.pal.forEach(v => { P.pal.s += v; P.pal.n++; });
+        const e1 = o.pemb.length ? _modaRec(o.pemb) : null, q1 = o.qemb.length ? _modaRec(o.qemb) : null;
+        if (e1) { P.pe.push(e1); if (P.pe.length > 5) P.pe.shift(); }
+        if (q1) { P.qe.push(q1); if (P.qe.length > 5) P.qe.shift(); }
+    });
+}
+const _kk = t => _semAcento(t).replace(/\s+/g, ' ');
+const _fN = (v, c = 3) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: c });
+const _hash = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return String(h); };
+const _moda = m => { let b = null, n = 0; for (const k in (m || {})) if (m[k] >= n) { n = m[k]; b = +k; } return b; };
+
+function _aprender(silencioso) {
+    if (_pausaApr) return;
+    try {
+        lerFormularioParaState();
+        const B = _aprBase(), forn = (state.fornecedor || '').trim() || 'Sem fornecedor', kf0 = _kk(forn), sid = _sid(), agora = Date.now();
+        const atuais = new Set(); let mudou = 0;
+        const ok = (v, mx) => v > 0 && v <= mx;
+        state.produtos.forEach(pr => {
+            const nome = (pr.nome || '').trim(); if (!nome) return;
+            const pls = pr.pallets.filter(pl => parseSeguro(pl.bto).valor > 0); if (!pls.length) return;
+            const o = { pcx: [], pemb: [], qemb: [], pal: [] };
+            pls.forEach(pl => {
+                const cx = parseSeguro(pl.pcx).valor, em = parseSeguro(pl.pemb).valor, qe = Math.round(parseSeguro(pl.qemb).valor), pa = parseSeguro(pl.pal).valor;
+                if (ok(cx, 60)) o.pcx.push(+cx.toFixed(4)); if (ok(em, 10)) o.pemb.push(+em.toFixed(4)); if (ok(qe, 1000)) o.qemb.push(qe); if (ok(pa, 200)) o.pal.push(+pa.toFixed(3));
+            });
+            const key = sid + '|' + _kk(nome); atuais.add(key);
+            const kf = _chaveSimilar(B.f, kf0), kp = _chaveSimilar(B.f[kf]?.p || {}, _kk(nome));
+            const nova = Object.assign({ sid, kf, kp, fn: B.f[kf]?.nome || forn, pn: B.f[kf]?.p[kp]?.nome || nome, d: state.dataPesagem || _dataHoje(), t: agora }, o);
+            const ant = B.s[key], sig = x => JSON.stringify([x.kf, x.kp, x.pcx, x.pemb, x.qemb, x.pal, x.d]);
+            if (ant && sig(ant) === sig(nova)) return;
+            B.s[key] = nova; mudou++;
+        });
+        if (atuais.size) Object.keys(B.s).forEach(k => { if (B.s[k].sid === sid && !atuais.has(k)) { delete B.s[k]; mudou++; } });
+        if (mudou) {
+            const ks = Object.keys(B.s); if (ks.length > 800) ks.sort((a, b) => B.s[a].t - B.s[b].t).slice(0, ks.length - 800).forEach(k => delete B.s[k]);
+            _reconstruir(B); _lsSet(_APR, B);
+            if (!silencioso) toast('📚 Aprendizado atualizado.', 'success');
+            _atualizarDatalist(); _atualizarListaForn();
+        }
+    } catch (e) { console.warn('aprendizado', e); }
+}
+
+function _mediaProd(forn, prod) {
+    const B = _aprBase(), kf = _chaveSimilar(B.f, _kk(forn || 'Sem fornecedor')), kp0 = _kk(prod || ''); if (!kp0) return null;
+    const kp = _chaveSimilar(B.f[kf]?.p || {}, kp0), L = B.f[kf]?.p[kp];
+    const ikf = _chaveSimilar(B.ia, kf), I = B.ia[ikf]?.[_chaveSimilar(B.ia[ikf] || {}, kp0)];
+    if (!L && !I) return null;
+    const m = { n: L?.n || 0, fonte: I ? 'ia' : 'local' };
+    const robusta = a => { if (!a?.length) return 0; const o = [...a].sort((x, y) => x - y), md = o[Math.floor(o.length / 2)], k = a.filter(x => Math.abs(x - md) <= 0.3 * md); return k.reduce((t, x) => t + x, 0) / k.length; };
+    m.pcx = I?.pcx > 0 ? I.pcx : (robusta(L?.pcx.am) || (L?.pcx.n ? L.pcx.s / L.pcx.n : 0));
+    m.pemb = I?.pemb > 0 ? I.pemb : (L ? (L.pe?.length ? _modaRec(L.pe) : _moda(L.pemb)) || 0 : 0);
+    m.qemb = I?.qemb > 0 ? I.qemb : (L ? (L.qe?.length ? _modaRec(L.qe) : _moda(L.qemb)) || 0 : 0);
+    return m;
+}
+function _nomesProdutos() {
+    const nomes = new Map(); _cadastro().forEach(x => nomes.set(_kk(x.nome), x.nome));
+    const B = _aprBase(), F = B.f[_kk(state.fornecedor || document.getElementById('fornecedor')?.value || '')];
+    if (F) Object.entries(F.p).forEach(([k, v]) => nomes.set(k, v.nome));
+    return [...nomes.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+function _atualizarListaForn() {
+    let dl = document.getElementById('lista-fornecedores');
+    if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-fornecedores'; document.body.appendChild(dl); }
+    dl.innerHTML = Object.values(_aprBase().f).map(f => `<option value="${String(f.nome).replace(/"/g, '&quot;')}"></option>`).join('');
+}
+function _preencherAprendido() {
+    lerFormularioParaState();
+    const pr = state.produtos[state.idAtivo], m = _mediaProd(state.fornecedor, pr.nome); if (!m) return;
+    let mudou = false;
+    pr.pallets.forEach(pl => [['pcx', m.pcx], ['pemb', m.pemb], ['qemb', m.qemb]].forEach(([k, v]) => { if (v > 0 && !String(pl[k]).trim()) { pl[k] = k === 'qemb' ? String(Math.round(v)) : _fN(v, 4); mudou = true; } }));
+    if (mudou) { renderizarTudo(); toast(m.fonte === 'ia' ? '🤖 Preenchido com a média da IA.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
+}
+
+function abrirAprendizado() {
+    const B = _aprBase(), forns = Object.entries(B.f).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
+    let tot = 0;
+    let h = forns.length ? forns.map(([kf, F]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(F.nome)}</b>` + Object.entries(F.p).map(([kp, P]) => {
+        tot += P.n; const m = _mediaProd(F.nome, P.nome);
+        return `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;border-bottom:1px dotted #dde3ea"><b style="font-family:Sora">${_esc(P.nome)}</b> ${m.fonte === 'ia' ? '🤖' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.pcx.n > 1 ? ` (${_fN(P.pcx.min)}–${_fN(P.pcx.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div>`;
+    }).join('') + '</div>').join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
+    h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button style="${_BTN}" onclick="exportarAprendizado()">📤 Exportar para IA</button><button style="${_BTN2}" onclick="document.getElementById('apr-file').click()">📥 Importar médias</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="apr-file" accept=".json" style="display:none" onchange="importarMedias(event)"><p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) registradas. Peso da caixa = média; embalagem e qtd/caixa = valor mais frequente.</p>`;
+    _modal('📚 Aprendizado por fornecedor', h);
+}
+function exportarAprendizado() {
+    const B = _aprBase(), dados = [], medias = {};
+    Object.values(B.f).forEach(F => Object.values(F.p).forEach(P => {
+        const m = _mediaProd(F.nome, P.nome);
+        dados.push({ fornecedor: F.nome, produto: P.nome, pesagens: P.n, ultima: P.ult, caixa_kg: { media: P.pcx.n ? +(P.pcx.s / P.pcx.n).toFixed(4) : null, min: P.pcx.min, max: P.pcx.max, amostras: P.pcx.am }, embalagem_kg_mais_frequente: _moda(P.pemb), qtd_emb_por_caixa_mais_frequente: _moda(P.qemb) });
+        (medias[F.nome] = medias[F.nome] || {})[P.nome] = { pcx: m.pcx ? +m.pcx.toFixed(4) : 0, pemb: m.pemb || 0, qemb: m.qemb || 0 };
+    }));
+    const out = { app: 'Conferência de Pesagem', exportado_em: new Date().toISOString(), instrucoes: 'Revise "dados" (descarte amostras discrepantes, pondere pesagens recentes) e devolva este mesmo arquivo com o bloco "medias" corrigido. Em "medias": pcx = peso médio da caixa (kg), pemb = peso da embalagem (kg), qemb = embalagens por caixa. Mantenha os nomes de fornecedor e produto exatamente como estão.', dados, medias };
+    B.exp = Date.now(); _lsSet(_APR, B);
+    _baixarArquivo('base_pesagem_ia.json', JSON.stringify(out, null, 2), 'application/json'); toast('📤 Base exportada.', 'success');
+}
+function importarMedias(e) {
+    const f = e.target.files?.[0]; if (!f) return; const r = new FileReader();
+    r.onload = ev => {
+        try {
+            const M = JSON.parse(ev.target.result).medias; if (!M || typeof M !== 'object') throw 0;
+            const B = _aprBase(); let n = 0;
+            Object.entries(M).forEach(([fo, ps]) => Object.entries(ps).forEach(([pr, v]) => {
+                const kf = _kk(fo); (B.ia[kf] = B.ia[kf] || {})[_kk(pr)] = { pcx: +v.pcx || 0, pemb: +v.pemb || 0, qemb: Math.round(+v.qemb) || 0 }; n++;
+            }));
+            _lsSet(_APR, B); abrirAprendizado(); toast(`🤖 ${n} média(s) importada(s).`, 'success');
+        } catch { toast('Arquivo inválido: falta o bloco "medias".', 'error'); }
+    };
+    r.readAsText(f); e.target.value = '';
+}
+function zerarAprendizado() { mostrarConfirm('Apagar todo o aprendizado e as médias da IA?', '🗑', () => { try { localStorage.removeItem(_APR); } catch {} _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
+
+/* Teclado completo (mostra o microfone do teclado do celular) */
+function _aplicarTeclado() {
+    document.querySelectorAll('input[inputmode="decimal"],input[data-im="decimal"]').forEach(i => {
+        if (i.id && i.id.startsWith('cfg-')) return;
+        i.dataset.im = 'decimal'; i.setAttribute('inputmode', appConfig.tecladoCompleto ? 'text' : 'decimal');
+    });
+}
+function definirTeclado(v) { appConfig.tecladoCompleto = !!v; salvarConfig(); _aplicarTeclado(); }
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const t = _vTxt(); if (!t) return;
+        t.addEventListener('input', () => {
+            t.value = _mascaraData(t.value); const d = t.value.replace(/\D/g, ''); t.style.borderColor = '';
+            if (d.length === 6 || d.length === 8) { const iso = _isoDeDigitos(d); if (iso) _setValidadeHid(iso); else { t.style.borderColor = '#c0392b'; toast('Data inválida.', 'warning'); } }
+            else if (!d.length) _setValidadeHid('');
+        });
+        t.addEventListener('blur', () => { const d = t.value.replace(/\D/g, ''); if (d.length === 6) { const iso = _isoDeDigitos(d); if (iso) t.value = iso.split('-').reverse().join('/'); } });
+        _syncValidadeTxt(); _atualizarListaForn(); _atualizarDatalist();
+        const fo = document.getElementById('fornecedor');
+        fo.addEventListener('change', () => { _atualizarDatalist(); _preencherAprendido(); });
+        document.getElementById('produto').addEventListener('change', () => setTimeout(_preencherAprendido, 0));
+        const c = document.getElementById('cfg-tecfull'); if (c) c.checked = !!appConfig.tecladoCompleto;
+        _aplicarTeclado(); new MutationObserver(() => { if (appConfig.tecladoCompleto) _aplicarTeclado(); }).observe(document.body, { childList: true, subtree: true });
+        const B = _aprBase(), total = Object.values(B.f).reduce((a, F) => a + Object.values(F.p).reduce((x, P) => x + P.n, 0), 0);
+        if (total >= 5 && (!B.exp || Date.now() - B.exp > 30 * 864e5)) setTimeout(() => toast('📚 Hora de atualizar as médias: Menu ▸ Aprendizado ▸ Exportar para IA.', 'info', 6000), 5000);
+    }, 50);
+});
+
+/* ══ V16 · SUGESTÕES INTELIGENTES (fornecedor e produto) ══ */
+(function () {
+    const st = document.createElement('style');
+    st.textContent = '#sug-box{position:fixed;z-index:9500;background:#fff;border:1px solid #c9d3dd;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.22);overflow-y:auto;font-family:Sora,sans-serif;display:none}'
+        + '.sg-row{padding:9px 12px;border-bottom:1px solid #eef1f4;cursor:pointer}.sg-row:last-child{border-bottom:0}.sg-row:active{background:#e8f5ee}'
+        + '.sg-n{font-size:13px;font-weight:700;color:#1c2b3a}.sg-n mark{background:none;color:#1a6b3c}.sg-d{font:500 10.5px "DM Mono",monospace;color:#6b7a8d;margin-top:2px}.sg-tag{font-size:9px;color:#b9770e;margin-left:6px;font-weight:700}'
+        + '@media print{#sug-box{display:none!important}}';
+    document.head.appendChild(st);
+})();
+const _fmtPerfil = m => m ? [m.pcx > 0 && `Cx ${_fN(m.pcx)} kg`, m.pemb > 0 && `Emb ${_fN(m.pemb * 1000, 1)} g`, m.qemb > 0 && `${m.qemb}/cx`, m.n > 0 && `${m.n}×`].filter(Boolean).join(' · ') : '';
+
+function _candFornecedores() {
+    return Object.values(_aprBase().f).map(F => { const n = Object.values(F.p); return { nome: F.nome, det: `${n.length} produto(s) · ${n.reduce((a, P) => a + P.n, 0)} pesagem(ns)`, peso: n.reduce((a, P) => a + P.n, 0) }; });
+}
+function _candProdutos() {
+    const B = _aprBase(), kfAt = _kk(document.getElementById('fornecedor').value || ''), mapa = new Map();
+    const add = (nome, det, origem, peso, tag) => { const k = _kk(nome), c = mapa.get(k); if (!c || origem < c.o) mapa.set(k, { nome, det, o: origem, peso, tag }); };
+    Object.entries(B.f).forEach(([kf, F]) => Object.values(F.p).forEach(P => {
+        const mesmo = kf === kfAt;
+        add(P.nome, _fmtPerfil(_mediaProd(F.nome, P.nome)), mesmo ? 0 : 2, P.n, mesmo ? '' : F.nome);
+    }));
+    _cadastro().forEach(x => add(x.nome, [x.pcx && `Cx ${x.pcx} kg`, x.pemb && `Emb ${x.pemb} kg`, x.qemb && `${x.qemb}/cx`].filter(Boolean).join(' · ') || 'cadastrado', 1, 0, ''));
+    return [...mapa.values()];
+}
+function _rank(nome, q) {
+    const n = _kk(nome); if (!q) return 3;
+    if (n.startsWith(q)) return 0;
+    if (n.split(' ').some(w => w.startsWith(q))) return 1;
+    return n.includes(q) ? 2 : -1;
+}
+function _escolherSugestao(input, nome) {
+    input.value = nome;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    _esconderSug();
+}
+let _sugAtual = null;
+function _esconderSug() { const b = document.getElementById('sug-box'); if (b) b.style.display = 'none'; }
+function _mostrarSug(input, cands) {
+    const q = _kk(input.value || '');
+    let L = cands.map(c => ({ c, r: _rank(c.nome, q) })).filter(x => x.r >= 0 && _kk(x.c.nome) !== q)
+        .sort((a, b) => a.r - b.r || a.c.o - b.c.o || b.c.peso - a.c.peso || a.c.nome.localeCompare(b.c.nome, 'pt-BR')).slice(0, 7);
+    let box = document.getElementById('sug-box');
+    if (!box) { box = document.createElement('div'); box.id = 'sug-box'; box.addEventListener('pointerdown', e => e.preventDefault()); document.body.appendChild(box); }
+    if (!L.length) { box.style.display = 'none'; return; }
+    const hl = nome => { const i = q ? _semAcento(nome).indexOf(q) : -1; return i < 0 ? nome : nome.slice(0, i) + '<mark>' + nome.slice(i, i + q.length) + '</mark>' + nome.slice(i + q.length); };
+    box.innerHTML = L.map((x, i) => `<div class="sg-row" data-i="${i}"><div class="sg-n">${hl(x.c.nome.replace(/</g, '&lt;'))}${x.c.tag ? `<span class="sg-tag">de ${x.c.tag.replace(/</g, '&lt;')}</span>` : ''}</div>${x.c.det ? `<div class="sg-d">${x.c.det}</div>` : ''}</div>`).join('');
+    box.querySelectorAll('.sg-row').forEach(r => r.addEventListener('click', () => _escolherSugestao(input, L[+r.dataset.i].c.nome)));
+    const vv = window.visualViewport, rc = input.getBoundingClientRect();
+    const topV = vv ? vv.offsetTop : 0, hV = vv ? vv.height : innerHeight;
+    const abaixo = topV + hV - rc.bottom - 8, acima = rc.top - topV - 8;
+    box.style.display = 'block'; box.style.left = Math.max(6, rc.left) + 'px'; box.style.width = Math.min(rc.width, innerWidth - 12) + 'px';
+    if (abaixo >= 150 || abaixo >= acima) { box.style.top = (rc.bottom + 4) + 'px'; box.style.bottom = 'auto'; box.style.maxHeight = Math.max(90, Math.min(300, abaixo)) + 'px'; }
+    else { box.style.top = 'auto'; box.style.bottom = (innerHeight - rc.top + 4) + 'px'; box.style.maxHeight = Math.max(90, Math.min(300, acima)) + 'px'; }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const fo = document.getElementById('fornecedor'), pr = document.getElementById('produto');
+        [[fo, _candFornecedores], [pr, _candProdutos]].forEach(([el, fn]) => {
+            el.removeAttribute('list');
+            const mostrar = () => { _sugAtual = { el, fn }; _mostrarSug(el, fn()); };
+            el.addEventListener('input', mostrar); el.addEventListener('focus', mostrar);
+            el.addEventListener('blur', () => setTimeout(() => { if (_sugAtual?.el === el && document.activeElement !== el) _esconderSug(); }, 160));
+            el.addEventListener('keydown', e => { if (e.key === 'Escape') _esconderSug(); });
+        });
+        const reposicionar = () => { if (_sugAtual && document.activeElement === _sugAtual.el && document.getElementById('sug-box')?.style.display === 'block') _mostrarSug(_sugAtual.el, _sugAtual.fn()); };
+        window.addEventListener('scroll', reposicionar, true);
+        window.visualViewport?.addEventListener('resize', reposicionar); window.visualViewport?.addEventListener('scroll', reposicionar);
+    }, 80);
+});
+
+/* ══ V18 · AUDITORIA: backup do aprendizado, persistência e gatilhos ══ */
+function _extrasBackup() { return { aprendizado: _lsGet(_APR, null), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
+function _restaurarExtras(x) {
+    if (!x) return;
+    try {
+        const B = _aprBase(), I = x.aprendizado || {};
+        Object.entries(I.s || {}).forEach(([k, v]) => { if (!B.s[k] || B.s[k].t < v.t) B.s[k] = v; });
+        if (!B.leg) { if (I.leg) B.leg = I.leg; else if (I.f && !I.s) B.leg = I.f; }
+        Object.entries(I.ia || {}).forEach(([kf, ps]) => { B.ia[kf] = Object.assign({}, ps, B.ia[kf] || {}); });
+        _reconstruir(B); _lsSet(_APR, B);
+        const C = _cadastro(); (x.cadastro || []).forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) C.push(c); }); _lsSet('pesagem_produtos', C);
+        const P = _lsGet('pesagem_perfis_tara', []); (x.perfis || []).forEach(c => { if (!P.some(o => o.nome === c.nome)) P.push(c); }); _lsSet('pesagem_perfis_tara', P);
+        _atualizarDatalist(); _atualizarListaForn();
+    } catch (e) { console.warn('restaurar extras', e); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') _aprender(true); });
+window.addEventListener('pagehide', () => _aprender(true));
+document.addEventListener('DOMContentLoaded', () => { try { navigator.storage?.persist?.(); } catch {} });
 </script>
 </body>
 </html>

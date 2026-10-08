@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conferencia-pesagem-v14';
+const CACHE_NAME = 'conferencia-pesagem-v18';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,15 +17,15 @@ self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// Rede primeiro (pega versão nova do GitHub), cache como reserva offline
+// Rede primeiro, ignorando o cache HTTP do GitHub Pages (que pode segurar o arquivo por ~10 min);
+// cache do app só como reserva offline e só com respostas válidas.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(res => {
-        const copia = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(req, copia));
+        if (res.ok) { const copia = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, copia)); }
         return res;
       })
       .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
