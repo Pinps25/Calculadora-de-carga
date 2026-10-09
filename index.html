@@ -3368,13 +3368,19 @@ function _medias() {
         P.n++; P.ult = o.d; P.obs.push(o);
     });
     Object.entries(F).forEach(([kf, Fo]) => Object.entries(Fo.p).forEach(([kp, P]) => {
-        const am = []; P.obs.forEach(o => o.pcx.forEach((v, i) => am.push({ v, key: o.k + '#' + i })));
-        const rec = am.slice(-60), vals = rec.map(a => a.v), med = vals.length ? [...vals].sort((x, y) => x - y)[Math.floor(vals.length / 2)] : 0, ac = [];
+        /* mudança de padrão: 3 pesagens recentes coerentes e bem diferentes das anteriores = fornecedor mudou, não é erro */
+        const md = a => { const o = [...a].sort((x, y) => x - y); return o[Math.floor(o.length / 2)]; };
+        const mus = P.obs.map(o => o.pcx.length ? o.pcx.reduce((t, x) => t + x, 0) / o.pcx.length : null), idx = mus.map((m, i) => m == null ? -1 : i).filter(i => i >= 0);
+        let ini = 0;
+        if (idx.length >= 4) { const u3 = idx.slice(-3), mr = md(u3.map(i => mus[i])), ma = md(idx.slice(0, -3).map(i => mus[i])); if (u3.every(i => Math.abs(mus[i] - mr) <= 0.15 * mr) && Math.abs(mr - ma) > 0.3 * ma) { ini = u3[0]; P.regime = true; } }
+        const am = []; P.obs.forEach((o, r) => { if (r >= ini) o.pcx.forEach((v, i) => am.push({ v, key: o.k + '#' + i, r })); });
+        const rec = am.slice(-60), vals = rec.map(a => a.v), med = vals.length ? [...vals].sort((x, y) => x - y)[Math.floor(vals.length / 2)] : 0, ac = [], wt = [], nO = P.obs.length;
         rec.forEach(a => {
             const fora = vals.length >= 3 && med > 0 && Math.abs(a.v - med) > 0.3 * med, dec = Q[a.key];
-            if (dec === 'aceito' || !fora) ac.push(a.v); else if (!dec) quar.push({ kf, kp, fn: Fo.nome, pn: P.nome, key: a.key, v: a.v, med });
+            if (dec === 'aceito' || !fora) { ac.push(a.v); wt.push(Math.pow(0.5, (nO - 1 - a.r) / 8)); } else if (!dec) quar.push({ kf, kp, fn: Fo.nome, pn: P.nome, key: a.key, v: a.v, med });
         });
-        P.pcx = ac.length ? ac.reduce((t, x) => t + x, 0) / ac.length : 0; P.min = ac.length ? Math.min(...ac) : 0; P.max = ac.length ? Math.max(...ac) : 0; P.am = ac;
+        const sw = wt.reduce((t, x) => t + x, 0), mu = ac.length ? ac.reduce((t, x) => t + x, 0) / ac.length : 0;
+        P.pcx = sw ? ac.reduce((t, x, i) => t + x * wt[i], 0) / sw : 0; P.dp = ac.length > 1 ? Math.sqrt(ac.reduce((t, x) => t + (x - mu) ** 2, 0) / (ac.length - 1)) : 0; P.min = ac.length ? Math.min(...ac) : 0; P.max = ac.length ? Math.max(...ac) : 0; P.am = ac;
         const ult = campo => P.obs.map(o => o[campo].length ? _modaRec(o[campo]) : null).filter(Boolean).slice(-5);
         const pe = ult('pemb'), qe = ult('qemb'); P.pemb = pe.length ? _modaRec(pe) : 0; P.qemb = qe.length ? _modaRec(qe) : 0;
         P.pembVals = [...new Set(P.obs.flatMap(o => o.pemb))]; P.qembVals = [...new Set(P.obs.flatMap(o => o.qemb))];
@@ -3393,10 +3399,9 @@ function _resolver(forn, prod) {
 }
 function _mediaProd(forn, prod) {
     const r = _resolver(forn, prod); if (!r) return null;
-    const { kf, kp, L } = r, J = _lsGet(_K.aj, {})[kf]?.[kp], I = _lsGet(_K.ia, {})[kf]?.[kp];
-    const iaOk = I && (!L || L.n - (I.nObs || 0) < 8) && (Date.now() - I.em < 60 * 864e5);
-    if (!L && !J && !iaOk) return null;
-    const pick = c => J?.[c] > 0 ? [J[c], 'manual'] : (iaOk && I[c] > 0 ? [I[c], 'ia'] : [L?.[c] || 0, 'local']);
+    const { kf, kp, L } = r, J = _lsGet(_K.aj, {})[kf]?.[kp];
+    if (!L && !J) return null;
+    const pick = c => J?.[c] > 0 ? [J[c], 'manual'] : [L?.[c] || 0, 'local'];
     const [pcx, f1] = pick('pcx'), [pemb, f2] = pick('pemb'), [qemb, f3] = pick('qemb');
     return { n: L?.n || 0, pcx, pemb, qemb, fonte: f1, fontes: { pcx: f1, pemb: f2, qemb: f3 }, conf: L?.conf || 'baixa' };
 }
@@ -3415,8 +3420,8 @@ function _preencherAprendido() {
     lerFormularioParaState();
     const pr = state.produtos[state.idAtivo], m = _mediaProd(state.fornecedor, pr.nome); if (!m) return;
     let mudou = false;
-    pr.pallets.forEach(pl => [['pcx', m.pcx], ['pemb', m.pemb], ['qemb', m.qemb]].forEach(([k, v]) => { if (v > 0 && !String(pl[k]).trim()) { pl[k] = k === 'qemb' ? String(Math.round(v)) : _fN(v, 4); mudou = true; } }));
-    if (mudou) { renderizarTudo(); toast(m.fonte === 'manual' ? '🔧 Preenchido com o ajuste manual.' : m.fonte === 'ia' ? '🤖 Preenchido com a média da IA.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
+    pr.pallets.forEach(pl => [['pcx', m.pcx], ['pemb', m.pemb], ['qemb', m.qemb]].forEach(([k, v]) => { if (v > 0 && !String(pl[k]).trim()) { pl[k] = k === 'qemb' ? String(Math.round(v)) : v.toFixed(3).replace('.', ','); mudou = true; } }));
+    if (mudou) { renderizarTudo(); toast(m.fonte === 'manual' ? '🔧 Preenchido com o ajuste manual.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
 }
 
 /* ── tela Aprendizado ── */
@@ -3429,18 +3434,18 @@ function abrirAprendizado() {
     const forns = Object.entries(F).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
     h += forns.length ? forns.map(([kf, Fo]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(Fo.nome)}</b>` + Object.entries(Fo.p).map(([kp, P]) => {
         tot += P.n; const m = _mediaProd(Fo.nome, P.nome), i = _aprLista.push({ kf, kp }) - 1, cf = { alta: '🟢', 'média': '🟡', baixa: '🔴' }[P.conf];
-        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${m.fontes.pcx === 'manual' ? ' 🔧' : m.fontes.pcx === 'ia' ? ' 🤖' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
+        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${P.regime ? ' 🔄' : ''}${m.fontes.pcx === 'manual' ? ' 🔧' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
     }).join('') + '</div>').join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
-    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="exportarAprendizado()">📤 Exportar p/ IA</button><button style="${_BTN2}" onclick="document.getElementById('apr-file').click()">📥 Médias da IA</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="apr-file" accept=".json" style="display:none" onchange="importarMedias(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="document.getElementById('lg-file').click()">📥 Dados antigos (arquivo)</button><button style="${_BTN2}" onclick="reaplicarAntigo()">↻ Reaplicar do aparelho</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="lg-file" accept=".json" style="display:none" onchange="importarLegado(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
     if (_apeLista.length) h += `<details style="margin-top:12px"><summary style="font-size:12px;font-weight:700;cursor:pointer">Nomes unificados (${_apeLista.length})</summary>` + _apeLista.map(([t, k], i) => `<div style="display:flex;gap:6px;align-items:center;font:500 11px 'DM Mono',monospace;padding:4px 0"><span style="flex:1">${_esc(k.split('|').pop())} → ${_esc(A[t][k])}</span><button style="${_BTN2}" onclick="desfazerApelido(${i})">desfazer</button></div>`).join('') + '</details>';
-    h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. Prioridade: 🔧 manual › 🤖 IA (válida por 8 pesagens/60 dias) › automática.</p>`;
+    h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. · 🔄 padrão mudou. Prioridade: 🔧 ajuste manual › média automática (as pesagens recentes pesam mais).</p>`;
     _modal('📚 Aprendizado por fornecedor', h);
 }
 function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; const Q = _lsGet(_K.q, {}); Q[q.key] = dec; _lsSet(_K.q, Q); _bump(); abrirAprendizado(); }
 function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
 function editarAjuste(i) {
     const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp], J = _lsGet(_K.aj, {})[kf]?.[kp] || {}, f = v => v > 0 ? _fN(v, 4) : '';
-    _corpo(`<b style="font-size:13px">${_esc(P.nome)}</b><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a IA e a média).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
+    _corpo(`<b style="font-size:13px">${_esc(P.nome)}</b><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
 }
 function salvarAjuste(i, remover) {
     const { kf, kp } = _aprLista[i], Aj = _lsGet(_K.aj, {}), g = id => _num(document.getElementById(id).value) || 0;
@@ -3448,39 +3453,44 @@ function salvarAjuste(i, remover) {
     _lsSet(_K.aj, Aj); _bump(); abrirAprendizado();
 }
 
-/* ── ciclo com a IA ── */
-function exportarAprendizado() {
-    const { F, quar } = _medias(), dados = [], medias = {};
-    Object.values(F).forEach(Fo => Object.values(Fo.p).forEach(P => {
-        const m = _mediaProd(Fo.nome, P.nome);
-        dados.push({ fornecedor: Fo.nome, produto: P.nome, pesagens: P.n, confianca: P.conf, ultima: P.ult, caixa_kg: { media: +P.pcx.toFixed(4), min: P.min, max: P.max, amostras: P.am }, embalagem_kg_valores_vistos: P.pembVals, qtd_emb_por_caixa_valores_vistos: P.qembVals });
-        (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pcx: +(m.pcx || 0).toFixed(4), pemb: m.pemb || 0, qemb: m.qemb || 0 };
-    }));
-    const out = { app: 'Conferência de Pesagem', esquema: 2, exportado_em: new Date().toISOString(), instrucoes: 'Revise "dados" e devolva este MESMO arquivo JSON, alterando só o bloco "medias". pcx = peso médio da caixa (kg), pemb = peso da embalagem (kg), qemb = embalagens por caixa. Descarte amostras discrepantes e dê mais peso às recentes. Para embalagem e qemb use apenas valores já vistos em "dados". Se um produto tiver só 1 pesagem, mantenha o valor atual. Opcional: acrescente "justificativa" em cada produto. Mantenha nomes de fornecedor e produto exatamente iguais, use ponto decimal e responda apenas com o JSON. O app rejeita pcx fora de -20%/+20% do intervalo observado.', dados, quarentena: quar.map(q => ({ fornecedor: q.fn, produto: q.pn, valor: q.v, mediana: q.med })), medias };
-    try { localStorage.setItem(_K.exp, String(Date.now())); } catch {}
-    _baixarArquivo('base_pesagem_ia.json', JSON.stringify(out, null, 2), 'application/json'); toast('📤 Base exportada.', 'success');
+function zerarAprendizado() { mostrarConfirm('Apagar TODO o aprendizado (observações, apelidos, ajustes, médias da IA)?', '🗑', () => { Object.values(_K).forEach(k => { if (k !== _K.dev) try { localStorage.removeItem(k); } catch {} }); _bump(); _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
+
+
+/* ── trazer o que o sistema antigo (com IA) já tinha aprendido ── */
+function reaplicarAntigo() {
+    let n = 0;
+    try {
+        const velho = localStorage.getItem('pesagem_aprendizado_antigo') || localStorage.getItem('pesagem_aprendizado');
+        if (velho) { _restaurarExtras({ aprendizado: JSON.parse(velho) }); n++; }
+        const ia = _lsGet(_K.ia, null);
+        if (ia) { _restaurarExtras({ aprendizado: { f: {}, s: {}, ia } }); n++; }
+    } catch (e) { console.warn(e); }
+    _bump(); abrirAprendizado(); toast(n ? '↻ Dados antigos do aparelho reaplicados (sem duplicar).' : 'Não há dados antigos neste aparelho.', n ? 'success' : 'info');
 }
-function importarMedias(e) {
+function importarLegado(e) {
     const f = e.target.files?.[0]; if (!f) return; const r = new FileReader();
     r.onload = ev => {
         try {
-            const M = JSON.parse(ev.target.result).medias; if (!M || typeof M !== 'object') throw 0;
-            const I = _lsGet(_K.ia, {}); let ok = 0, rej = 0;
-            Object.entries(M).forEach(([fo, ps]) => Object.entries(ps).forEach(([pr, v]) => {
-                const rs = _resolver(fo, pr), L = rs?.L; if (!L) { rej++; return; }
-                const n = { pcx: +v.pcx || 0, pemb: +v.pemb || 0, qemb: Math.round(+v.qemb) || 0 };
-                if (n.pcx && L.min > 0 && (n.pcx < L.min * 0.8 || n.pcx > L.max * 1.2)) n.pcx = 0;
-                if (n.pemb && L.pembVals.length && !L.pembVals.some(x => Math.abs(x - n.pemb) < 1e-4)) n.pemb = 0;
-                if (n.qemb && L.qembVals.length && !L.qembVals.includes(n.qemb)) n.qemb = 0;
-                if (!n.pcx && !n.pemb && !n.qemb) { rej++; return; }
-                (I[rs.kf] = I[rs.kf] || {})[rs.kp] = Object.assign(n, { em: Date.now(), nObs: L.n, just: String(v.justificativa || '').slice(0, 200) }); ok++;
-            }));
-            _lsSet(_K.ia, I); _bump(); abrirAprendizado(); toast(`🤖 ${ok} média(s) da IA aplicada(s)${rej ? `, ${rej} rejeitada(s) (fora do intervalo ou sem dados)` : ''}.`, rej ? 'warning' : 'success', 5000);
-        } catch { toast('Arquivo inválido: falta o bloco "medias".', 'error'); }
+            const raw = JSON.parse(ev.target.result); let n = 0;
+            if (Array.isArray(raw.dados)) {
+                const O = _obsAll(), vistos = new Set(), cv = a => (Array.isArray(a) ? a : [a]).filter(x => x > 0), put = (fo, pr, d, o) => {
+                    const k = 'legado-arquivo|' + _kk(fo) + '|' + _kk(pr); vistos.add(_kk(fo) + '|' + _kk(pr)); if (O[k]) return;
+                    O[k] = { k, cid: 'legado-arquivo', forn: fo, prod: pr, d, pcx: o.pcx, pemb: o.pemb, qemb: o.qemb, pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k + JSON.stringify(o)) }; n++;
+                };
+                raw.dados.forEach(x => {
+                    const am = (x.caixa_kg?.amostras || []).filter(v => v > 0 && v <= 60).slice(-60), pc = am.length ? am : cv(x.caixa_kg?.media || 0);
+                    put(x.fornecedor || 'Sem fornecedor', x.produto, x.ultima || String(raw.exportado_em || _dataHoje()).slice(0, 10), { pcx: pc, pemb: cv(x.embalagem_kg_valores_vistos ?? x.embalagem_kg_mais_frequente ?? 0), qemb: cv(x.qtd_emb_por_caixa_valores_vistos ?? x.qtd_emb_por_caixa_mais_frequente ?? 0).map(Math.round) });
+                });
+                Object.entries(raw.medias || {}).forEach(([fo, ps]) => Object.entries(ps).forEach(([pr, v]) => { if (!vistos.has(_kk(fo) + '|' + _kk(pr))) put(fo, pr, _dataHoje(), { pcx: cv(v.pcx || 0), pemb: cv(v.pemb || 0), qemb: cv(v.qemb || 0).map(Math.round) }); }));
+                _lsSet(_K.obs, O);
+            } else if (raw.extras?.aprendizado || raw.aprendizado || (raw.f && !raw.produtos)) { _restaurarExtras({ aprendizado: raw.extras?.aprendizado || raw.aprendizado || raw }); n = 1; }
+            else if (raw.obs || raw.extras?.obs) { _restaurarExtras(raw.extras || raw); n = 1; }
+            else throw 0;
+            _bump(); _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); toast(`📥 Dados antigos aplicados${n > 1 ? ` (${n} produto(s))` : ''}.`, 'success');
+        } catch { toast('Arquivo não reconhecido como dados antigos de aprendizado.', 'error', 5000); }
     };
     r.readAsText(f); e.target.value = '';
 }
-function zerarAprendizado() { mostrarConfirm('Apagar TODO o aprendizado (observações, apelidos, ajustes, médias da IA)?', '🗑', () => { Object.values(_K).forEach(k => { if (k !== _K.dev) try { localStorage.removeItem(k); } catch {} }); _bump(); _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
 
 /* ── pacote de dados (.zip com a estrutura final do repositório) ── */
 const _crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -3517,7 +3527,7 @@ async function baixarPacote(semFotos) {
     Object.entries(porMes).forEach(([m, v]) => { f[`aprendizado/obs/${m}.json`] = J(v); });
     const medias = {}; Object.values(M.F).forEach(Fo => Object.values(Fo.p).forEach(P => { (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pesagens: P.n, confianca: P.conf, ultima: P.ult, pcx: +P.pcx.toFixed(4), min: P.min, max: P.max, pemb: P.pemb, qemb: P.qemb, hashObs: P.h }; }));
     f['aprendizado/medias_auto.json'] = J({ esquema: 2, geradoEm: agora, medias });
-    f['aprendizado/medias_ia.json'] = J(_lsGet(_K.ia, {})); f['aprendizado/ajustes_manuais.json'] = J(_lsGet(_K.aj, {}));
+    f['aprendizado/ajustes_manuais.json'] = J(_lsGet(_K.aj, {}));
     f['aprendizado/quarentena.json'] = J({ decisoes: _lsGet(_K.q, {}), pendentes: M.quar });
     f['cadastro/produtos.json'] = J(_cadastro()); f['cadastro/perfis_tara.json'] = J(_lsGet('pesagem_perfis_tara', [])); f['cadastro/apelidos.json'] = J(_apel());
     f['manifest.json'] = J({ app: 'Conferência de Pesagem', esquema: 2, exportado_em: agora, dispositivo: _device(), semFotos: !!semFotos, conferencias: H.length, observacoes: Object.keys(O).length });
@@ -3533,7 +3543,7 @@ async function importarPacote(e) {
             const j = JSON.parse(txt);
             if (nome.startsWith('conferencias/')) { const a = await _hTx('readonly', st => st.get(j.id)); if (!a || (a.ua || a.ts) < (j.ua || j.ts)) { await _hTx('readwrite', st => st.put(j)); nconf++; } }
             else if (nome.startsWith('aprendizado/obs/')) Object.assign(ex.obs, j);
-            else if (nome.endsWith('medias_ia.json')) ex.ia = j; else if (nome.endsWith('ajustes_manuais.json')) ex.ajustes = j;
+            else if (nome.endsWith('ajustes_manuais.json')) ex.ajustes = j;
             else if (nome.endsWith('quarentena.json')) ex.quarentena = j.decisoes; else if (nome.endsWith('apelidos.json')) ex.apelidos = j;
             else if (nome.endsWith('produtos.json')) ex.cadastro = j; else if (nome.endsWith('perfis_tara.json')) ex.perfis = j;
         }
@@ -3542,17 +3552,18 @@ async function importarPacote(e) {
 }
 
 /* ── backup .json e mesclagem (idempotente: restaurar 2× não duplica) ── */
-function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), ia: _lsGet(_K.ia, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
+function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
 function _converterAntigo(B) {
-    const obs = {}, ia = {};
+    const obs = {};
+    const semear = (ia, nomes) => { const tem = new Set([...Object.values(obs), ...Object.values(_obsAll())].map(o => _kk(o.forn) + '|' + _kk(o.prod))); Object.entries(ia || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { if (tem.has(kf + '|' + kp)) return; const k = 'legado-ia|' + kf + '|' + kp; obs[k] = { k, cid: 'legado-ia', forn: nomes?.[kf]?.nome || kf, prod: nomes?.[kf]?.p?.[kp]?.nome || kp, d: _dataHoje(), pcx: v.pcx > 0 ? [+v.pcx] : [], pemb: v.pemb > 0 ? [+v.pemb] : [], qemb: v.qemb > 0 ? [Math.round(v.qemb)] : [], pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k) }; })); };
     Object.values(B.s || {}).forEach(s => { obs[s.sid + '|' + s.kp] = { k: s.sid + '|' + s.kp, cid: s.sid, forn: s.fn, prod: s.pn, d: s.d, pcx: s.pcx || [], pemb: s.pemb || [], qemb: s.qemb || [], pal: s.pal || [], st: 'final', ua: s.t || 0, dev: 'legado', h: _hash(JSON.stringify(s)) }; });
     const leg = B.leg || (B.s && Object.keys(B.s).length ? null : B.f) || {};
     Object.entries(leg).forEach(([kf, Fo]) => Object.entries(Fo.p).forEach(([kp, P]) => {
         const pe = P.pe?.length ? P.pe : [_moda(P.pemb)].filter(Boolean), qe = P.qe?.length ? P.qe : [_moda(P.qemb)].filter(Boolean), k = 'legado|' + kf + '|' + kp;
         obs[k] = { k, cid: 'legado', forn: Fo.nome, prod: P.nome, d: P.ult || '', pcx: P.pcx?.am || [], pemb: pe, qemb: qe, pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k) };
     }));
-    Object.entries(B.ia || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { (ia[kf] = ia[kf] || {})[kp] = Object.assign({}, v, { em: B.exp || Date.now(), nObs: (B.f?.[kf]?.p?.[kp]?.n) || 0 }); }));
-    return { obs, ia };
+    semear(B.ia, B.f);
+    return { obs };
 }
 function _mesclar2(chave, inc) { const L = _lsGet(chave, {}); Object.entries(inc || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { const a = L[kf]?.[kp]; if (!a || (a.em || 0) < (v.em || 0)) (L[kf] = L[kf] || {})[kp] = v; })); _lsSet(chave, L); }
 function _restaurarExtras(x) {
@@ -3562,7 +3573,6 @@ function _restaurarExtras(x) {
         if (x.obs) { const O = _obsAll(); Object.entries(x.obs).forEach(([k, v]) => { const a = O[k]; if (!a || a.ua < v.ua || (a.ua === v.ua && (v.dev || '') > (a.dev || ''))) O[k] = v; }); _lsSet(_K.obs, O); }
         if (x.apelidos) { const A = _apel(); _lsSet(_K.ap, { f: Object.assign({}, x.apelidos.f, A.f), p: Object.assign({}, x.apelidos.p, A.p) }); }
         if (x.ajustes) _mesclar2(_K.aj, x.ajustes);
-        if (x.ia) _mesclar2(_K.ia, x.ia);
         if (x.quarentena) _lsSet(_K.q, Object.assign({}, x.quarentena, _lsGet(_K.q, {})));
         const C = _cadastro(); (x.cadastro || []).forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) C.push(c); }); _lsSet('pesagem_produtos', C);
         const P = _lsGet('pesagem_perfis_tara', []); (x.perfis || []).forEach(c => { if (!P.some(o => o.nome === c.nome)) P.push(c); }); _lsSet('pesagem_perfis_tara', P);
@@ -3603,8 +3613,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('produto').addEventListener('change', () => setTimeout(_preencherAprendido, 0));
         const c = document.getElementById('cfg-tecfull'); if (c) c.checked = !!appConfig.tecladoCompleto;
         _aplicarTeclado(); new MutationObserver(() => { if (appConfig.tecladoCompleto) _aplicarTeclado(); }).observe(document.body, { childList: true, subtree: true });
-        const B = _aprBase(), total = Object.values(B.f).reduce((a, F) => a + Object.values(F.p).reduce((x, P) => x + P.n, 0), 0);
-        if (total >= 5 && (!B.exp || Date.now() - B.exp > 30 * 864e5)) setTimeout(() => toast('📚 Hora de atualizar as médias: Menu ▸ Aprendizado ▸ Exportar para IA.', 'info', 6000), 5000);
     }, 50);
 });
 
@@ -3683,6 +3691,25 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') _aprender(true, true); });
 window.addEventListener('pagehide', () => _aprender(true, true));
 document.addEventListener('DOMContentLoaded', () => { try { navigator.storage?.persist?.(); } catch {} });
+
+/* ══ AVISO DE DESVIO (usa a média do próprio sistema, sem IA) ══ */
+function _avisoDesvio(el) {
+    const wrap = el.closest('.input-clear-wrap') || el, h0 = wrap.nextElementSibling; if (h0?.classList.contains('dev-hint')) h0.remove();
+    const v = parseSeguro(el.value).valor; if (!(v > 0)) return;
+    const m = _mediaProd(document.getElementById('fornecedor').value, document.getElementById('produto').value), r = _resolver(document.getElementById('fornecedor').value, document.getElementById('produto').value), L = r?.L;
+    if (!m || !L || L.n < 2) return;
+    let msg = '';
+    if (el.matches('.pcx-in') && m.pcx > 0) { const tol = L.n >= 3 ? Math.max(0.15 * m.pcx, 2.5 * (L.dp || 0)) : 0.25 * m.pcx; if (Math.abs(v - m.pcx) > tol) msg = `⚠ Média desta caixa: ${_fN(m.pcx)} kg (${L.n}×). Você digitou ${_fN(v)}.`; }
+    else if (el.matches('.pemb-in')) { const ok = m.fontes.pemb === 'manual' ? [m.pemb] : L.pembVals; if (ok.length && !ok.some(x => Math.abs(x - v) < 0.0006)) msg = `⚠ Embalagem costuma ser ${ok.slice(0, 3).map(x => _fN(x * 1000, 1) + ' g').join(' ou ')}.`; }
+    else if (el.matches('.qemb-in')) { const ok = m.fontes.qemb === 'manual' ? [m.qemb] : L.qembVals; if (ok.length && !ok.includes(Math.round(v))) msg = `⚠ Costuma ser ${ok.slice(0, 3).join(' ou ')} por caixa.`; }
+    if (msg) { const d = document.createElement('div'); d.className = 'dev-hint'; d.textContent = msg; d.style.cssText = 'font:600 10.5px Sora,sans-serif;color:#b9770e;margin:3px 0 0'; wrap.insertAdjacentElement('afterend', d); }
+}
+(function () {
+    const st = document.createElement('style'); st.textContent = '@media screen{html.dark .dev-hint{color:#ffb454!important}}@media print{.dev-hint{display:none!important}}'; document.head.appendChild(st);
+    let t = null;
+    document.addEventListener('input', e => { const el = e.target; if (!el.matches?.('.pcx-in,.pemb-in,.qemb-in')) return; clearTimeout(t); t = setTimeout(() => _avisoDesvio(el), 450); });
+    document.addEventListener('change', e => { if (e.target.matches?.('#produto,#fornecedor')) document.querySelectorAll('.pcx-in,.pemb-in,.qemb-in').forEach(el => setTimeout(() => _avisoDesvio(el), 200)); });
+})();
 </script>
 </body>
 </html>
