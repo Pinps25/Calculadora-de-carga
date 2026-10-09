@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conferencia-pesagem-v18';
+const CACHE_NAME = 'conferencia-pesagem-v20';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

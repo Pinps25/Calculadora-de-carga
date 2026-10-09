@@ -1222,6 +1222,8 @@
             html.dark #modal-v10 [style*="#dde3ea"] { border-color: #2c3a48 !important; }
             html.dark #modal-v10 [style*="background:#f0f3f6"] { background: #2c3a48 !important; color: #e6edf3 !important; }
             html.dark #modal-v10 [style*="background:#e8f5ee"] { background: #153325 !important; color: #e6edf3 !important; }
+            html.dark #modal-v10 [style*="background:#fff4e0"] { background: #3b2a14 !important; border-color: #6b4e12 !important; color: #ffd9a0 !important; }
+            html.dark #modal-v10 [style*="#e3c48d"] { border-color: #6b4e12 !important; }
             html.dark #modal-v10 [style*="background:#fdf2f1"] { background: #3a1f1d !important; color: #e6edf3 !important; }
             html.dark #modal-v10 input, html.dark #modal-v10 textarea { background: #0f1720 !important; color: #e6edf3 !important; border-color: #2c3a48 !important; }
             html.dark #modal-v10 table td, html.dark #modal-v10 table th { color: #e6edf3; }
@@ -1301,7 +1303,7 @@
         <div class="drawer-section">
             <span class="drawer-section-title">💾 Dados da Sessão</span>
             <div style="display:flex; gap:8px;">
-                <button class="btn-drawer-action" onclick="gerarBackupManual();">⬇ Backup</button>
+                <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
                 <button class="btn-drawer-action" onclick="document.getElementById('file-import').click();">⬆ Carregar</button>
             </div>
             <div style="display:flex; gap:8px; margin-top:8px;">
@@ -1555,7 +1557,7 @@
 <div class="btn-bar">
     <button class="action-btn btn-clear"  onclick="confirmarLimpeza()">Limpar Tudo</button>
     <button class="action-btn btn-new"    onclick="novoProduto()">+ Novo Item</button>
-    <button class="action-btn btn-print"  id="btn-imprimir" onclick="gerarLaudo()">PDF + Backup</button>
+    <button class="action-btn btn-print"  id="btn-imprimir" onclick="gerarLaudo()">PDF + Histórico</button>
 </div>
 
 <!-- Print Area -->
@@ -1566,7 +1568,7 @@
    CONFERÊNCIA DE PESAGEM -- V8
    ────────────────────────────────────────────────────────────────────
    Novidades V8:
-     • Laudo PDF completamente redesenhado (3 produtos/página, A4)
+     • Laudo PDF A4 com encaixe automático dos produtos
      • Feature "Peso Desejado": input + comparação em tempo real
      • pesoDesejado salvo por produto no state
    ════════════════════════════════════════════════════════════════════ */
@@ -1618,7 +1620,7 @@ function aplicarConfig() {
 
 const FORMATO_3 = { minimumFractionDigits: 3, maximumFractionDigits: 3 };
 
-const state = { conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
+const state = { cid:'', conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
 
 function criarProduto() {
     return {
@@ -1805,7 +1807,7 @@ async function carregar() {
 }
 
 function exportarEstado() {
-    return { versao:'V8', conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
+    return { versao:'V8', esquema:2, cid:_cid(), conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
 }
 
 function importarEstado(raw) {
@@ -1813,6 +1815,7 @@ function importarEstado(raw) {
     state.conferente  = raw.conferente  || '';
     state.fornecedor  = raw.fornecedor  || '';
     state.dataPesagem = raw.dataPesagem || '';
+    _setCid(raw.cid || (window._boot && localStorage.getItem('pesagem_cid_atual')) || _gerarCid());
     state.produtos = raw.produtos.map(p => ({
         ...criarProduto(), ...p,
         validade:      p.validade      || p.pallets?.[0]?.val || '',
@@ -2070,7 +2073,7 @@ function calcular(silencioso = false) {
     const btnImprimir = document.getElementById('btn-imprimir');
     const resultBox   = document.getElementById('result-box');
     btnImprimir.disabled  = effectiveBloqueio;
-    btnImprimir.innerText = effectiveBloqueio ? '⚠ Pendente Liberação' : 'PDF + Backup';
+    btnImprimir.innerText = effectiveBloqueio ? '⚠ Pendente Liberação' : 'PDF + Histórico';
     btnImprimir.classList.toggle('blocked', effectiveBloqueio);
     resultBox.classList.toggle('bloqueado', effectiveBloqueio);
 
@@ -2331,8 +2334,16 @@ function importarBackup(e) {
     const arquivo = e.target.files?.[0]; if (!arquivo) return;
     mostrarLoading('Carregando backup...');
     const reader = new FileReader();
-    reader.onload = ev => {
-        try { const raw = JSON.parse(ev.target.result); importarEstado(raw); _restaurarExtras(raw.extras); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
+    reader.onload = async ev => {
+        try {
+            const raw = JSON.parse(ev.target.result);
+            if (Array.isArray(raw.historico)) {
+                for (const x of raw.historico) { const ex = await _hTx('readonly', st => st.get(x.id)); if (!ex || ex.ts < x.ts) await _hTx('readwrite', st => st.put(x)); }
+                _restaurarExtras(raw.extras);
+                if (raw.atual && !_temDados()) { importarEstado(raw.atual); renderizarTudo(); }
+                toast(`✅ Backup completo restaurado (${raw.historico.length} item(ns) no histórico).`, 'success');
+            } else { importarEstado(raw); _restaurarExtras(raw.extras); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
+        }
         catch(err) { toast(`❌ Falha ao carregar backup: ${err.message}`, 'error'); }
         finally { esconderLoading(); e.target.value = ''; }
     };
@@ -2495,15 +2506,15 @@ function gerarLaudo() {
     _aprender();
     html += _anexoFotos(produtosValidos);
     document.getElementById('print-area').innerHTML = html;
-    gerarBackupManual();
+    histSalvar().then(() => toast('🗂 Salvo no histórico.', 'info', 2000)).catch(() => toast('Não consegui salvar no histórico.', 'warning'));
     setTimeout(() => window.print(), 800);
 }
 
 /* ─── Limpar tudo ─── */
 
 function confirmarLimpeza() {
-    mostrarConfirm('ATENÇÃO: Isso apagará TODOS os dados. Tem certeza?', '🗑', () => {
-        _aprender(true); _pausaApr = true; _novoSid();
+    mostrarConfirm('ATENÇÃO: Isso apagará TODOS os dados. Tem certeza?', '🗑', async () => {
+        _aprender(true); _pausaApr = true; try { await histSalvar(); } catch {} _novoSid();
         esconderLoading();
         try {
             if (idb) { idb.close(); idb = null; }
@@ -2908,8 +2919,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const ultimo = parseInt(localStorage.getItem('pesagem_ultimo_backup') || '0');
             const temDados = state.produtos.some(p => p.nome || p.pallets.some(pl => pl.bto));
             const dias = ultimo ? Math.floor((Date.now() - ultimo) / 864e5) : null;
-            if (temDados && (dias === null || dias >= 7))
-                toast(dias === null ? '💾 Você ainda não fez backup. Menu ▸ Backup.' : `💾 Faz ${dias} dias sem backup. Menu ▸ Backup.`, 'warning', 6000);
+            if (temDados && (dias === null || dias >= 30))
+                toast(dias === null ? '💾 Você ainda não baixou um backup completo. Menu ▸ Histórico ▸ Backup completo.' : `💾 Faz ${dias} dias sem backup completo. Menu ▸ Histórico ▸ Backup completo.`, 'warning', 6000);
         } catch {}
     }, 2500);
 });
@@ -3012,25 +3023,54 @@ function aplicarPerfil(i) {
     renderizarTudo(); _fecharModal(); toast(`🏷 Perfil "${x.nome}" aplicado ao produto atual.`, 'success');
 }
 
-/* 12 · Histórico + 14 · Auditoria */
-function abrirHistorico() {
-    const H = _lsGet('pesagem_historico', []), A = _lsGet('pesagem_auditoria', []);
-    let h = `<button style="${_BTN}" onclick="salvarNoHistorico()">Salvar conferência atual</button><div style="margin-top:10px">` + (H.length ? H.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b><br><span style="color:#6b7a8d">${x.quando}</span></div><button style="${_BTN}" onclick="abrirDoHistorico(${i})">Abrir</button><button style="${_BTN2}" onclick="excluirDoHistorico(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>') + '</div>';
-    if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${a.quando} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
+/* 12 · Histórico (IndexedDB, com fotos) + 14 · Auditoria */
+const _hdb = () => new Promise((ok, er) => { const r = indexedDB.open('PesagemHistoricoDB', 1); r.onupgradeneeded = () => r.result.createObjectStore('h', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => er(r.error); });
+const _hTx = async (modo, fn) => { const db = await _hdb(); return new Promise((ok, er) => { const tx = db.transaction('h', modo), rq = fn(tx.objectStore('h')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = tx.onabort = () => er(tx.error); }); };
+const _hLista = async () => ((await _hTx('readonly', st => st.getAll())) || []).sort((a, b) => b.ts - a.ts);
+
+async function histSalvar() {
+    lerFormularioParaState(); if (!_temDados()) return false;
+    const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0);
+    const e = { id: _sid(), cid: _sid(), ua: Date.now(), status: 'final', v: 2, ts: Date.now(), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', quando: new Date().toLocaleString('pt-BR'),
+        nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: JSON.parse(JSON.stringify(exportarEstado())) };
+    await _hTx('readwrite', st => st.put(e));
+    for (const x of (await _hLista()).slice(60)) await _hTx('readwrite', st => st.delete(x.id));
+    return true;
+}
+async function _migrarHistorico() {
+    const H = _lsGet('pesagem_historico', null); if (!H || !H.length) return;
+    for (let i = 0; i < H.length; i++) { const x = H[i]; await _hTx('readwrite', st => st.put({ id: 'old-' + i + '-' + String(x.quando || '').replace(/\W/g, ''), ts: Date.now() - (i + 1) * 1000, titulo: String(x.titulo || 'Sem fornecedor').split(' · ')[0], quando: x.quando || '', nProd: x.estado?.produtos?.length || 0, liq: null, estado: x.estado })); }
+    try { localStorage.removeItem('pesagem_historico'); } catch {}
+}
+async function abrirHistorico() {
+    let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
+    const A = _lsGet('pesagem_auditoria', []);
+    let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button><button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada PDF gerado fica salvo aqui automaticamente, com fotos. Baixe só quando quiser.</p>`;
+    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}</span></div><button style="${_BTN}" onclick="histAbrir('${x.id}')">Abrir</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
-function salvarNoHistorico() {
-    const est = JSON.parse(JSON.stringify((lerFormularioParaState(), exportarEstado())));
-    est.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); est.sid = _sid();
-    const H = _lsGet('pesagem_historico', []);
-    H.unshift({ titulo: `${state.fornecedor || 'Sem fornecedor'} · ${state.produtos.length} produto(s)`, quando: new Date().toLocaleString('pt-BR'), estado: est });
-    _lsSet('pesagem_historico', H.slice(0, 15)); abrirHistorico(); toast('🗂 Salvo no histórico (sem fotos).', 'success');
+async function histSalvarAgora() { const ok = await histSalvar(); toast(ok ? '🗂 Conferência salva no histórico.' : 'Nada para salvar ainda.', ok ? 'success' : 'info'); abrirHistorico(); }
+async function histAbrir(id) {
+    const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
+    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos (a atual é guardada no histórico antes).', '🗂', async () => {
+        _aprender(true); try { await histSalvar(); } catch {}
+        importarEstado(x.estado); if (!x.estado.cid && !String(x.id).startsWith('old-')) _setCid(x.id);
+        renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success');
+    }, 'warning');
 }
-function abrirDoHistorico(i) {
-    const x = _lsGet('pesagem_historico', [])[i]; if (!x) return;
-    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos.', '🗂', () => { _aprender(true); importarEstado(x.estado); if (x.estado.sid) { try { localStorage.setItem('pesagem_sid', x.estado.sid); } catch {} } renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success'); }, 'warning');
+async function histBaixar(id) {
+    const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
+    _baixarArquivo(`Pesagem_${String(x.titulo).replace(/[^\w]+/g, '_')}_${String(x.quando).split(',')[0].replace(/\//g, '-')}.json`, JSON.stringify(x.estado), 'application/json');
 }
-function excluirDoHistorico(i) { const H = _lsGet('pesagem_historico', []); H.splice(i, 1); _lsSet('pesagem_historico', H); abrirHistorico(); }
+function histExcluir(id) { mostrarConfirm('Excluir esta conferência do histórico?', '🗑', async () => { await _hTx('readwrite', st => st.delete(id)); abrirHistorico(); }, 'error'); }
+async function baixarBackupCompleto() {
+    lerFormularioParaState();
+    const out = { app: 'Conferência de Pesagem', tipo: 'backup_completo', exportado_em: new Date().toISOString(), atual: _temDados() ? exportarEstado() : null, historico: await _hLista(), extras: _extrasBackup() };
+    _baixarArquivo(`Backup_completo_${_dataHoje()}.json`, JSON.stringify(out), 'application/json');
+    try { localStorage.setItem('pesagem_ultimo_backup', String(Date.now())); } catch {}
+    toast('⬇ Backup completo baixado.', 'success');
+}
 
 /* 13 · PIN do supervisor */
 function definirPIN() {
@@ -3222,7 +3262,7 @@ async function abrirCarga(id) {
     _aprender(true); lerFormularioParaState();
     if (_temDados()) await _estacionarAtual();
     await _cTx('readwrite', st => st.delete(id));
-    importarEstado(x.estado); if (x.sid) { try { localStorage.setItem('pesagem_sid', x.sid); } catch {} } renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
+    importarEstado(x.estado); if (x.sid && !x.estado.cid) _setCid(x.sid); renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
 }
 async function excluirCarga(id) { mostrarConfirm('Excluir esta carga guardada?', '🗑', async () => { await _cTx('readwrite', st => st.delete(id)); abrirCargas(); }); }
 
@@ -3243,43 +3283,53 @@ function _setValidadeHid(iso) { const h = _vHid(); if (h.value === iso) return; 
     renderizarTudo = function () { orig.apply(this, arguments); _syncValidadeTxt(); };
 })();
 
-/* Aprendizado: fornecedor → produto → médias */
-const _APR = 'pesagem_aprendizado';
-const _aprBase = () => { const b = Object.assign({ f: {}, s: null, ia: {}, exp: 0 }, _lsGet(_APR, null) || {}); if (!b.s) { b.s = {}; if (Object.keys(b.f).length && !b.leg) b.leg = b.f; } return b; };
-let _pausaApr = false;
-function _esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function _sid() { try { let v = localStorage.getItem('pesagem_sid'); if (!v) { v = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); localStorage.setItem('pesagem_sid', v); } return v; } catch { return 'x'; } }
-function _novoSid() { try { localStorage.removeItem('pesagem_sid'); } catch {} }
-function _lev(a, b) { if (a === b) return 0; const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
-function _chaveSimilar(obj, k) { if (!k || obj[k] || /\d/.test(k) || k.length < 5) return k; const lim = k.length >= 10 ? 2 : 1; let best = null, bd = 9; for (const o in obj) { if (/\d/.test(o)) continue; const d = _lev(k, o); if (d <= lim && d < bd) { best = o; bd = d; } } return best || k; }
-const _modaRec = a => { const c = {}; let b = null, n = 0; a.forEach(x => { c[x] = (c[x] || 0) + 1; }); a.forEach(x => { if (c[x] >= n) { n = c[x]; b = x; } }); return b; };
-function _reconstruir(B) {
-    B.f = B.leg ? JSON.parse(JSON.stringify(B.leg)) : {};
-    Object.values(B.s).sort((a, b) => a.t - b.t).forEach(o => {
-        const F = B.f[o.kf] = B.f[o.kf] || { nome: o.fn, p: {} };
-        const P = F.p[o.kp] = F.p[o.kp] || { nome: o.pn, n: 0, pcx: { s: 0, n: 0, min: 0, max: 0, am: [] }, pemb: {}, qemb: {}, pal: { s: 0, n: 0 } };
-        P.n++; P.ult = o.d; P.pe = P.pe || []; P.qe = P.qe || [];
-        o.pcx.forEach(cx => { const c = P.pcx; c.s += cx; c.n++; c.min = c.n === 1 ? cx : Math.min(c.min, cx); c.max = Math.max(c.max, cx); c.am.push(cx); if (c.am.length > 60) c.am.shift(); });
-        o.pemb.forEach(e => { const k = e.toFixed(4); P.pemb[k] = (P.pemb[k] || 0) + 1; });
-        o.qemb.forEach(q => { P.qemb[q] = (P.qemb[q] || 0) + 1; });
-        o.pal.forEach(v => { P.pal.s += v; P.pal.n++; });
-        const e1 = o.pemb.length ? _modaRec(o.pemb) : null, q1 = o.qemb.length ? _modaRec(o.qemb) : null;
-        if (e1) { P.pe.push(e1); if (P.pe.length > 5) P.pe.shift(); }
-        if (q1) { P.qe.push(q1); if (P.qe.length > 5) P.qe.shift(); }
-    });
-}
+/* ══════════ FASE 1 · MODELO DE DADOS V2 (conferência · observações · médias · apelidos) ══════════ */
+const _K = { obs: 'pesagem_obs_v2', ap: 'pesagem_apelidos_v2', aj: 'pesagem_ajustes_v2', ia: 'pesagem_medias_ia_v2', q: 'pesagem_quarentena_v2', dev: 'pesagem_device', exp: 'pesagem_exp_ia' };
+let _ver = 0, _cache = null, _pausaApr = false;
+window._boot = true; setTimeout(() => { window._boot = false; }, 5000);
+const _bump = () => { _ver++; _cache = null; };
 const _kk = t => _semAcento(t).replace(/\s+/g, ' ');
 const _fN = (v, c = 3) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: c });
 const _hash = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return String(h); };
 const _moda = m => { let b = null, n = 0; for (const k in (m || {})) if (m[k] >= n) { n = m[k]; b = +k; } return b; };
+const _modaRec = a => { const c = {}; let b = null, n = 0; a.forEach(x => { c[x] = (c[x] || 0) + 1; }); a.forEach(x => { if (c[x] >= n) { n = c[x]; b = x; } }); return b; };
+function _esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function _lev(a, b) { if (a === b) return 0; const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+function _chaveSimilar(obj, k) { if (!k || obj[k] || /\d/.test(k) || k.length < 5) return k; const lim = k.length >= 10 ? 2 : 1; let best = null, bd = 9; for (const o in obj) { if (/\d/.test(o)) continue; const d = _lev(k, o); if (d <= lim && d < bd) { best = o; bd = d; } } return best || k; }
 
-function _aprender(silencioso) {
+/* identidade da conferência (cid) — gravada dentro da própria conferência */
+function _gerarCid() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function _setCid(v) { state.cid = v; try { localStorage.setItem('pesagem_cid_atual', v); } catch {} }
+function _cid() {
+    if (!state.cid) { let v = null; try { v = localStorage.getItem('pesagem_cid_atual') || localStorage.getItem('pesagem_sid'); localStorage.removeItem('pesagem_sid'); } catch {} _setCid(v || _gerarCid()); }
+    return state.cid;
+}
+const _sid = () => _cid();
+const _novoSid = () => _setCid(_gerarCid());
+function _device() { let d = 'd0'; try { d = localStorage.getItem(_K.dev); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 8); localStorage.setItem(_K.dev, d); } } catch {} return d; }
+
+/* apelidos: a junção de nomes parecidos fica GRAVADA (igual em todos os aparelhos) */
+const _apel = () => { const A = _lsGet(_K.ap, null) || {}; return { f: A.f || {}, p: A.p || {} }; };
+const _canonF = kr => _apel().f[kr] || kr;
+const _canonP = (kfc, kr) => _apel().p[kfc + '|' + kr] || kr;
+const _obsAll = () => _lsGet(_K.obs, {});
+function _registrarAliases(forn, prod) {
+    const O = Object.values(_obsAll()).filter(o => !o.del), A = _apel(); let mud = false;
+    const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[A.f[_kk(o.forn)] || _kk(o.forn)] = 1; });
+    let kfc = A.f[kfr] || kfr;
+    if (!A.f[kfr] && !conF[kfr]) { const sim = _chaveSimilar(conF, kfr); if (sim !== kfr) { A.f[kfr] = sim; kfc = sim; mud = true; } }
+    const kpr = _kk(prod), conP = {}; O.forEach(o => { if ((A.f[_kk(o.forn)] || _kk(o.forn)) === kfc) conP[A.p[kfc + '|' + _kk(o.prod)] || _kk(o.prod)] = 1; });
+    if (!A.p[kfc + '|' + kpr] && !conP[kpr]) { const sim = _chaveSimilar(conP, kpr); if (sim !== kpr) { A.p[kfc + '|' + kpr] = sim; mud = true; } }
+    if (mud) { _lsSet(_K.ap, A); _bump(); }
+}
+
+/* captura: observação por (conferência, produto) — regravar SUBSTITUI, nunca soma */
+function _aprender(silencioso, auto) {
     if (_pausaApr) return;
     try {
         lerFormularioParaState();
-        const B = _aprBase(), forn = (state.fornecedor || '').trim() || 'Sem fornecedor', kf0 = _kk(forn), sid = _sid(), agora = Date.now();
-        const atuais = new Set(); let mudou = 0;
-        const ok = (v, mx) => v > 0 && v <= mx;
+        const O = _obsAll(), cid = _cid(), now = Date.now(), dev = _device(), forn = (state.fornecedor || '').trim() || 'Sem fornecedor';
+        const atuais = new Set(), ok = (v, mx) => v > 0 && v <= mx; let mudou = 0;
         state.produtos.forEach(pr => {
             const nome = (pr.nome || '').trim(); if (!nome) return;
             const pls = pr.pallets.filter(pl => parseSeguro(pl.bto).valor > 0); if (!pls.length) return;
@@ -3288,73 +3338,126 @@ function _aprender(silencioso) {
                 const cx = parseSeguro(pl.pcx).valor, em = parseSeguro(pl.pemb).valor, qe = Math.round(parseSeguro(pl.qemb).valor), pa = parseSeguro(pl.pal).valor;
                 if (ok(cx, 60)) o.pcx.push(+cx.toFixed(4)); if (ok(em, 10)) o.pemb.push(+em.toFixed(4)); if (ok(qe, 1000)) o.qemb.push(qe); if (ok(pa, 200)) o.pal.push(+pa.toFixed(3));
             });
-            const key = sid + '|' + _kk(nome); atuais.add(key);
-            const kf = _chaveSimilar(B.f, kf0), kp = _chaveSimilar(B.f[kf]?.p || {}, _kk(nome));
-            const nova = Object.assign({ sid, kf, kp, fn: B.f[kf]?.nome || forn, pn: B.f[kf]?.p[kp]?.nome || nome, d: state.dataPesagem || _dataHoje(), t: agora }, o);
-            const ant = B.s[key], sig = x => JSON.stringify([x.kf, x.kp, x.pcx, x.pemb, x.qemb, x.pal, x.d]);
-            if (ant && sig(ant) === sig(nova)) return;
-            B.s[key] = nova; mudou++;
+            const k = cid + '|' + _kk(nome); atuais.add(k); _registrarAliases(forn, nome);
+            const base = Object.assign({ k, cid, forn, prod: nome, d: state.dataPesagem || _dataHoje() }, o);
+            const h = _hash(JSON.stringify([base.forn, base.prod, base.d, o.pcx, o.pemb, o.qemb, o.pal])), ant = O[k];
+            const st = auto ? (ant && ant.st === 'final' ? 'final' : 'rascunho') : 'final';
+            if (ant && !ant.del && ant.h === h && ant.st === st) return;
+            O[k] = Object.assign(base, { h, st, ua: now, dev }); mudou++;
         });
-        if (atuais.size) Object.keys(B.s).forEach(k => { if (B.s[k].sid === sid && !atuais.has(k)) { delete B.s[k]; mudou++; } });
+        if (atuais.size) Object.keys(O).forEach(k => { const x = O[k]; if (x.cid === cid && !x.del && !atuais.has(k)) { O[k] = Object.assign({}, x, { del: true, ua: now, dev }); mudou++; } });
         if (mudou) {
-            const ks = Object.keys(B.s); if (ks.length > 800) ks.sort((a, b) => B.s[a].t - B.s[b].t).slice(0, ks.length - 800).forEach(k => delete B.s[k]);
-            _reconstruir(B); _lsSet(_APR, B);
-            if (!silencioso) toast('📚 Aprendizado atualizado.', 'success');
+            Object.keys(O).forEach(k => { if (O[k].del && O[k].ua < now - 90 * 864e5) delete O[k]; });
+            const ks = Object.keys(O); if (ks.length > 6000) ks.sort((a, b) => O[a].ua - O[b].ua).slice(0, ks.length - 6000).forEach(k => delete O[k]);
+            _lsSet(_K.obs, O); _bump();
+            if (!silencioso && !auto) toast('📚 Aprendizado atualizado.', 'success');
             _atualizarDatalist(); _atualizarListaForn();
         }
     } catch (e) { console.warn('aprendizado', e); }
 }
 
+/* médias: SEMPRE recalculadas das observações (nunca fundidas) */
+function _medias() {
+    if (_cache && _cache.v === _ver) return _cache.d;
+    const O = _obsAll(), Q = _lsGet(_K.q, {}), now = Date.now(), F = {}, quar = [];
+    const efetiva = o => !o.del && (o.st === 'final' || now - o.ua > 864e5);
+    Object.values(O).filter(efetiva).sort((a, b) => (a.d === b.d ? a.ua - b.ua : (a.d > b.d ? 1 : -1))).forEach(o => {
+        const kf = _canonF(_kk(o.forn)), kp = _canonP(kf, _kk(o.prod));
+        const Fo = F[kf] = F[kf] || { nome: o.forn, p: {} };
+        const P = Fo.p[kp] = Fo.p[kp] || { nome: o.prod, n: 0, obs: [], ult: '' };
+        P.n++; P.ult = o.d; P.obs.push(o);
+    });
+    Object.entries(F).forEach(([kf, Fo]) => Object.entries(Fo.p).forEach(([kp, P]) => {
+        const am = []; P.obs.forEach(o => o.pcx.forEach((v, i) => am.push({ v, key: o.k + '#' + i })));
+        const rec = am.slice(-60), vals = rec.map(a => a.v), med = vals.length ? [...vals].sort((x, y) => x - y)[Math.floor(vals.length / 2)] : 0, ac = [];
+        rec.forEach(a => {
+            const fora = vals.length >= 3 && med > 0 && Math.abs(a.v - med) > 0.3 * med, dec = Q[a.key];
+            if (dec === 'aceito' || !fora) ac.push(a.v); else if (!dec) quar.push({ kf, kp, fn: Fo.nome, pn: P.nome, key: a.key, v: a.v, med });
+        });
+        P.pcx = ac.length ? ac.reduce((t, x) => t + x, 0) / ac.length : 0; P.min = ac.length ? Math.min(...ac) : 0; P.max = ac.length ? Math.max(...ac) : 0; P.am = ac;
+        const ult = campo => P.obs.map(o => o[campo].length ? _modaRec(o[campo]) : null).filter(Boolean).slice(-5);
+        const pe = ult('pemb'), qe = ult('qemb'); P.pemb = pe.length ? _modaRec(pe) : 0; P.qemb = qe.length ? _modaRec(qe) : 0;
+        P.pembVals = [...new Set(P.obs.flatMap(o => o.pemb))]; P.qembVals = [...new Set(P.obs.flatMap(o => o.qemb))];
+        P.conf = P.n >= 10 ? 'alta' : P.n >= 3 ? 'média' : 'baixa'; P.h = _hash(P.obs.map(o => o.h).join(',')); delete P.obs;
+    }));
+    const d = { F, quar }; _cache = { v: _ver, d }; return d;
+}
+const _aprBase = () => ({ f: _medias().F, exp: +(localStorage.getItem(_K.exp) || 0) });
+
+/* uso: ajuste manual > IA (válida) > automática */
+function _resolver(forn, prod) {
+    const kp0 = _kk(prod || ''); if (!kp0) return null;
+    const M = _medias().F; let kf = _canonF(_kk(forn || 'Sem fornecedor')); if (!M[kf]) kf = _chaveSimilar(M, kf);
+    const Pp = M[kf]?.p || {}; let kp = _canonP(kf, kp0); if (!Pp[kp]) kp = _chaveSimilar(Pp, kp);
+    return { kf, kp, L: Pp[kp] };
+}
 function _mediaProd(forn, prod) {
-    const B = _aprBase(), kf = _chaveSimilar(B.f, _kk(forn || 'Sem fornecedor')), kp0 = _kk(prod || ''); if (!kp0) return null;
-    const kp = _chaveSimilar(B.f[kf]?.p || {}, kp0), L = B.f[kf]?.p[kp];
-    const ikf = _chaveSimilar(B.ia, kf), I = B.ia[ikf]?.[_chaveSimilar(B.ia[ikf] || {}, kp0)];
-    if (!L && !I) return null;
-    const m = { n: L?.n || 0, fonte: I ? 'ia' : 'local' };
-    const robusta = a => { if (!a?.length) return 0; const o = [...a].sort((x, y) => x - y), md = o[Math.floor(o.length / 2)], k = a.filter(x => Math.abs(x - md) <= 0.3 * md); return k.reduce((t, x) => t + x, 0) / k.length; };
-    m.pcx = I?.pcx > 0 ? I.pcx : (robusta(L?.pcx.am) || (L?.pcx.n ? L.pcx.s / L.pcx.n : 0));
-    m.pemb = I?.pemb > 0 ? I.pemb : (L ? (L.pe?.length ? _modaRec(L.pe) : _moda(L.pemb)) || 0 : 0);
-    m.qemb = I?.qemb > 0 ? I.qemb : (L ? (L.qe?.length ? _modaRec(L.qe) : _moda(L.qemb)) || 0 : 0);
-    return m;
+    const r = _resolver(forn, prod); if (!r) return null;
+    const { kf, kp, L } = r, J = _lsGet(_K.aj, {})[kf]?.[kp], I = _lsGet(_K.ia, {})[kf]?.[kp];
+    const iaOk = I && (!L || L.n - (I.nObs || 0) < 8) && (Date.now() - I.em < 60 * 864e5);
+    if (!L && !J && !iaOk) return null;
+    const pick = c => J?.[c] > 0 ? [J[c], 'manual'] : (iaOk && I[c] > 0 ? [I[c], 'ia'] : [L?.[c] || 0, 'local']);
+    const [pcx, f1] = pick('pcx'), [pemb, f2] = pick('pemb'), [qemb, f3] = pick('qemb');
+    return { n: L?.n || 0, pcx, pemb, qemb, fonte: f1, fontes: { pcx: f1, pemb: f2, qemb: f3 }, conf: L?.conf || 'baixa' };
 }
 function _nomesProdutos() {
     const nomes = new Map(); _cadastro().forEach(x => nomes.set(_kk(x.nome), x.nome));
-    const B = _aprBase(), F = B.f[_kk(state.fornecedor || document.getElementById('fornecedor')?.value || '')];
+    const F = _aprBase().f[_canonF(_kk(state.fornecedor || document.getElementById('fornecedor')?.value || ''))];
     if (F) Object.entries(F.p).forEach(([k, v]) => nomes.set(k, v.nome));
     return [...nomes.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 function _atualizarListaForn() {
     let dl = document.getElementById('lista-fornecedores');
     if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-fornecedores'; document.body.appendChild(dl); }
-    dl.innerHTML = Object.values(_aprBase().f).map(f => `<option value="${String(f.nome).replace(/"/g, '&quot;')}"></option>`).join('');
+    dl.innerHTML = Object.values(_medias().F).map(f => `<option value="${_esc(f.nome)}"></option>`).join('');
 }
 function _preencherAprendido() {
     lerFormularioParaState();
     const pr = state.produtos[state.idAtivo], m = _mediaProd(state.fornecedor, pr.nome); if (!m) return;
     let mudou = false;
     pr.pallets.forEach(pl => [['pcx', m.pcx], ['pemb', m.pemb], ['qemb', m.qemb]].forEach(([k, v]) => { if (v > 0 && !String(pl[k]).trim()) { pl[k] = k === 'qemb' ? String(Math.round(v)) : _fN(v, 4); mudou = true; } }));
-    if (mudou) { renderizarTudo(); toast(m.fonte === 'ia' ? '🤖 Preenchido com a média da IA.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
+    if (mudou) { renderizarTudo(); toast(m.fonte === 'manual' ? '🔧 Preenchido com o ajuste manual.' : m.fonte === 'ia' ? '🤖 Preenchido com a média da IA.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
 }
 
+/* ── tela Aprendizado ── */
+let _aprLista = [], _quarLista = [], _apeLista = [];
 function abrirAprendizado() {
-    const B = _aprBase(), forns = Object.entries(B.f).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
-    let tot = 0;
-    let h = forns.length ? forns.map(([kf, F]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(F.nome)}</b>` + Object.entries(F.p).map(([kp, P]) => {
-        tot += P.n; const m = _mediaProd(F.nome, P.nome);
-        return `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;border-bottom:1px dotted #dde3ea"><b style="font-family:Sora">${_esc(P.nome)}</b> ${m.fonte === 'ia' ? '🤖' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.pcx.n > 1 ? ` (${_fN(P.pcx.min)}–${_fN(P.pcx.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div>`;
+    const { F, quar } = _medias(), A = _apel(), J = _lsGet(_K.aj, {}), I = _lsGet(_K.ia, {});
+    _aprLista = []; _quarLista = quar; _apeLista = [...Object.keys(A.f).map(k => ['f', k]), ...Object.keys(A.p).map(k => ['p', k])];
+    let tot = 0, h = '';
+    if (quar.length) h += `<div style="background:#fff4e0;border:1px solid #f0c27a;border-radius:10px;padding:10px;margin-bottom:12px"><b style="font-size:12px">⚠ ${quar.length} valor(es) em quarentena</b><div style="font-size:11px;color:#6b7a8d;margin-bottom:6px">Fora do padrão: não entram na média até você decidir.</div>` + quar.slice(0, 8).map((q, i) => `<div style="display:flex;gap:6px;align-items:center;padding:5px 0;border-top:1px dotted #e3c48d"><div style="flex:1;font-size:11px"><b>${_esc(q.pn)}</b> <span style="color:#6b7a8d">(${_esc(q.fn)})</span><br>${_fN(q.v)} kg · mediana ${_fN(q.med)} kg</div><button style="${_BTN}" onclick="decidirQuarentena(${i},'aceito')">Aceitar</button><button style="${_BTN2}" onclick="decidirQuarentena(${i},'descartado')">Descartar</button></div>`).join('') + '</div>';
+    const forns = Object.entries(F).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
+    h += forns.length ? forns.map(([kf, Fo]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(Fo.nome)}</b>` + Object.entries(Fo.p).map(([kp, P]) => {
+        tot += P.n; const m = _mediaProd(Fo.nome, P.nome), i = _aprLista.push({ kf, kp }) - 1, cf = { alta: '🟢', 'média': '🟡', baixa: '🔴' }[P.conf];
+        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${m.fontes.pcx === 'manual' ? ' 🔧' : m.fontes.pcx === 'ia' ? ' 🤖' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
     }).join('') + '</div>').join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
-    h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button style="${_BTN}" onclick="exportarAprendizado()">📤 Exportar para IA</button><button style="${_BTN2}" onclick="document.getElementById('apr-file').click()">📥 Importar médias</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="apr-file" accept=".json" style="display:none" onchange="importarMedias(event)"><p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) registradas. Peso da caixa = média; embalagem e qtd/caixa = valor mais frequente.</p>`;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="exportarAprendizado()">📤 Exportar p/ IA</button><button style="${_BTN2}" onclick="document.getElementById('apr-file').click()">📥 Médias da IA</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="apr-file" accept=".json" style="display:none" onchange="importarMedias(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
+    if (_apeLista.length) h += `<details style="margin-top:12px"><summary style="font-size:12px;font-weight:700;cursor:pointer">Nomes unificados (${_apeLista.length})</summary>` + _apeLista.map(([t, k], i) => `<div style="display:flex;gap:6px;align-items:center;font:500 11px 'DM Mono',monospace;padding:4px 0"><span style="flex:1">${_esc(k.split('|').pop())} → ${_esc(A[t][k])}</span><button style="${_BTN2}" onclick="desfazerApelido(${i})">desfazer</button></div>`).join('') + '</details>';
+    h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. Prioridade: 🔧 manual › 🤖 IA (válida por 8 pesagens/60 dias) › automática.</p>`;
     _modal('📚 Aprendizado por fornecedor', h);
 }
+function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; const Q = _lsGet(_K.q, {}); Q[q.key] = dec; _lsSet(_K.q, Q); _bump(); abrirAprendizado(); }
+function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
+function editarAjuste(i) {
+    const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp], J = _lsGet(_K.aj, {})[kf]?.[kp] || {}, f = v => v > 0 ? _fN(v, 4) : '';
+    _corpo(`<b style="font-size:13px">${_esc(P.nome)}</b><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a IA e a média).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
+}
+function salvarAjuste(i, remover) {
+    const { kf, kp } = _aprLista[i], Aj = _lsGet(_K.aj, {}), g = id => _num(document.getElementById(id).value) || 0;
+    if (remover) { if (Aj[kf]) delete Aj[kf][kp]; } else { const v = { pcx: g('aj-pcx'), pemb: g('aj-pemb'), qemb: Math.round(g('aj-qemb')), em: Date.now() }; if (v.pcx || v.pemb || v.qemb) (Aj[kf] = Aj[kf] || {})[kp] = v; else if (Aj[kf]) delete Aj[kf][kp]; }
+    _lsSet(_K.aj, Aj); _bump(); abrirAprendizado();
+}
+
+/* ── ciclo com a IA ── */
 function exportarAprendizado() {
-    const B = _aprBase(), dados = [], medias = {};
-    Object.values(B.f).forEach(F => Object.values(F.p).forEach(P => {
-        const m = _mediaProd(F.nome, P.nome);
-        dados.push({ fornecedor: F.nome, produto: P.nome, pesagens: P.n, ultima: P.ult, caixa_kg: { media: P.pcx.n ? +(P.pcx.s / P.pcx.n).toFixed(4) : null, min: P.pcx.min, max: P.pcx.max, amostras: P.pcx.am }, embalagem_kg_mais_frequente: _moda(P.pemb), qtd_emb_por_caixa_mais_frequente: _moda(P.qemb) });
-        (medias[F.nome] = medias[F.nome] || {})[P.nome] = { pcx: m.pcx ? +m.pcx.toFixed(4) : 0, pemb: m.pemb || 0, qemb: m.qemb || 0 };
+    const { F, quar } = _medias(), dados = [], medias = {};
+    Object.values(F).forEach(Fo => Object.values(Fo.p).forEach(P => {
+        const m = _mediaProd(Fo.nome, P.nome);
+        dados.push({ fornecedor: Fo.nome, produto: P.nome, pesagens: P.n, confianca: P.conf, ultima: P.ult, caixa_kg: { media: +P.pcx.toFixed(4), min: P.min, max: P.max, amostras: P.am }, embalagem_kg_valores_vistos: P.pembVals, qtd_emb_por_caixa_valores_vistos: P.qembVals });
+        (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pcx: +(m.pcx || 0).toFixed(4), pemb: m.pemb || 0, qemb: m.qemb || 0 };
     }));
-    const out = { app: 'Conferência de Pesagem', exportado_em: new Date().toISOString(), instrucoes: 'Revise "dados" (descarte amostras discrepantes, pondere pesagens recentes) e devolva este mesmo arquivo com o bloco "medias" corrigido. Em "medias": pcx = peso médio da caixa (kg), pemb = peso da embalagem (kg), qemb = embalagens por caixa. Mantenha os nomes de fornecedor e produto exatamente como estão.', dados, medias };
-    B.exp = Date.now(); _lsSet(_APR, B);
+    const out = { app: 'Conferência de Pesagem', esquema: 2, exportado_em: new Date().toISOString(), instrucoes: 'Revise "dados" e devolva este MESMO arquivo JSON, alterando só o bloco "medias". pcx = peso médio da caixa (kg), pemb = peso da embalagem (kg), qemb = embalagens por caixa. Descarte amostras discrepantes e dê mais peso às recentes. Para embalagem e qemb use apenas valores já vistos em "dados". Se um produto tiver só 1 pesagem, mantenha o valor atual. Opcional: acrescente "justificativa" em cada produto. Mantenha nomes de fornecedor e produto exatamente iguais, use ponto decimal e responda apenas com o JSON. O app rejeita pcx fora de -20%/+20% do intervalo observado.', dados, quarentena: quar.map(q => ({ fornecedor: q.fn, produto: q.pn, valor: q.v, mediana: q.med })), medias };
+    try { localStorage.setItem(_K.exp, String(Date.now())); } catch {}
     _baixarArquivo('base_pesagem_ia.json', JSON.stringify(out, null, 2), 'application/json'); toast('📤 Base exportada.', 'success');
 }
 function importarMedias(e) {
@@ -3362,16 +3465,119 @@ function importarMedias(e) {
     r.onload = ev => {
         try {
             const M = JSON.parse(ev.target.result).medias; if (!M || typeof M !== 'object') throw 0;
-            const B = _aprBase(); let n = 0;
+            const I = _lsGet(_K.ia, {}); let ok = 0, rej = 0;
             Object.entries(M).forEach(([fo, ps]) => Object.entries(ps).forEach(([pr, v]) => {
-                const kf = _kk(fo); (B.ia[kf] = B.ia[kf] || {})[_kk(pr)] = { pcx: +v.pcx || 0, pemb: +v.pemb || 0, qemb: Math.round(+v.qemb) || 0 }; n++;
+                const rs = _resolver(fo, pr), L = rs?.L; if (!L) { rej++; return; }
+                const n = { pcx: +v.pcx || 0, pemb: +v.pemb || 0, qemb: Math.round(+v.qemb) || 0 };
+                if (n.pcx && L.min > 0 && (n.pcx < L.min * 0.8 || n.pcx > L.max * 1.2)) n.pcx = 0;
+                if (n.pemb && L.pembVals.length && !L.pembVals.some(x => Math.abs(x - n.pemb) < 1e-4)) n.pemb = 0;
+                if (n.qemb && L.qembVals.length && !L.qembVals.includes(n.qemb)) n.qemb = 0;
+                if (!n.pcx && !n.pemb && !n.qemb) { rej++; return; }
+                (I[rs.kf] = I[rs.kf] || {})[rs.kp] = Object.assign(n, { em: Date.now(), nObs: L.n, just: String(v.justificativa || '').slice(0, 200) }); ok++;
             }));
-            _lsSet(_APR, B); abrirAprendizado(); toast(`🤖 ${n} média(s) importada(s).`, 'success');
+            _lsSet(_K.ia, I); _bump(); abrirAprendizado(); toast(`🤖 ${ok} média(s) da IA aplicada(s)${rej ? `, ${rej} rejeitada(s) (fora do intervalo ou sem dados)` : ''}.`, rej ? 'warning' : 'success', 5000);
         } catch { toast('Arquivo inválido: falta o bloco "medias".', 'error'); }
     };
     r.readAsText(f); e.target.value = '';
 }
-function zerarAprendizado() { mostrarConfirm('Apagar todo o aprendizado e as médias da IA?', '🗑', () => { try { localStorage.removeItem(_APR); } catch {} _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
+function zerarAprendizado() { mostrarConfirm('Apagar TODO o aprendizado (observações, apelidos, ajustes, médias da IA)?', '🗑', () => { Object.values(_K).forEach(k => { if (k !== _K.dev) try { localStorage.removeItem(k); } catch {} }); _bump(); _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
+
+/* ── pacote de dados (.zip com a estrutura final do repositório) ── */
+const _crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const _crc = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = _crcT[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function _zip(files) {
+    const enc = new TextEncoder(), ch = [], cen = []; let off = 0;
+    const w16 = (a, v) => a.push(v & 255, (v >> 8) & 255), w32 = (a, v) => a.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255);
+    Object.entries(files).forEach(([nome, txt]) => {
+        const nb = enc.encode(nome), db = enc.encode(txt), crc = _crc(db), h = [], c = [];
+        w32(h, 0x04034b50); w16(h, 20); w16(h, 0x0800); w16(h, 0); w16(h, 0); w16(h, 0x21); w32(h, crc); w32(h, db.length); w32(h, db.length); w16(h, nb.length); w16(h, 0);
+        ch.push(new Uint8Array(h), nb, db);
+        w32(c, 0x02014b50); w16(c, 20); w16(c, 20); w16(c, 0x0800); w16(c, 0); w16(c, 0); w16(c, 0x21); w32(c, crc); w32(c, db.length); w32(c, db.length); w16(c, nb.length); w16(c, 0); w16(c, 0); w16(c, 0); w16(c, 0); w32(c, 0); w32(c, off);
+        cen.push(new Uint8Array(c), nb); off += h.length + nb.length + db.length;
+    });
+    const n = Object.keys(files).length, e = [], cl = cen.reduce((a, x) => a + x.length, 0);
+    w32(e, 0x06054b50); w16(e, 0); w16(e, 0); w16(e, n); w16(e, n); w32(e, cl); w32(e, off); w16(e, 0);
+    return new Blob([...ch, ...cen, new Uint8Array(e)], { type: 'application/zip' });
+}
+function _unzip(buf) {
+    const v = new DataView(buf), dec = new TextDecoder(), out = {}; let p = 0;
+    while (p + 30 <= buf.byteLength && v.getUint32(p, true) === 0x04034b50) {
+        const met = v.getUint16(p + 8, true), csz = v.getUint32(p + 18, true), nl = v.getUint16(p + 26, true), xl = v.getUint16(p + 28, true);
+        if (met !== 0) throw new Error('Use o .zip gerado pelo próprio app (sem recompactar).');
+        out[dec.decode(new Uint8Array(buf, p + 30, nl))] = dec.decode(new Uint8Array(buf, p + 30 + nl + xl, csz)); p += 30 + nl + xl + csz;
+    }
+    return out;
+}
+const _mes = (d, ts) => /^\d{4}-\d{2}/.test(d || '') ? d.slice(0, 7) : new Date(ts || Date.now()).toISOString().slice(0, 7);
+async function baixarPacote(semFotos) {
+    lerFormularioParaState();
+    const f = {}, J = x => JSON.stringify(x, null, 1), O = _obsAll(), M = _medias(), H = await _hLista(), agora = new Date().toISOString();
+    H.forEach(x => { const e = JSON.parse(JSON.stringify(x)); if (semFotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); const m = _mes(e.estado.dataPesagem, e.ts); f[`conferencias/${m.slice(0, 4)}/${m.slice(5)}/${e.id}.json`] = J(e); });
+    const porMes = {}; Object.values(O).forEach(o => { (porMes[_mes(o.d, o.ua)] = porMes[_mes(o.d, o.ua)] || {})[o.k] = o; });
+    Object.entries(porMes).forEach(([m, v]) => { f[`aprendizado/obs/${m}.json`] = J(v); });
+    const medias = {}; Object.values(M.F).forEach(Fo => Object.values(Fo.p).forEach(P => { (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pesagens: P.n, confianca: P.conf, ultima: P.ult, pcx: +P.pcx.toFixed(4), min: P.min, max: P.max, pemb: P.pemb, qemb: P.qemb, hashObs: P.h }; }));
+    f['aprendizado/medias_auto.json'] = J({ esquema: 2, geradoEm: agora, medias });
+    f['aprendizado/medias_ia.json'] = J(_lsGet(_K.ia, {})); f['aprendizado/ajustes_manuais.json'] = J(_lsGet(_K.aj, {}));
+    f['aprendizado/quarentena.json'] = J({ decisoes: _lsGet(_K.q, {}), pendentes: M.quar });
+    f['cadastro/produtos.json'] = J(_cadastro()); f['cadastro/perfis_tara.json'] = J(_lsGet('pesagem_perfis_tara', [])); f['cadastro/apelidos.json'] = J(_apel());
+    f['manifest.json'] = J({ app: 'Conferência de Pesagem', esquema: 2, exportado_em: agora, dispositivo: _device(), semFotos: !!semFotos, conferencias: H.length, observacoes: Object.keys(O).length });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(_zip(f)); a.download = `Pacote_pesagem_${_dataHoje()}${semFotos ? '_sem_fotos' : ''}.zip`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    try { localStorage.setItem('pesagem_ultimo_backup', String(Date.now())); } catch {}
+    toast('📦 Pacote gerado.', 'success');
+}
+async function importarPacote(e) {
+    const file = e.target.files?.[0]; if (!file) return; e.target.value = '';
+    try {
+        const Z = _unzip(await file.arrayBuffer()), ex = { obs: {}, cadastro: [], perfis: [] }; let nconf = 0;
+        for (const [nome, txt] of Object.entries(Z)) {
+            const j = JSON.parse(txt);
+            if (nome.startsWith('conferencias/')) { const a = await _hTx('readonly', st => st.get(j.id)); if (!a || (a.ua || a.ts) < (j.ua || j.ts)) { await _hTx('readwrite', st => st.put(j)); nconf++; } }
+            else if (nome.startsWith('aprendizado/obs/')) Object.assign(ex.obs, j);
+            else if (nome.endsWith('medias_ia.json')) ex.ia = j; else if (nome.endsWith('ajustes_manuais.json')) ex.ajustes = j;
+            else if (nome.endsWith('quarentena.json')) ex.quarentena = j.decisoes; else if (nome.endsWith('apelidos.json')) ex.apelidos = j;
+            else if (nome.endsWith('produtos.json')) ex.cadastro = j; else if (nome.endsWith('perfis_tara.json')) ex.perfis = j;
+        }
+        _restaurarExtras(ex); toast(`📦 Pacote importado (${nconf} conferência(s) nova(s)/atualizada(s)).`, 'success');
+    } catch (err) { toast('Pacote inválido: ' + err.message, 'error', 5000); }
+}
+
+/* ── backup .json e mesclagem (idempotente: restaurar 2× não duplica) ── */
+function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), ia: _lsGet(_K.ia, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
+function _converterAntigo(B) {
+    const obs = {}, ia = {};
+    Object.values(B.s || {}).forEach(s => { obs[s.sid + '|' + s.kp] = { k: s.sid + '|' + s.kp, cid: s.sid, forn: s.fn, prod: s.pn, d: s.d, pcx: s.pcx || [], pemb: s.pemb || [], qemb: s.qemb || [], pal: s.pal || [], st: 'final', ua: s.t || 0, dev: 'legado', h: _hash(JSON.stringify(s)) }; });
+    const leg = B.leg || (B.s && Object.keys(B.s).length ? null : B.f) || {};
+    Object.entries(leg).forEach(([kf, Fo]) => Object.entries(Fo.p).forEach(([kp, P]) => {
+        const pe = P.pe?.length ? P.pe : [_moda(P.pemb)].filter(Boolean), qe = P.qe?.length ? P.qe : [_moda(P.qemb)].filter(Boolean), k = 'legado|' + kf + '|' + kp;
+        obs[k] = { k, cid: 'legado', forn: Fo.nome, prod: P.nome, d: P.ult || '', pcx: P.pcx?.am || [], pemb: pe, qemb: qe, pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k) };
+    }));
+    Object.entries(B.ia || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { (ia[kf] = ia[kf] || {})[kp] = Object.assign({}, v, { em: B.exp || Date.now(), nObs: (B.f?.[kf]?.p?.[kp]?.n) || 0 }); }));
+    return { obs, ia };
+}
+function _mesclar2(chave, inc) { const L = _lsGet(chave, {}); Object.entries(inc || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { const a = L[kf]?.[kp]; if (!a || (a.em || 0) < (v.em || 0)) (L[kf] = L[kf] || {})[kp] = v; })); _lsSet(chave, L); }
+function _restaurarExtras(x) {
+    if (!x) return;
+    try {
+        if (x.aprendizado && !x.obs) { const c = _converterAntigo(x.aprendizado); x = Object.assign({}, x, c); }
+        if (x.obs) { const O = _obsAll(); Object.entries(x.obs).forEach(([k, v]) => { const a = O[k]; if (!a || a.ua < v.ua || (a.ua === v.ua && (v.dev || '') > (a.dev || ''))) O[k] = v; }); _lsSet(_K.obs, O); }
+        if (x.apelidos) { const A = _apel(); _lsSet(_K.ap, { f: Object.assign({}, x.apelidos.f, A.f), p: Object.assign({}, x.apelidos.p, A.p) }); }
+        if (x.ajustes) _mesclar2(_K.aj, x.ajustes);
+        if (x.ia) _mesclar2(_K.ia, x.ia);
+        if (x.quarentena) _lsSet(_K.q, Object.assign({}, x.quarentena, _lsGet(_K.q, {})));
+        const C = _cadastro(); (x.cadastro || []).forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) C.push(c); }); _lsSet('pesagem_produtos', C);
+        const P = _lsGet('pesagem_perfis_tara', []); (x.perfis || []).forEach(c => { if (!P.some(o => o.nome === c.nome)) P.push(c); }); _lsSet('pesagem_perfis_tara', P);
+        _bump(); _atualizarDatalist(); _atualizarListaForn();
+    } catch (e) { console.warn('restaurar extras', e); }
+}
+/* migração única do formato antigo (pesagem_aprendizado) */
+(function () {
+    try {
+        const velho = localStorage.getItem('pesagem_aprendizado'); if (!velho) return;
+        const B = JSON.parse(velho); _restaurarExtras({ aprendizado: B });
+        if (B.exp) localStorage.setItem(_K.exp, String(B.exp));
+        localStorage.setItem('pesagem_aprendizado_antigo', velho); localStorage.removeItem('pesagem_aprendizado');
+    } catch (e) { console.warn('migração', e); }
+})();
 
 /* Teclado completo (mostra o microfone do teclado do celular) */
 function _aplicarTeclado() {
@@ -3417,7 +3623,7 @@ function _candFornecedores() {
     return Object.values(_aprBase().f).map(F => { const n = Object.values(F.p); return { nome: F.nome, det: `${n.length} produto(s) · ${n.reduce((a, P) => a + P.n, 0)} pesagem(ns)`, peso: n.reduce((a, P) => a + P.n, 0) }; });
 }
 function _candProdutos() {
-    const B = _aprBase(), kfAt = _kk(document.getElementById('fornecedor').value || ''), mapa = new Map();
+    const B = _aprBase(), kfAt = _canonF(_kk(document.getElementById('fornecedor').value || '')), mapa = new Map();
     const add = (nome, det, origem, peso, tag) => { const k = _kk(nome), c = mapa.get(k); if (!c || origem < c.o) mapa.set(k, { nome, det, o: origem, peso, tag }); };
     Object.entries(B.f).forEach(([kf, F]) => Object.values(F.p).forEach(P => {
         const mesmo = kf === kfAt;
@@ -3474,22 +3680,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ══ V18 · AUDITORIA: backup do aprendizado, persistência e gatilhos ══ */
-function _extrasBackup() { return { aprendizado: _lsGet(_APR, null), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
-function _restaurarExtras(x) {
-    if (!x) return;
-    try {
-        const B = _aprBase(), I = x.aprendizado || {};
-        Object.entries(I.s || {}).forEach(([k, v]) => { if (!B.s[k] || B.s[k].t < v.t) B.s[k] = v; });
-        if (!B.leg) { if (I.leg) B.leg = I.leg; else if (I.f && !I.s) B.leg = I.f; }
-        Object.entries(I.ia || {}).forEach(([kf, ps]) => { B.ia[kf] = Object.assign({}, ps, B.ia[kf] || {}); });
-        _reconstruir(B); _lsSet(_APR, B);
-        const C = _cadastro(); (x.cadastro || []).forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) C.push(c); }); _lsSet('pesagem_produtos', C);
-        const P = _lsGet('pesagem_perfis_tara', []); (x.perfis || []).forEach(c => { if (!P.some(o => o.nome === c.nome)) P.push(c); }); _lsSet('pesagem_perfis_tara', P);
-        _atualizarDatalist(); _atualizarListaForn();
-    } catch (e) { console.warn('restaurar extras', e); }
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') _aprender(true); });
-window.addEventListener('pagehide', () => _aprender(true));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') _aprender(true, true); });
+window.addEventListener('pagehide', () => _aprender(true, true));
 document.addEventListener('DOMContentLoaded', () => { try { navigator.storage?.persist?.(); } catch {} });
 </script>
 </body>
