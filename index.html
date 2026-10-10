@@ -3311,16 +3311,18 @@ const _novoSid = () => _setCid(_gerarCid());
 function _device() { let d = 'd0'; try { d = localStorage.getItem(_K.dev); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 8); localStorage.setItem(_K.dev, d); } } catch {} return d; }
 
 /* apelidos: a junção de nomes parecidos fica GRAVADA (igual em todos os aparelhos) */
-const _apel = () => { const A = _lsGet(_K.ap, null) || {}; return { f: A.f || {}, p: A.p || {}, t: A.t || {}, d: A.d || {} }; };
-const _canonF = kr => _apel().f[kr] || kr;
-const _canonP = (kfc, kr) => _apel().p[kfc + '|' + kr] || kr;
+const _apel = () => { const A = _lsGet(_K.ap, null) || {}; return { f: A.f || {}, p: A.p || {}, t: A.t || {}, d: A.d || {}, n: A.n || {} }; };
+function _canonFA(A, kr) { let k = kr; for (let i = 0; i < 6; i++) { const n = A.f[k]; if (!n || n === k) break; k = n; } return k; }
+function _canonPA(A, kfc, kr) { let k = kr; for (let i = 0; i < 6; i++) { const n = A.p[kfc + '|' + k]; if (!n || n === k) break; k = n; } return k; }
+const _canonF = kr => _canonFA(_apel(), kr);
+const _canonP = (kfc, kr) => _canonPA(_apel(), kfc, kr);
 const _obsAll = () => _lsGet(_K.obs, {});
 function _registrarAliases(forn, prod) {
     const O = Object.values(_obsAll()).filter(o => !o.del), A = _apel(); let mud = false;
-    const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[A.f[_kk(o.forn)] || _kk(o.forn)] = 1; });
-    let kfc = A.f[kfr] || kfr;
+    const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[_canonFA(A, _kk(o.forn))] = 1; });
+    let kfc = _canonFA(A, kfr);
     if (!A.f[kfr] && !conF[kfr]) { const sim = _chaveSimilar(conF, kfr); if (sim !== kfr) { A.f[kfr] = sim; A.t['f:' + kfr] = Date.now(); delete A.d['f:' + kfr]; kfc = sim; mud = true; } }
-    const kpr = _kk(prod), conP = {}; O.forEach(o => { if ((A.f[_kk(o.forn)] || _kk(o.forn)) === kfc) conP[A.p[kfc + '|' + _kk(o.prod)] || _kk(o.prod)] = 1; });
+    const kpr = _kk(prod), conP = {}; O.forEach(o => { if (_canonFA(A, _kk(o.forn)) === kfc) conP[_canonPA(A, kfc, _kk(o.prod))] = 1; });
     if (!A.p[kfc + '|' + kpr] && !conP[kpr]) { const sim = _chaveSimilar(conP, kpr); if (sim !== kpr) { A.p[kfc + '|' + kpr] = sim; A.t['p:' + kfc + '|' + kpr] = Date.now(); delete A.d['p:' + kfc + '|' + kpr]; mud = true; } }
     if (mud) { _lsSet(_K.ap, A); _bump(); }
 }
@@ -3361,12 +3363,12 @@ function _aprender(silencioso, auto) {
 /* médias: SEMPRE recalculadas das observações (nunca fundidas) */
 function _medias() {
     if (_cache && _cache.v === _ver) return _cache.d;
-    const O = _obsAll(), Q = _lsGet(_K.q, {}), now = Date.now(), F = {}, quar = [];
+    const O = _obsAll(), Q = _lsGet(_K.q, {}), now = Date.now(), F = {}, quar = [], A = _apel();
     const efetiva = o => !o.del && (o.st === 'final' || now - o.ua > 864e5);
     Object.values(O).filter(efetiva).sort((a, b) => (a.d === b.d ? a.ua - b.ua : (a.d > b.d ? 1 : -1))).forEach(o => {
-        const kf = _canonF(_kk(o.forn)), kp = _canonP(kf, _kk(o.prod));
+        const kf = _canonFA(A, _kk(o.forn)), kp = _canonPA(A, kf, _kk(o.prod));
         const Fo = F[kf] = F[kf] || { nome: o.forn, p: {} };
-        const P = Fo.p[kp] = Fo.p[kp] || { nome: o.prod, n: 0, obs: [], ult: '' };
+        const P = Fo.p[kp] = Fo.p[kp] || { nome: A.n[kf + '|' + kp]?.nome || o.prod, n: 0, obs: [], ult: '' };
         P.n++; P.ult = o.d; P.obs.push(o);
     });
     Object.entries(F).forEach(([kf, Fo]) => Object.entries(Fo.p).forEach(([kp, P]) => {
@@ -3447,7 +3449,7 @@ function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; co
 function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; A.d[t + ':' + k] = Date.now(); _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
 function editarAjuste(i) {
     const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp], J = _lsGet(_K.aj, {})[kf]?.[kp] || {}, f = v => v > 0 ? _fN(v, 4) : '';
-    _corpo(`<b style="font-size:13px">${_esc(P.nome)}</b><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
+    _corpo(`<label style="font-size:11px">Nome do produto</label><div style="display:flex;gap:6px"><input id="rn-nome" style="${_INP};flex:1" value="${_esc(P.nome)}"><button style="${_BTN};margin:4px 0 10px" onclick="renomearProduto(${i})">Renomear</button></div><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div><button style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:10px 14px;font:700 12px Sora,sans-serif;margin-top:14px;width:100%" onclick="apagarProduto(${i})">🗑 Apagar este produto do aprendizado</button>`);
 }
 function salvarAjuste(i, remover) {
     const { kf, kp } = _aprLista[i], Aj = _lsGet(_K.aj, {}), g = id => _num(document.getElementById(id).value) || 0;
@@ -3457,6 +3459,33 @@ function salvarAjuste(i, remover) {
 
 function zerarAprendizado() { mostrarConfirm('Apagar TODO o aprendizado (observações, apelidos, ajustes, médias da IA)?', '🗑', () => { Object.values(_K).forEach(k => { if (k !== _K.dev) try { localStorage.removeItem(k); } catch {} }); _bump(); _atualizarDatalist(); _atualizarListaForn(); abrirAprendizado(); }, 'error'); }
 
+
+
+/* ── renomear / unir / apagar produto do aprendizado ── */
+function renomearProduto(i) {
+    const { kf, kp } = _aprLista[i], novo = (document.getElementById('rn-nome').value || '').trim(); if (!novo) return;
+    const kn = _kk(novo), F = _medias().F[kf], existe = kn !== kp && F.p[kn];
+    const go = () => {
+        const A = _apel(), now = Date.now();
+        if (kn !== kp) {
+            A.p[kf + '|' + kp] = kn; A.t['p:' + kf + '|' + kp] = now; delete A.d['p:' + kf + '|' + kp];
+            if (A.p[kf + '|' + kn]) { delete A.p[kf + '|' + kn]; A.d['p:' + kf + '|' + kn] = now; }
+        }
+        A.n[kf + '|' + kn] = { nome: novo, t: now };
+        _lsSet(_K.ap, A); _bump(); abrirAprendizado(); toast(existe ? '🔀 Produtos unidos.' : '✏ Produto renomeado.', 'success');
+    };
+    if (existe) mostrarConfirm(`Já existe "${existe.nome}" neste fornecedor. Unir os dois produtos num só?`, '🔀', go, 'warning'); else go();
+}
+function apagarProduto(i) {
+    const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp];
+    mostrarConfirm(`Apagar "${P.nome}" do aprendizado? As pesagens que formam a média serão removidas. O histórico de conferências não muda. Se o produto ainda estiver na conferência aberta, ele volta a ser aprendido.`, '🗑', () => {
+        const O = _obsAll(), A = _apel(), now = Date.now(), dev = _device(); let n = 0;
+        Object.keys(O).forEach(k => { const o = O[k]; if (o.del) return; const f = _canonFA(A, _kk(o.forn)); if (f !== kf || _canonPA(A, f, _kk(o.prod)) !== kp) return; O[k] = Object.assign({}, o, { del: true, ua: now, dev }); n++; });
+        _lsSet(_K.obs, O);
+        const Aj = _lsGet(_K.aj, {}); if (Aj[kf]?.[kp]) { Aj[kf][kp] = { pcx: 0, pemb: 0, qemb: 0, em: now }; _lsSet(_K.aj, Aj); }
+        _bump(); _atualizarDatalist(); abrirAprendizado(); toast(`🗑 Produto apagado (${n} pesagem(ns) removida(s)).`, 'success');
+    }, 'error');
+}
 
 /* ── trazer o que o sistema antigo (com IA) já tinha aprendido ── */
 function reaplicarAntigo() {
@@ -3577,7 +3606,8 @@ function _restaurarExtras(x) {
             const A = _apel(), X = x.apelidos, mx = (a, b) => { const o = Object.assign({}, a); Object.entries(b || {}).forEach(([k, v]) => { o[k] = Math.max(o[k] || 0, v); }); return o; };
             const f = Object.assign({}, X.f, A.f), pp = Object.assign({}, X.p, A.p), t = mx(A.t, X.t), d = mx(A.d, X.d);
             [['f', f], ['p', pp]].forEach(([tp, obj]) => Object.keys(obj).forEach(k => { const kk = tp + ':' + k; if (d[kk] && d[kk] >= (t[kk] || 0)) delete obj[k]; }));
-            _lsSet(_K.ap, { f, p: pp, t, d });
+            const nn = Object.assign({}, A.n); Object.entries(X.n || {}).forEach(([k, v]) => { if (!nn[k] || nn[k].t < v.t) nn[k] = v; });
+            _lsSet(_K.ap, { f, p: pp, t, d, n: nn });
         }
         if (x.histDel) { const T = _lsGet('pesagem_hist_del', {}); Object.entries(x.histDel).forEach(([k, v]) => { T[k] = Math.max(T[k] || 0, v); }); _lsSet('pesagem_hist_del', T); }
         if (x.ajustes) _mesclar2(_K.aj, x.ajustes);
