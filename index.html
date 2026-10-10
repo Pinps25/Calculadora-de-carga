@@ -1327,6 +1327,7 @@
                 <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
                 <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
                 <button class="btn-drawer-action" onclick="abrirAprendizado()">📚 Aprendizado</button>
+                <button class="btn-drawer-action" onclick="abrirSync()">☁ Sincronizar</button>
             </div>
         </div>
         <div class="drawer-section">
@@ -2932,7 +2933,7 @@ const _BTN2 = 'background:#f0f3f6;color:#1c2b3a;border:1px solid #dde3ea;border-
 const _kg = v => v.toLocaleString('pt-BR', FORMATO_3);
 const _num = v => { const n = parseFloat(String(v).trim().replace(/\./g, '').replace(',', '.')); return isNaN(n) ? null : n; };
 const _lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
-const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { toast('Sem espaço para salvar.', 'error'); } };
+const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); if (k === 'pesagem_produtos' || k === 'pesagem_perfis_tara') { localStorage.setItem(k + '_em', String(Date.now())); _syncAgendar(8000); } } catch { toast('Sem espaço para salvar.', 'error'); } };
 
 function _modal(titulo, corpo) {
     fecharDrawer();
@@ -3035,6 +3036,7 @@ async function histSalvar() {
         nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: JSON.parse(JSON.stringify(exportarEstado())) };
     await _hTx('readwrite', st => st.put(e));
     for (const x of (await _hLista()).slice(60)) await _hTx('readwrite', st => st.delete(x.id));
+    _syncAgendar(3000);
     return true;
 }
 async function _migrarHistorico() {
@@ -3063,7 +3065,7 @@ async function histBaixar(id) {
     const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
     _baixarArquivo(`Pesagem_${String(x.titulo).replace(/[^\w]+/g, '_')}_${String(x.quando).split(',')[0].replace(/\//g, '-')}.json`, JSON.stringify(x.estado), 'application/json');
 }
-function histExcluir(id) { mostrarConfirm('Excluir esta conferência do histórico?', '🗑', async () => { await _hTx('readwrite', st => st.delete(id)); abrirHistorico(); }, 'error'); }
+function histExcluir(id) { mostrarConfirm('Excluir esta conferência do histórico?', '🗑', async () => { await _hTx('readwrite', st => st.delete(id)); const T = _lsGet('pesagem_hist_del', {}); T[id] = Date.now(); _lsSet('pesagem_hist_del', T); _syncAgendar(3000); abrirHistorico(); }, 'error'); }
 async function baixarBackupCompleto() {
     lerFormularioParaState();
     const out = { app: 'Conferência de Pesagem', tipo: 'backup_completo', exportado_em: new Date().toISOString(), atual: _temDados() ? exportarEstado() : null, historico: await _hLista(), extras: _extrasBackup() };
@@ -3287,7 +3289,7 @@ function _setValidadeHid(iso) { const h = _vHid(); if (h.value === iso) return; 
 const _K = { obs: 'pesagem_obs_v2', ap: 'pesagem_apelidos_v2', aj: 'pesagem_ajustes_v2', ia: 'pesagem_medias_ia_v2', q: 'pesagem_quarentena_v2', dev: 'pesagem_device', exp: 'pesagem_exp_ia' };
 let _ver = 0, _cache = null, _pausaApr = false;
 window._boot = true; setTimeout(() => { window._boot = false; }, 5000);
-const _bump = () => { _ver++; _cache = null; };
+const _bump = () => { _ver++; _cache = null; _syncAgendar(8000); };
 const _kk = t => _semAcento(t).replace(/\s+/g, ' ');
 const _fN = (v, c = 3) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: c });
 const _hash = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return String(h); };
@@ -3309,7 +3311,7 @@ const _novoSid = () => _setCid(_gerarCid());
 function _device() { let d = 'd0'; try { d = localStorage.getItem(_K.dev); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 8); localStorage.setItem(_K.dev, d); } } catch {} return d; }
 
 /* apelidos: a junção de nomes parecidos fica GRAVADA (igual em todos os aparelhos) */
-const _apel = () => { const A = _lsGet(_K.ap, null) || {}; return { f: A.f || {}, p: A.p || {} }; };
+const _apel = () => { const A = _lsGet(_K.ap, null) || {}; return { f: A.f || {}, p: A.p || {}, t: A.t || {}, d: A.d || {} }; };
 const _canonF = kr => _apel().f[kr] || kr;
 const _canonP = (kfc, kr) => _apel().p[kfc + '|' + kr] || kr;
 const _obsAll = () => _lsGet(_K.obs, {});
@@ -3317,9 +3319,9 @@ function _registrarAliases(forn, prod) {
     const O = Object.values(_obsAll()).filter(o => !o.del), A = _apel(); let mud = false;
     const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[A.f[_kk(o.forn)] || _kk(o.forn)] = 1; });
     let kfc = A.f[kfr] || kfr;
-    if (!A.f[kfr] && !conF[kfr]) { const sim = _chaveSimilar(conF, kfr); if (sim !== kfr) { A.f[kfr] = sim; kfc = sim; mud = true; } }
+    if (!A.f[kfr] && !conF[kfr]) { const sim = _chaveSimilar(conF, kfr); if (sim !== kfr) { A.f[kfr] = sim; A.t['f:' + kfr] = Date.now(); delete A.d['f:' + kfr]; kfc = sim; mud = true; } }
     const kpr = _kk(prod), conP = {}; O.forEach(o => { if ((A.f[_kk(o.forn)] || _kk(o.forn)) === kfc) conP[A.p[kfc + '|' + _kk(o.prod)] || _kk(o.prod)] = 1; });
-    if (!A.p[kfc + '|' + kpr] && !conP[kpr]) { const sim = _chaveSimilar(conP, kpr); if (sim !== kpr) { A.p[kfc + '|' + kpr] = sim; mud = true; } }
+    if (!A.p[kfc + '|' + kpr] && !conP[kpr]) { const sim = _chaveSimilar(conP, kpr); if (sim !== kpr) { A.p[kfc + '|' + kpr] = sim; A.t['p:' + kfc + '|' + kpr] = Date.now(); delete A.d['p:' + kfc + '|' + kpr]; mud = true; } }
     if (mud) { _lsSet(_K.ap, A); _bump(); }
 }
 
@@ -3442,14 +3444,14 @@ function abrirAprendizado() {
     _modal('📚 Aprendizado por fornecedor', h);
 }
 function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; const Q = _lsGet(_K.q, {}); Q[q.key] = dec; _lsSet(_K.q, Q); _bump(); abrirAprendizado(); }
-function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
+function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; A.d[t + ':' + k] = Date.now(); _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
 function editarAjuste(i) {
     const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp], J = _lsGet(_K.aj, {})[kf]?.[kp] || {}, f = v => v > 0 ? _fN(v, 4) : '';
     _corpo(`<b style="font-size:13px">${_esc(P.nome)}</b><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
 }
 function salvarAjuste(i, remover) {
     const { kf, kp } = _aprLista[i], Aj = _lsGet(_K.aj, {}), g = id => _num(document.getElementById(id).value) || 0;
-    if (remover) { if (Aj[kf]) delete Aj[kf][kp]; } else { const v = { pcx: g('aj-pcx'), pemb: g('aj-pemb'), qemb: Math.round(g('aj-qemb')), em: Date.now() }; if (v.pcx || v.pemb || v.qemb) (Aj[kf] = Aj[kf] || {})[kp] = v; else if (Aj[kf]) delete Aj[kf][kp]; }
+    (Aj[kf] = Aj[kf] || {})[kp] = remover ? { pcx: 0, pemb: 0, qemb: 0, em: Date.now() } : { pcx: g('aj-pcx'), pemb: g('aj-pemb'), qemb: Math.round(g('aj-qemb')), em: Date.now() };
     _lsSet(_K.aj, Aj); _bump(); abrirAprendizado();
 }
 
@@ -3522,8 +3524,8 @@ const _mes = (d, ts) => /^\d{4}-\d{2}/.test(d || '') ? d.slice(0, 7) : new Date(
 async function baixarPacote(semFotos) {
     lerFormularioParaState();
     const f = {}, J = x => JSON.stringify(x, null, 1), O = _obsAll(), M = _medias(), H = await _hLista(), agora = new Date().toISOString();
-    H.forEach(x => { const e = JSON.parse(JSON.stringify(x)); if (semFotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); const m = _mes(e.estado.dataPesagem, e.ts); f[`conferencias/${m.slice(0, 4)}/${m.slice(5)}/${e.id}.json`] = J(e); });
-    const porMes = {}; Object.values(O).forEach(o => { (porMes[_mes(o.d, o.ua)] = porMes[_mes(o.d, o.ua)] || {})[o.k] = o; });
+    H.forEach(x => { const e = JSON.parse(JSON.stringify(x)); if (semFotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); f[_pathConf(e.id)] = J(e); });
+    const porMes = {}; Object.values(O).forEach(o => { (porMes[_mesDeId(o.cid)] = porMes[_mesDeId(o.cid)] || {})[o.k] = o; });
     Object.entries(porMes).forEach(([m, v]) => { f[`aprendizado/obs/${m}.json`] = J(v); });
     const medias = {}; Object.values(M.F).forEach(Fo => Object.values(Fo.p).forEach(P => { (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pesagens: P.n, confianca: P.conf, ultima: P.ult, pcx: +P.pcx.toFixed(4), min: P.min, max: P.max, pemb: P.pemb, qemb: P.qemb, hashObs: P.h }; }));
     f['aprendizado/medias_auto.json'] = J({ esquema: 2, geradoEm: agora, medias });
@@ -3552,7 +3554,7 @@ async function importarPacote(e) {
 }
 
 /* ── backup .json e mesclagem (idempotente: restaurar 2× não duplica) ── */
-function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []) }; }
+function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []), histDel: _lsGet('pesagem_hist_del', {}) }; }
 function _converterAntigo(B) {
     const obs = {};
     const semear = (ia, nomes) => { const tem = new Set([...Object.values(obs), ...Object.values(_obsAll())].map(o => _kk(o.forn) + '|' + _kk(o.prod))); Object.entries(ia || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { if (tem.has(kf + '|' + kp)) return; const k = 'legado-ia|' + kf + '|' + kp; obs[k] = { k, cid: 'legado-ia', forn: nomes?.[kf]?.nome || kf, prod: nomes?.[kf]?.p?.[kp]?.nome || kp, d: _dataHoje(), pcx: v.pcx > 0 ? [+v.pcx] : [], pemb: v.pemb > 0 ? [+v.pemb] : [], qemb: v.qemb > 0 ? [Math.round(v.qemb)] : [], pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k) }; })); };
@@ -3571,11 +3573,17 @@ function _restaurarExtras(x) {
     try {
         if (x.aprendizado && !x.obs) { const c = _converterAntigo(x.aprendizado); x = Object.assign({}, x, c); }
         if (x.obs) { const O = _obsAll(); Object.entries(x.obs).forEach(([k, v]) => { const a = O[k]; if (!a || a.ua < v.ua || (a.ua === v.ua && (v.dev || '') > (a.dev || ''))) O[k] = v; }); _lsSet(_K.obs, O); }
-        if (x.apelidos) { const A = _apel(); _lsSet(_K.ap, { f: Object.assign({}, x.apelidos.f, A.f), p: Object.assign({}, x.apelidos.p, A.p) }); }
+        if (x.apelidos) {
+            const A = _apel(), X = x.apelidos, mx = (a, b) => { const o = Object.assign({}, a); Object.entries(b || {}).forEach(([k, v]) => { o[k] = Math.max(o[k] || 0, v); }); return o; };
+            const f = Object.assign({}, X.f, A.f), pp = Object.assign({}, X.p, A.p), t = mx(A.t, X.t), d = mx(A.d, X.d);
+            [['f', f], ['p', pp]].forEach(([tp, obj]) => Object.keys(obj).forEach(k => { const kk = tp + ':' + k; if (d[kk] && d[kk] >= (t[kk] || 0)) delete obj[k]; }));
+            _lsSet(_K.ap, { f, p: pp, t, d });
+        }
+        if (x.histDel) { const T = _lsGet('pesagem_hist_del', {}); Object.entries(x.histDel).forEach(([k, v]) => { T[k] = Math.max(T[k] || 0, v); }); _lsSet('pesagem_hist_del', T); }
         if (x.ajustes) _mesclar2(_K.aj, x.ajustes);
         if (x.quarentena) _lsSet(_K.q, Object.assign({}, x.quarentena, _lsGet(_K.q, {})));
-        const C = _cadastro(); (x.cadastro || []).forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) C.push(c); }); _lsSet('pesagem_produtos', C);
-        const P = _lsGet('pesagem_perfis_tara', []); (x.perfis || []).forEach(c => { if (!P.some(o => o.nome === c.nome)) P.push(c); }); _lsSet('pesagem_perfis_tara', P);
+        if (x.cadastro?.length) { const C = _cadastro(); let add = 0; x.cadastro.forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) { C.push(c); add++; } }); if (add) _lsSet('pesagem_produtos', C); }
+        if (x.perfis?.length) { const P = _lsGet('pesagem_perfis_tara', []); let add = 0; x.perfis.forEach(c => { if (!P.some(o => o.nome === c.nome)) { P.push(c); add++; } }); if (add) _lsSet('pesagem_perfis_tara', P); }
         _bump(); _atualizarDatalist(); _atualizarListaForn();
     } catch (e) { console.warn('restaurar extras', e); }
 }
@@ -3710,6 +3718,188 @@ function _avisoDesvio(el) {
     document.addEventListener('input', e => { const el = e.target; if (!el.matches?.('.pcx-in,.pemb-in,.qemb-in')) return; clearTimeout(t); t = setTimeout(() => _avisoDesvio(el), 450); });
     document.addEventListener('change', e => { if (e.target.matches?.('#produto,#fornecedor')) document.querySelectorAll('.pcx-in,.pemb-in,.qemb-in').forEach(el => setTimeout(() => _avisoDesvio(el), 200)); });
 })();
+
+/* ══════════ FASE 2 · SINCRONIZAÇÃO COM O GITHUB (repositório privado) ══════════ */
+const _SC = 'pesagem_sync_cfg', _SS = 'pesagem_sync_st';
+let _syncBusy = false, _syncTimer = null, _syncErr = '', _syncAvisou = false, _syncPend = false;
+const _syncCfg = () => _lsGet(_SC, null), _syncSt = () => Object.assign({ shas: {}, last: 0 }, _lsGet(_SS, {}));
+const _u8 = t => new TextEncoder().encode(t);
+function _sha1(u8) {
+    const rl = (n, s) => (n << s) | (n >>> (32 - s)), l = u8.length, nb = ((l + 8) >> 6) + 1, w = new Uint32Array(nb * 16);
+    for (let i = 0; i < l; i++) w[i >> 2] |= u8[i] << (24 - (i & 3) * 8);
+    w[l >> 2] |= 0x80 << (24 - (l & 3) * 8); w[nb * 16 - 1] = l * 8;
+    let h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0; const x = new Uint32Array(80);
+    for (let b = 0; b < nb; b++) {
+        for (let i = 0; i < 16; i++) x[i] = w[b * 16 + i];
+        for (let i = 16; i < 80; i++) x[i] = rl(x[i - 3] ^ x[i - 8] ^ x[i - 14] ^ x[i - 16], 1);
+        let a = h0, bb = h1, c = h2, d = h3, e = h4;
+        for (let i = 0; i < 80; i++) {
+            let f, k; if (i < 20) { f = (bb & c) | (~bb & d); k = 0x5A827999; } else if (i < 40) { f = bb ^ c ^ d; k = 0x6ED9EBA1; } else if (i < 60) { f = (bb & c) | (bb & d) | (c & d); k = 0x8F1BBCDC; } else { f = bb ^ c ^ d; k = 0xCA62C1D6; }
+            const t = (rl(a, 5) + f + e + k + x[i]) | 0; e = d; d = c; c = rl(bb, 30); bb = a; a = t;
+        }
+        h0 = (h0 + a) | 0; h1 = (h1 + bb) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0; h4 = (h4 + e) | 0;
+    }
+    return [h0, h1, h2, h3, h4].map(v => (v >>> 0).toString(16).padStart(8, '0')).join('');
+}
+function _blobSha(txt) { const b = _u8(txt), h = _u8('blob ' + b.length + '\0'), a = new Uint8Array(h.length + b.length); a.set(h); a.set(b, h.length); return _sha1(a); }
+function _stable(v) { const o = x => Array.isArray(x) ? x.map(o) : (x && typeof x === 'object' ? Object.keys(x).sort().reduce((r, k) => (r[k] = o(x[k]), r), {}) : x); return JSON.stringify(o(v), null, 1) + '\n'; }
+function _mesDeId(id) { const m = /^c?([0-9a-z]{8})[0-9a-z]{0,6}$/.exec(String(id || '')); if (m) { const t = parseInt(m[1], 36); if (t > 1.5e12 && t < 4e12) return new Date(t).toISOString().slice(0, 7); } return 'legado'; }
+function _pathConf(id) { const m = _mesDeId(id); return m === 'legado' ? `conferencias/legado/${id}.json` : `conferencias/${m.slice(0, 4)}/${m.slice(5)}/${id}.json`; }
+const _trivial = txt => { try { const j = JSON.parse(txt); return !Object.keys(j).length || (Array.isArray(j.itens) && !j.itens.length && !j.em); } catch { return false; } };
+
+async function _gh(path, o = {}) {
+    const c = _syncCfg(), r = await fetch((c.api || 'https://api.github.com') + path, { method: o.method || 'GET', headers: Object.assign({ Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, o.body ? { 'Content-Type': 'application/json' } : {}), body: o.body ? JSON.stringify(o.body) : undefined });
+    const json = r.status === 204 ? null : await r.json().catch(() => null);
+    if (r.status >= 400 && !(o.ok || []).includes(r.status)) { const e = new Error((json && json.message) || ('HTTP ' + r.status)); e.status = r.status; e.auth = r.status === 401 || r.status === 403; throw e; }
+    return { status: r.status, json };
+}
+const _repoPath = c => `/repos/${c.owner}/${c.repo}`;
+async function _ghEstado(c) {
+    const rp = _repoPath(c);
+    let ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
+    if (ref.status !== 200) {
+        await _gh(`${rp}/contents/LEIA-ME.md`, { method: 'PUT', body: { message: 'inicio: dados do app Conferência de Pesagem', content: _txt64('# Dados do app Conferência de Pesagem\n\nGerado automaticamente. Não edite à mão.\n') }, ok: [404, 409, 422] });
+        ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
+        if (ref.status !== 200) throw new Error('Branch "' + c.branch + '" não encontrada.');
+    }
+    const head = ref.json.object.sha, cm = await _gh(`${rp}/git/commits/${head}`), treeSha = cm.json.tree.sha;
+    const tr = await _gh(`${rp}/git/trees/${treeSha}?recursive=1`), tree = new Map();
+    (tr.json.tree || []).forEach(t => { if (t.type === 'blob') tree.set(t.path, t.sha); });
+    return { head, treeSha, tree };
+}
+const _txt64 = t => { let b = ''; _u8(t).forEach(x => { b += String.fromCharCode(x); }); return btoa(b); };
+const _b64txt = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), ch => ch.charCodeAt(0)));
+const _ehNosso = p => /^(conferencias|aprendizado|cadastro)\//.test(p) && p.endsWith('.json') && p !== 'aprendizado/medias_auto.json';
+
+function _aplicarLista(key, j) {
+    if (!j || !Array.isArray(j.itens)) return;
+    const em = +localStorage.getItem(key + '_em') || 0, loc = _lsGet(key, []);
+    if (!em && loc.length && j.em > 0) { const nm = x => _semAcento(x.nome || ''), U = [...j.itens]; loc.forEach(x => { if (!U.some(y => nm(y) === nm(x))) U.push(x); }); localStorage.setItem(key, JSON.stringify(U)); localStorage.setItem(key + '_em', String(Math.max(j.em, Date.now()))); }
+    else if (j.em > em) { localStorage.setItem(key, JSON.stringify(j.itens)); localStorage.setItem(key + '_em', String(j.em)); }
+}
+async function _mesclarConf(j) {
+    if (!j?.id || !j.estado) return;
+    const T = _lsGet('pesagem_hist_del', {}); if (T[j.id] && T[j.id] >= (j.ua || j.ts)) return;
+    const a = await _hTx('readonly', st => st.get(j.id));
+    if (!a || (a.ua || a.ts) < (j.ua || j.ts)) {
+        if (a) { try { j.estado.produtos.forEach((p, pi) => p.pallets.forEach((pl, li) => { if (!pl.foto) { const lf = a.estado?.produtos?.[pi]?.pallets?.[li]?.foto; if (lf) pl.foto = lf; } })); } catch {} }
+        await _hTx('readwrite', st => st.put(j));
+    }
+}
+async function _mesclarTomb(j) {
+    const T = _lsGet('pesagem_hist_del', {}); Object.entries(j || {}).forEach(([k, v]) => { T[k] = Math.max(T[k] || 0, v); }); _lsSet('pesagem_hist_del', T);
+    for (const x of await _hLista()) if (T[x.id] && T[x.id] >= (x.ua || x.ts)) await _hTx('readwrite', st => st.delete(x.id));
+}
+async function _aplicarRemoto(path, j) {
+    if (path.startsWith('aprendizado/obs/')) _restaurarExtras({ obs: j });
+    else if (path === 'conferencias/_apagadas.json') await _mesclarTomb(j);
+    else if (path.startsWith('conferencias/')) await _mesclarConf(j);
+    else if (path === 'aprendizado/ajustes_manuais.json') _restaurarExtras({ ajustes: j });
+    else if (path === 'aprendizado/quarentena.json') _restaurarExtras({ quarentena: j });
+    else if (path === 'cadastro/apelidos.json') _restaurarExtras({ apelidos: j });
+    else if (path === 'cadastro/produtos.json') _aplicarLista('pesagem_produtos', j);
+    else if (path === 'cadastro/perfis_tara.json') _aplicarLista('pesagem_perfis_tara', j);
+}
+async function _puxar(c, R) {
+    const st = _syncSt(); let n = 0;
+    for (const [path, sha] of R.tree) {
+        if (!_ehNosso(path) || st.shas[path] === sha) continue;
+        const b = await _gh(`${_repoPath(c)}/git/blobs/${sha}`);
+        await _aplicarRemoto(path, JSON.parse(_b64txt(b.json.content))); st.shas[path] = sha; n++;
+    }
+    _lsSet(_SS, st); return n;
+}
+async function _arquivosLocais(c) {
+    const F = new Map(), O = _obsAll(), H = await _hLista(), T = _lsGet('pesagem_hist_del', {}), porMes = {};
+    Object.values(O).forEach(o => { (porMes[_mesDeId(o.cid)] = porMes[_mesDeId(o.cid)] || {})[o.k] = o; });
+    Object.entries(porMes).forEach(([m, v]) => F.set(`aprendizado/obs/${m}.json`, _stable(v)));
+    H.forEach(x => { if (T[x.id] && T[x.id] >= (x.ua || x.ts)) return; const e = JSON.parse(JSON.stringify(x)); if (!c.fotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); F.set(_pathConf(x.id), _stable(e)); });
+    if (Object.keys(T).length) F.set('conferencias/_apagadas.json', _stable(T));
+    F.set('aprendizado/ajustes_manuais.json', _stable(_lsGet(_K.aj, {}))); F.set('aprendizado/quarentena.json', _stable(_lsGet(_K.q, {}))); F.set('cadastro/apelidos.json', _stable(_apel()));
+    F.set('cadastro/produtos.json', _stable({ em: +localStorage.getItem('pesagem_produtos_em') || 0, itens: _cadastro() }));
+    F.set('cadastro/perfis_tara.json', _stable({ em: +localStorage.getItem('pesagem_perfis_tara_em') || 0, itens: _lsGet('pesagem_perfis_tara', []) }));
+    return F;
+}
+function _mediasAutoTxt() {
+    const medias = {}; Object.values(_medias().F).forEach(Fo => Object.values(Fo.p).forEach(P => { (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pesagens: P.n, confianca: P.conf, ultima: P.ult, pcx: +P.pcx.toFixed(4), min: P.min, max: P.max, pemb: P.pemb, qemb: P.qemb }; }));
+    return _stable({ esquema: 2, medias });
+}
+async function _empurrar(c, R) {
+    ['pesagem_produtos', 'pesagem_perfis_tara'].forEach(k => { if (!+localStorage.getItem(k + '_em') && _lsGet(k, []).length) localStorage.setItem(k + '_em', String(Date.now())); });
+    const F = await _arquivosLocais(c), mudou = [], del = [], T = _lsGet('pesagem_hist_del', {}), st = _syncSt();
+    for (const [path, txt] of F) { const sha = _blobSha(txt), rem = R.tree.get(path); if (rem === sha || (!rem && _trivial(txt))) continue; mudou.push({ path, txt, sha }); }
+    R.tree.forEach((sha, path) => { const m = /^conferencias\/(?:[^/]+\/)*([^/]+)\.json$/.exec(path); if (m && m[1] !== '_apagadas' && T[m[1]] && !F.has(path)) del.push(path); });
+    if (!mudou.length && !del.length) return 'ok';
+    const ma = _mediasAutoTxt(), mas = _blobSha(ma); if (R.tree.get('aprendizado/medias_auto.json') !== mas) mudou.push({ path: 'aprendizado/medias_auto.json', txt: ma, sha: mas });
+    const rp = _repoPath(c), entries = [];
+    for (const f of mudou) {
+        if (f.txt.length < 300000) entries.push({ path: f.path, mode: '100644', type: 'blob', content: f.txt });
+        else { const b = await _gh(`${rp}/git/blobs`, { method: 'POST', body: { content: f.txt, encoding: 'utf-8' } }); entries.push({ path: f.path, mode: '100644', type: 'blob', sha: b.json.sha }); }
+    }
+    del.forEach(path => entries.push({ path, mode: '100644', type: 'blob', sha: null }));
+    const tr = await _gh(`${rp}/git/trees`, { method: 'POST', body: { base_tree: R.treeSha, tree: entries } });
+    const cm = await _gh(`${rp}/git/commits`, { method: 'POST', body: { message: `sync ${_device()}: ${mudou.length} arquivo(s)${del.length ? `, ${del.length} removido(s)` : ''}`, tree: tr.json.sha, parents: [R.head] } });
+    const up = await _gh(`${rp}/git/refs/heads/${c.branch}`, { method: 'PATCH', body: { sha: cm.json.sha, force: false }, ok: [409, 422] });
+    if (up.status !== 200) return 'conflito';
+    mudou.forEach(f => { st.shas[f.path] = f.sha; }); del.forEach(p => { delete st.shas[p]; }); _lsSet(_SS, st);
+    return 'ok';
+}
+function _syncAgendar(ms) {
+    if (_syncBusy || !_syncCfg()?.token || _syncCfg().bloqueado) return;
+    clearTimeout(_syncTimer); _syncTimer = setTimeout(() => sincronizar(false), ms || 4000);
+}
+async function sincronizar(manual) {
+    const c = _syncCfg(); if (!c?.token || _syncBusy) return;
+    if (!manual && (c.bloqueado || (!_syncPend && Date.now() - _syncSt().last < 15000))) return;
+    if (!navigator.onLine) { _syncPend = true; _syncErr = 'Sem internet. Envio pendente.'; if (manual) toast('Sem internet: envio pendente.', 'info'); _syncUI(); return; }
+    _syncBusy = true; _syncErr = ''; _syncUI();
+    try {
+        let ok = false;
+        for (let i = 0; i < 4 && !ok; i++) { const R = await _ghEstado(c); await _puxar(c, R); ok = (await _empurrar(c, R)) === 'ok'; }
+        if (!ok) throw new Error('Conflito persistente. Tente de novo.');
+        const st = _syncSt(); st.last = Date.now(); _lsSet(_SS, st); _syncPend = false;
+        _atualizarDatalist(); _atualizarListaForn();
+        if (manual) toast('☁ Sincronizado.', 'success');
+    } catch (e) {
+        if (e.auth) { _syncErr = e.status === 401 ? 'Token recusado ou expirado. Gere outro e reconecte.' : 'Sem permissão. O token precisa de "Contents: Read and write" neste repositório.'; const c2 = _syncCfg(); c2.bloqueado = true; _lsSet(_SC, c2); if (!_syncAvisou) { _syncAvisou = true; toast('☁ ' + _syncErr, 'error', 6000); } }
+        else { _syncPend = true; _syncErr = String(e.message || e).slice(0, 140); if (manual) toast('☁ ' + _syncErr, 'warning', 5000); }
+    } finally { _syncBusy = false; _syncUI(); }
+}
+function _syncUI() { const el = document.getElementById('sync-status'); if (el) el.innerHTML = _syncStatusHtml(); }
+function _syncStatusHtml() {
+    const c = _syncCfg(), st = _syncSt(); if (!c) return '';
+    const quando = st.last ? new Date(st.last).toLocaleString('pt-BR') : 'ainda não';
+    return `<div style="font:500 12px 'DM Mono',monospace;line-height:1.7"><b style="font-family:Sora">${_esc(c.owner)}/${_esc(c.repo)}</b> · ${_esc(c.branch)}<br>Último envio: ${quando}<br>${_syncBusy ? '🔄 Sincronizando…' : _syncErr ? '⚠ ' + _esc(_syncErr) : '✅ Em dia'}</div>`;
+}
+function abrirSync() {
+    const c = _syncCfg();
+    if (!c) { _modal('☁ Sincronização com o GitHub', `<p style="font-size:12px;color:#6b7a8d;margin:0 0 10px">Guarda seus dados num repositório <b>privado</b> do GitHub e sincroniza entre aparelhos. O token fica só neste aparelho.</p><label style="font-size:11px">Repositório (usuario/repositorio)</label><input id="sy-repo" style="${_INP}" placeholder="seu-usuario/pesagem-dados" autocapitalize="off" autocomplete="off"><label style="font-size:11px">Token (fine-grained, Contents: Read and write)</label><input id="sy-token" type="password" style="${_INP}" autocomplete="off"><label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="sy-fotos"> Enviar fotos também (usa mais espaço)</label><button style="${_BTN}" onclick="syncConectar()">Conectar e sincronizar</button><div id="sync-status" style="margin-top:12px"></div>`); return; }
+    _modal('☁ Sincronização com o GitHub', `<div id="sync-status">${_syncStatusHtml()}</div><label style="font-size:12px;display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" id="sy-fotos" ${c.fotos ? 'checked' : ''} onchange="syncFotos(this.checked)"> Enviar fotos também (usa mais espaço)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="syncAgora()">Sincronizar agora</button><button style="${_BTN2}" onclick="syncDesconectar()">Desconectar</button></div><p style="font-size:11px;color:#6b7a8d;margin-top:10px">Envia sozinho ao gerar o PDF, ao abrir o app e ao voltar a ter internet.</p>`);
+}
+function syncFotos(v) { const c = _syncCfg(); c.fotos = !!v; _lsSet(_SC, c); _syncAgendar(1000); }
+function syncAgora() { const c = _syncCfg(); if (c.bloqueado) { c.bloqueado = false; _lsSet(_SC, c); _syncAvisou = false; } sincronizar(true); }
+function syncDesconectar() { mostrarConfirm('Desconectar do GitHub? Seus dados continuam no aparelho e no repositório.', '☁', () => { try { localStorage.removeItem(_SC); localStorage.removeItem(_SS); } catch {} _syncErr = ''; abrirSync(); }, 'warning'); }
+async function syncConectar() {
+    const raw = document.getElementById('sy-repo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, ''), token = document.getElementById('sy-token').value.trim(), fotos = document.getElementById('sy-fotos').checked;
+    const [owner, repo] = raw.split('/'); const el = document.getElementById('sync-status');
+    if (!owner || !repo || !token) { el.innerHTML = '<span style="color:#c0392b;font-size:12px">Preencha repositório e token.</span>'; return; }
+    el.textContent = 'Verificando…';
+    const base = (_syncCfg()?.api) || window._syncApi || undefined, tmp = { owner, repo, token, branch: 'main', fotos, api: base };
+    _lsSet(_SC, tmp);
+    try {
+        const r = await _gh(_repoPath(tmp));
+        if (r.json.private !== true) { localStorage.removeItem(_SC); el.innerHTML = '<span style="color:#c0392b;font-size:12px">Este repositório é PÚBLICO. Use um repositório privado.</span>'; return; }
+        if (r.json.permissions && r.json.permissions.push === false) { localStorage.removeItem(_SC); el.innerHTML = '<span style="color:#c0392b;font-size:12px">O token não tem permissão de escrita (Contents: Read and write).</span>'; return; }
+        tmp.branch = r.json.default_branch || 'main'; _lsSet(_SC, tmp); _syncAvisou = false;
+        await sincronizar(true); abrirSync();
+    } catch (e) { localStorage.removeItem(_SC); el.innerHTML = `<span style="color:#c0392b;font-size:12px">${e.status === 404 ? 'Repositório não encontrado (ou o token não enxerga ele).' : e.auth ? 'Token recusado.' : _esc(e.message)}</span>`; }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => sincronizar(false), 3500);
+    window.addEventListener('online', () => _syncAgendar(1500));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - _syncSt().last > 120000) _syncAgendar(1500); });
+    setInterval(() => { if (document.visibilityState === 'visible') _syncAgendar(500); }, 600000);
+});
 </script>
 </body>
 </html>
