@@ -1237,6 +1237,21 @@
         }
 
         
+
+        /* painel de dias para vencer */
+        .validade-row { display: flex; gap: 8px; align-items: stretch; }
+        .validade-row #validade-txt { flex: 1; min-width: 0; }
+        .validade-dias { display: none; flex: none; flex-direction: column; align-items: center; justify-content: center; min-width: 78px; padding: 4px 10px; border-radius: 10px; font-family: 'Sora', sans-serif; line-height: 1.1; border: 1.5px solid; }
+        .validade-dias b { font-size: 17px; font-weight: 800; }
+        .validade-dias span { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .validade-dias.ok { background: #e8f5ee; border-color: #9bd3b3; color: #1a6b3c; }
+        .validade-dias.warn { background: #fff4e0; border-color: #f0c27a; color: #b9770e; }
+        .validade-dias.bad { background: #fdecea; border-color: #eba39b; color: #c0392b; }
+        @media screen {
+            html.dark .validade-dias.ok { background: #153325; border-color: #2e8b57; color: #4cd68a; }
+            html.dark .validade-dias.warn { background: #3b2a14; border-color: #c96a00; color: #ffb454; }
+            html.dark .validade-dias.bad { background: #3a1f1d; border-color: #c0392b; color: #ff8a80; }
+        }
         /* ─── RESPONSIVE ─── */
         @media (max-width: 520px) {
             .tara-row { font-size: 9px; }
@@ -1301,36 +1316,6 @@
     </div>
     <div class="drawer-body">
         <div class="drawer-section">
-            <span class="drawer-section-title">💾 Dados da Sessão</span>
-            <div style="display:flex; gap:8px;">
-                <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
-                <button class="btn-drawer-action" onclick="document.getElementById('file-import').click();">⬆ Carregar</button>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px;">
-                <button class="btn-drawer-action" onclick="exportarCSV();">📊 Excel/CSV</button>
-                <button class="btn-drawer-action" onclick="compartilharResumo();">📤 Compartilhar</button>
-            </div>
-            <input type="file" id="file-import" style="display:none" accept=".json" onchange="importarBackup(event)">
-        </div>
-        <div class="drawer-section">
-            <span class="drawer-section-title">🧰 Ferramentas</span>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button class="btn-drawer-action" onclick="abrirPainel()">📈 Painel da carga</button>
-                <button class="btn-drawer-action" onclick="abrirNF()">🧾 Comparar NF</button>
-                <button class="btn-drawer-action" onclick="abrirAmostragem()">⚖ Amostragem</button>
-                <button class="btn-drawer-action" onclick="abrirPerfis()">🏷 Perfis de tara</button>
-                <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
-                <button class="btn-drawer-action" onclick="definirPIN()">🔐 PIN supervisor</button>
-                <button class="btn-drawer-action" onclick="abrirProdutos()">📦 Produtos</button>
-                <button class="btn-drawer-action" onclick="lerCodigoBarras()">📷 Ler código</button>
-                <button class="btn-drawer-action" onclick="alternarTema()">🌙 Modo escuro</button>
-                <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
-                <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
-                <button class="btn-drawer-action" onclick="abrirAprendizado()">📚 Aprendizado</button>
-                <button class="btn-drawer-action" onclick="abrirSync()">☁ Sincronizar</button>
-            </div>
-        </div>
-        <div class="drawer-section">
             <span class="drawer-section-title">👤 Identificação</span>
             <div class="drawer-field">
                 <label class="drawer-label">Conferente</label>
@@ -1351,6 +1336,27 @@
             </div>
         </div>
         <div class="drawer-section">
+            <span class="drawer-section-title">💾 Dados da Sessão</span>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
+                <button class="btn-drawer-action" onclick="compartilharResumo();">📤 Compartilhar</button>
+            </div>
+            <input type="file" id="file-import" style="display:none" accept=".json" onchange="importarBackup(event)">
+        </div>
+        <div class="drawer-section">
+            <span class="drawer-section-title">🧰 Ferramentas</span>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button class="btn-drawer-action" onclick="abrirPainel()">📈 Painel da carga</button>
+                <button class="btn-drawer-action" onclick="abrirNF()">🧾 Comparar NF</button>
+                <button class="btn-drawer-action" onclick="abrirAmostragem()">⚖ Amostragem</button>
+                <button class="btn-drawer-action" onclick="definirPIN()">🔐 PIN supervisor</button>
+                <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
+                <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
+                <button class="btn-drawer-action" onclick="abrirAprendizado()">📚 Aprendizado</button>
+                <button class="btn-drawer-action" onclick="abrirSync()">☁ Sincronizar</button>
+            </div>
+        </div>
+        <div class="drawer-section">
             <span class="drawer-section-title">⚙ Recursos Ativos</span>
             <div class="drawer-field">
                 <label class="drawer-label">Tolerância de tara (alerta laranja, %)</label>
@@ -1360,9 +1366,10 @@
                 <label class="drawer-label">Validade mínima aceita (dias, 0 = desligado)</label>
                 <input type="number" id="cfg-valmin" class="drawer-input" min="0" step="1" value="0" inputmode="numeric" onchange="definirValMin(this.value)">
             </div>
-            <div class="drawer-field">
-                <label class="drawer-label" style="display:flex;gap:8px;align-items:center;text-transform:none"><input type="checkbox" id="cfg-tecfull" onchange="definirTeclado(this.checked)"> Teclado completo nos pesos (mostra o 🎤 do teclado do celular)</label>
-            </div>
+            <label class="toggle-item" for="cfg-escuro">
+                <div class="toggle-info"><span class="toggle-label">Modo escuro</span><span class="toggle-desc">Segue o tema do celular até você escolher</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-escuro" onchange="definirTema(this.checked)"><span class="toggle-track"></span></div>
+            </label>
             <label class="toggle-item" for="cfg-alerts">
                 <div class="toggle-info"><span class="toggle-label">Sistema de alertas</span><span class="toggle-desc">Erros e marcações visuais de tara</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-alerts" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
@@ -1395,10 +1402,10 @@
                 <div class="toggle-info"><span class="toggle-label">Modo compacto</span><span class="toggle-desc">Oculta P.Caixa, P.Emb e Emb/Cx</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-compact" onchange="aplicarConfig()"><span class="toggle-track"></span></div>
             </label>
+            <button class="btn-drawer-action" style="width:100%;margin-top:10px" onclick="verificarAtualizacao()">🔄 Verificar atualização</button>
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-drawer-action" style="width:100%;margin-bottom:8px" onclick="verificarAtualizacao()">🔄 Verificar atualização</button>
         <button class="btn-help-drawer" onclick="abrirModalAjuda()">❓ Dossiê de Segurança -- Como os cálculos funcionam</button>
     </div>
 </div>
@@ -1424,7 +1431,7 @@
             <div class="grid-produto">
                 <div class="validade-global-wrap">
                     <label class="field-label">📅 Validade (Global)</label>
-                    <input type="date" id="validade-global" style="display:none"><input type="text" id="validade-txt" inputmode="numeric" placeholder="dd/mm/aa" maxlength="10" autocomplete="off">
+                    <div class="validade-row"><input type="date" id="validade-global" style="display:none"><input type="text" id="validade-txt" inputmode="numeric" placeholder="dd/mm/aa" maxlength="10" autocomplete="off"><div id="validade-dias" class="validade-dias" aria-live="polite"></div></div>
                 </div>
                 <div>
                     <label class="field-label">
@@ -2871,26 +2878,6 @@ function _baixarArquivo(nome, conteudo, tipo) {
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 150);
 }
 
-function exportarCSV() {
-    lerFormularioParaState();
-    const n = v => String(Number(v).toFixed(3)).replace('.', ',');
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const linhas = [['Fornecedor','Conferente','Data','Produto','Validade','Pallet','Bruto (kg)','Tara madeira','Tara caixas','Tara embalagens','Tara total','Liquido (kg)','% Tara','Estado'].join(';')];
-    const estados = { OK:'OK', VERMELHO:'Bloqueado', LARANJA:'Atencao', INVALIDO:'Invalido' };
-    state.produtos.forEach((p, i) => {
-        p.pallets.forEach((pd, j) => {
-            const r = calcularResultadoPallet(pd);
-            if (!(r.bto > 0)) return;
-            linhas.push([q(state.fornecedor), q(state.conferente), q(state.dataPesagem), q(p.nome || `Produto ${i+1}`), q(p.validade), j+1,
-                n(r.bto), n(r.taraMad), n(r.taraCx), n(r.taraEmb), n(r.taraTotal), n(r.liqPallet),
-                (r.percTara * 100).toFixed(1).replace('.', ','), estados[determinarEstadoPallet(r, pd)] || ''].join(';'));
-        });
-    });
-    if (linhas.length === 1) { toast('Nenhum pallet com peso bruto para exportar.', 'warning'); return; }
-    _baixarArquivo(`${gerarNomeArquivo()}.csv`, '\uFEFF' + linhas.join('\r\n'), 'text/csv;charset=utf-8');
-    toast('📊 Planilha exportada!', 'success');
-}
-
 function _resumoTexto() {
     lerFormularioParaState();
     const idOrig = state.idAtivo;
@@ -2933,7 +2920,7 @@ const _BTN2 = 'background:#f0f3f6;color:#1c2b3a;border:1px solid #dde3ea;border-
 const _kg = v => v.toLocaleString('pt-BR', FORMATO_3);
 const _num = v => { const n = parseFloat(String(v).trim().replace(/\./g, '').replace(',', '.')); return isNaN(n) ? null : n; };
 const _lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
-const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); if (k === 'pesagem_produtos' || k === 'pesagem_perfis_tara') { localStorage.setItem(k + '_em', String(Date.now())); _syncAgendar(8000); } } catch { toast('Sem espaço para salvar.', 'error'); } };
+const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { toast('Sem espaço para salvar.', 'error'); } };
 
 function _modal(titulo, corpo) {
     fecharDrawer();
@@ -2999,29 +2986,6 @@ function calcularAmostra() {
     if (alvo) { const d = (m - alvo) / alvo * 100; h += `Média vs alvo: <b>${d >= 0 ? '+' : ''}${d.toFixed(1).replace('.', ',')}%</b> ${Math.abs(d) <= 5 ? '🟢' : '🟠'}<br>`; }
     h += fora.length ? `🟠 ${fora.length} peça(s) a mais de 10% da média: ${fora.map(_kg).join(', ')}` : '🟢 Nenhuma peça discrepante';
     res.innerHTML = `<div style="padding:14px;border-radius:10px;background:#f0f3f6;font:500 13px 'DM Mono',monospace;line-height:1.8">${h}</div>`;
-}
-
-/* 1 · Perfis de tara */
-function abrirPerfis() {
-    const P = _lsGet('pesagem_perfis_tara', []);
-    let h = P.length ? P.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.nome)}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'} · ${x.qemb || '-'}/cx</span></div><button style="${_BTN}" onclick="aplicarPerfil(${i})">Aplicar</button><button style="${_BTN2}" onclick="excluirPerfil(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum perfil salvo.</p>';
-    h += `<div style="margin-top:14px"><b style="font-size:12px">Novo perfil</b><input id="pf-nome" style="${_INP}" placeholder="Nome (ex.: PBR + caixa plástica)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pf-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pf-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pf-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pf-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px"><button style="${_BTN}" onclick="salvarPerfil()">Salvar</button><button style="${_BTN2}" onclick="salvarPerfil(true)">Copiar do Pallet 1</button></div></div>`;
-    _modal('🏷 Perfis de tara', h);
-}
-function salvarPerfil(doPallet1) {
-    let x;
-    if (doPallet1) { lerFormularioParaState(); const pl = state.produtos[state.idAtivo].pallets[0]; x = { pal: pl.pal, pcx: pl.pcx, pemb: pl.pemb, qemb: pl.qemb }; }
-    else x = { pal: pf('pal'), pcx: pf('pcx'), pemb: pf('pemb'), qemb: pf('qemb') };
-    function pf(k) { return document.getElementById('pf-' + k).value.trim(); }
-    x.nome = pf('nome') || 'Perfil ' + (_lsGet('pesagem_perfis_tara', []).length + 1);
-    const P = _lsGet('pesagem_perfis_tara', []); P.push(x); _lsSet('pesagem_perfis_tara', P); abrirPerfis();
-}
-function excluirPerfil(i) { const P = _lsGet('pesagem_perfis_tara', []); P.splice(i, 1); _lsSet('pesagem_perfis_tara', P); abrirPerfis(); }
-function aplicarPerfil(i) {
-    const x = _lsGet('pesagem_perfis_tara', [])[i]; if (!x) return;
-    lerFormularioParaState();
-    state.produtos[state.idAtivo].pallets.forEach(pl => { ['pal', 'pcx', 'pemb', 'qemb'].forEach(k => { if (x[k] !== '') pl[k] = x[k]; }); });
-    renderizarTudo(); _fecharModal(); toast(`🏷 Perfil "${x.nome}" aplicado ao produto atual.`, 'success');
 }
 
 /* 12 · Histórico (IndexedDB, com fotos) + 14 · Auditoria */
@@ -3094,14 +3058,10 @@ autorizarPallet = function (num) {
 
 /* ══ V11 · PRODUTOS, CÓDIGO, VOZ, TEMA, VALIDADE MÍNIMA ══ */
 const _semAcento = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-const _cadastro = () => _lsGet('pesagem_produtos', []);
 
 /* 20 · Modo escuro */
 function _aplicarTema(escuro) { document.documentElement.classList.toggle('dark', escuro); document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro ? '#121b24' : '#1a6b3c'); }
-function alternarTema() {
-    const escuro = !document.documentElement.classList.contains('dark');
-    _aplicarTema(escuro); _lsSet('pesagem_tema', escuro ? 'escuro' : 'claro'); fecharDrawer();
-}
+function definirTema(escuro) { _aplicarTema(!!escuro); _lsSet('pesagem_tema', escuro ? 'escuro' : 'claro'); }
 (function () {
     const st = document.createElement('style');
     st.textContent = '';
@@ -3112,7 +3072,18 @@ function alternarTema() {
 
 /* 15 · Validade mínima */
 function definirValMin(v) { appConfig.valMin = Math.max(0, parseInt(v) || 0); salvarConfig(); _checarValidade(); }
+function _atualizarDiasValidade() {
+    const el = document.getElementById('validade-dias'), h = document.getElementById('validade-global'); if (!el || !h) return;
+    if (!h.value) { el.style.display = 'none'; el.className = 'validade-dias'; return; }
+    const dias = Math.round((new Date(h.value + 'T00:00:00') - new Date(_dataHoje() + 'T00:00:00')) / 864e5), min = appConfig.valMin || 0;
+    let cls = 'ok', t1, t2;
+    if (dias < 0) { cls = 'bad'; t1 = '−' + Math.abs(dias); t2 = 'vencido'; }
+    else if (dias === 0) { cls = 'bad'; t1 = 'HOJE'; t2 = 'vence'; }
+    else { t1 = String(dias); t2 = dias === 1 ? 'dia' : 'dias'; cls = (min > 0 && dias < min) ? 'bad' : (dias <= 30 ? 'warn' : 'ok'); }
+    el.className = 'validade-dias ' + cls; el.innerHTML = `<b>${t1}</b><span>${t2}</span>`; el.style.display = 'flex';
+}
 function _checarValidade() {
+    _atualizarDiasValidade();
     const el = document.getElementById('validade-global'); if (!el) return;
     const tx = document.getElementById('validade-txt') || el;
     tx.style.outline = ''; if (!el.value || !appConfig.valMin) return;
@@ -3121,82 +3092,20 @@ function _checarValidade() {
     else tx.style.outline = '2px solid #27ae60';
 }
 
-/* 2 · Cadastro de produtos */
+/* Datalist de nomes (do aprendizado) e init da validade */
 function _atualizarDatalist() {
     let dl = document.getElementById('lista-produtos');
     if (!dl) { dl = document.createElement('datalist'); dl.id = 'lista-produtos'; document.body.appendChild(dl); }
     dl.innerHTML = _nomesProdutos().map(n => `<option value="${String(n).replace(/"/g, '&quot;')}"></option>`).join('');
-}
-function _aplicarCadastro(x) {
-    lerFormularioParaState();
-    if (x.forn && !state.fornecedor) state.fornecedor = x.forn;
-    const pr = state.produtos[state.idAtivo]; pr.nome = x.nome;
-    pr.pallets.forEach(pl => ['pal', 'pcx', 'pemb', 'qemb'].forEach(k => { if (x[k] && !pl[k]) pl[k] = x[k]; }));
-    renderizarTudo();
-}
-function abrirProdutos() {
-    const C = _cadastro();
-    let h = C.length ? C.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.nome)}</b><br><span style="color:#6b7a8d;font-family:'DM Mono',monospace">${x.codigo ? '#' + x.codigo + ' · ' : ''}Pal ${x.pal || '-'} · Cx ${x.pcx || '-'} · Emb ${x.pemb || '-'}</span></div><button style="${_BTN}" onclick="usarProduto(${i})">Usar</button><button style="${_BTN2}" onclick="excluirProduto(${i})">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Nenhum produto cadastrado.</p>';
-    h += `<div style="margin-top:14px"><b style="font-size:12px">Novo produto</b><input id="pd-nome" style="${_INP}" placeholder="Nome"><input id="pd-codigo" style="${_INP}" placeholder="Código de barras (opcional)" inputmode="numeric"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="pd-pal" style="${_INP}" placeholder="Pallet (kg)" inputmode="decimal"><input id="pd-pcx" style="${_INP}" placeholder="Caixa (kg)" inputmode="decimal"><input id="pd-pemb" style="${_INP}" placeholder="Embalagem (kg)" inputmode="decimal"><input id="pd-qemb" style="${_INP}" placeholder="Emb. por caixa" inputmode="numeric"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarProduto()">Salvar</button><button style="${_BTN2}" onclick="salvarProduto(true)">Do produto atual</button><button style="${_BTN2}" onclick="document.getElementById('pd-csv').click()">Importar CSV</button></div><input type="file" id="pd-csv" accept=".csv,.txt" style="display:none" onchange="importarProdutosCSV(event)"><p style="font-size:11px;color:#6b7a8d;margin-top:8px">CSV com cabeçalho: nome;codigo;pal;pcx;pemb;qemb;forn</p></div>`;
-    _modal('📦 Produtos cadastrados', h);
-}
-function salvarProduto(doAtual) {
-    const g = k => document.getElementById('pd-' + k).value.trim(); let x;
-    if (doAtual) { lerFormularioParaState(); const pr = state.produtos[state.idAtivo], pl = pr.pallets[0]; x = { nome: pr.nome, codigo: g('codigo'), pal: pl.pal, pcx: pl.pcx, pemb: pl.pemb, qemb: pl.qemb, forn: state.fornecedor }; }
-    else x = { nome: g('nome'), codigo: g('codigo'), pal: g('pal'), pcx: g('pcx'), pemb: g('pemb'), qemb: g('qemb'), forn: '' };
-    if (!x.nome) { toast('Informe o nome do produto.', 'warning'); return; }
-    const C = _cadastro().filter(c => _semAcento(c.nome) !== _semAcento(x.nome)); C.push(x); C.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos();
-}
-function usarProduto(i) { const x = _cadastro()[i]; if (x) { _aplicarCadastro(x); _fecharModal(); toast(`📦 ${x.nome} aplicado.`, 'success'); } }
-function excluirProduto(i) { const C = _cadastro(); C.splice(i, 1); _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos(); }
-function importarProdutosCSV(e) {
-    const f = e.target.files?.[0]; if (!f) return; const r = new FileReader();
-    r.onload = ev => {
-        const L = String(ev.target.result).replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim()); if (L.length < 2) { toast('CSV vazio.', 'error'); return; }
-        const sep = L[0].includes(';') ? ';' : ',', H = L[0].split(sep).map(_semAcento);
-        const col = (...n) => H.findIndex(h => n.includes(h));
-        const ix = { nome: col('nome', 'produto'), codigo: col('codigo', 'cod', 'ean'), pal: col('pal', 'pallet'), pcx: col('pcx', 'caixa'), pemb: col('pemb', 'embalagem'), qemb: col('qemb'), forn: col('forn', 'fornecedor') };
-        if (ix.nome < 0) { toast('Falta a coluna "nome" ou "produto".', 'error'); return; }
-        const C = _cadastro(); let n = 0;
-        L.slice(1).forEach(l => { const c = l.split(sep).map(v => v.trim().replace(/^"|"$/g, '')); const x = {}; Object.keys(ix).forEach(k => x[k] = ix[k] >= 0 ? (c[ix[k]] || '') : '');
-            if (!x.nome) return; const j = C.findIndex(o => _semAcento(o.nome) === _semAcento(x.nome)); if (j >= 0) C[j] = x; else C.push(x); n++; });
-        _lsSet('pesagem_produtos', C); _atualizarDatalist(); abrirProdutos(); toast(`📦 ${n} produto(s) importado(s).`, 'success');
-    };
-    r.readAsText(f); e.target.value = '';
 }
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         _atualizarDatalist();
         const v = document.getElementById('cfg-valmin'); if (v) v.value = appConfig.valMin || 0;
         document.getElementById('validade-global')?.addEventListener('change', _checarValidade);
-        document.getElementById('produto')?.addEventListener('change', e => { const x = _cadastro().find(c => _semAcento(c.nome) === _semAcento(e.target.value)); if (x) _aplicarCadastro(x); });
+        const t = document.getElementById('cfg-escuro'); if (t) t.checked = document.documentElement.classList.contains('dark');
     }, 0);
 });
-
-/* 3 · Leitor de código de barras */
-let _streamCod = null;
-function _pararCamera() { _streamCod?.getTracks().forEach(t => t.stop()); _streamCod = null; }
-async function lerCodigoBarras() {
-    if (!('BarcodeDetector' in window)) { fecharDrawer(); toast('Leitor não suportado neste navegador (use Chrome no Android).', 'warning', 5000); return; }
-    _modal('📷 Aponte para o código', '<video id="cod-video" playsinline muted style="width:100%;border-radius:10px;background:#000"></video><p id="cod-msg" style="font-size:12px;color:#6b7a8d;margin-top:8px">Procurando código...</p>');
-    try {
-        _streamCod = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        const v = document.getElementById('cod-video'); v.srcObject = _streamCod; await v.play();
-        const det = new BarcodeDetector();
-        const loop = async () => {
-            if (!document.getElementById('cod-video')) { _pararCamera(); return; }
-            try { const r = await det.detect(v); if (r.length) { _pararCamera(); _codigoLido(r[0].rawValue); return; } } catch {}
-            setTimeout(loop, 300);
-        }; loop();
-    } catch { _fecharModal(); toast('Sem acesso à câmera.', 'error'); }
-}
-function _codigoLido(cod) {
-    _fecharModal(); vibrarLeve();
-    const x = _cadastro().find(c => String(c.codigo).trim() === String(cod).trim());
-    if (x) { _aplicarCadastro(x); toast(`📦 ${x.nome} (#${cod})`, 'success'); }
-    else { document.getElementById('produto').value = cod; lerFormularioParaState(); atualizarAbas(); toast(`Código ${cod} não cadastrado. Cadastre em 📦 Produtos.`, 'warning', 5000); }
-}
 
 /* ══ V12 · ASSINATURAS, ANEXO DE FOTOS, CARGAS ══ */
 
@@ -3410,7 +3319,7 @@ function _mediaProd(forn, prod) {
     return { n: L?.n || 0, pcx, pemb, qemb, fonte: f1, fontes: { pcx: f1, pemb: f2, qemb: f3 }, conf: L?.conf || 'baixa' };
 }
 function _nomesProdutos() {
-    const nomes = new Map(); _cadastro().forEach(x => nomes.set(_kk(x.nome), x.nome));
+    const nomes = new Map();
     const F = _aprBase().f[_canonF(_kk(state.fornecedor || document.getElementById('fornecedor')?.value || ''))];
     if (F) Object.entries(F.p).forEach(([k, v]) => nomes.set(k, v.nome));
     return [...nomes.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
@@ -3560,7 +3469,7 @@ async function baixarPacote(semFotos) {
     f['aprendizado/medias_auto.json'] = J({ esquema: 2, geradoEm: agora, medias });
     f['aprendizado/ajustes_manuais.json'] = J(_lsGet(_K.aj, {}));
     f['aprendizado/quarentena.json'] = J({ decisoes: _lsGet(_K.q, {}), pendentes: M.quar });
-    f['cadastro/produtos.json'] = J(_cadastro()); f['cadastro/perfis_tara.json'] = J(_lsGet('pesagem_perfis_tara', [])); f['cadastro/apelidos.json'] = J(_apel());
+    f['cadastro/apelidos.json'] = J(_apel());
     f['manifest.json'] = J({ app: 'Conferência de Pesagem', esquema: 2, exportado_em: agora, dispositivo: _device(), semFotos: !!semFotos, conferencias: H.length, observacoes: Object.keys(O).length });
     const a = document.createElement('a'); a.href = URL.createObjectURL(_zip(f)); a.download = `Pacote_pesagem_${_dataHoje()}${semFotos ? '_sem_fotos' : ''}.zip`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500);
     try { localStorage.setItem('pesagem_ultimo_backup', String(Date.now())); } catch {}
@@ -3569,21 +3478,20 @@ async function baixarPacote(semFotos) {
 async function importarPacote(e) {
     const file = e.target.files?.[0]; if (!file) return; e.target.value = '';
     try {
-        const Z = _unzip(await file.arrayBuffer()), ex = { obs: {}, cadastro: [], perfis: [] }; let nconf = 0;
+        const Z = _unzip(await file.arrayBuffer()), ex = { obs: {} }; let nconf = 0;
         for (const [nome, txt] of Object.entries(Z)) {
             const j = JSON.parse(txt);
             if (nome.startsWith('conferencias/')) { const a = await _hTx('readonly', st => st.get(j.id)); if (!a || (a.ua || a.ts) < (j.ua || j.ts)) { await _hTx('readwrite', st => st.put(j)); nconf++; } }
             else if (nome.startsWith('aprendizado/obs/')) Object.assign(ex.obs, j);
             else if (nome.endsWith('ajustes_manuais.json')) ex.ajustes = j;
             else if (nome.endsWith('quarentena.json')) ex.quarentena = j.decisoes; else if (nome.endsWith('apelidos.json')) ex.apelidos = j;
-            else if (nome.endsWith('produtos.json')) ex.cadastro = j; else if (nome.endsWith('perfis_tara.json')) ex.perfis = j;
         }
         _restaurarExtras(ex); toast(`📦 Pacote importado (${nconf} conferência(s) nova(s)/atualizada(s)).`, 'success');
     } catch (err) { toast('Pacote inválido: ' + err.message, 'error', 5000); }
 }
 
 /* ── backup .json e mesclagem (idempotente: restaurar 2× não duplica) ── */
-function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), quarentena: _lsGet(_K.q, {}), cadastro: _cadastro(), perfis: _lsGet('pesagem_perfis_tara', []), histDel: _lsGet('pesagem_hist_del', {}) }; }
+function _extrasBackup() { return { esquema: 2, obs: _obsAll(), apelidos: _apel(), ajustes: _lsGet(_K.aj, {}), quarentena: _lsGet(_K.q, {}), histDel: _lsGet('pesagem_hist_del', {}) }; }
 function _converterAntigo(B) {
     const obs = {};
     const semear = (ia, nomes) => { const tem = new Set([...Object.values(obs), ...Object.values(_obsAll())].map(o => _kk(o.forn) + '|' + _kk(o.prod))); Object.entries(ia || {}).forEach(([kf, ps]) => Object.entries(ps).forEach(([kp, v]) => { if (tem.has(kf + '|' + kp)) return; const k = 'legado-ia|' + kf + '|' + kp; obs[k] = { k, cid: 'legado-ia', forn: nomes?.[kf]?.nome || kf, prod: nomes?.[kf]?.p?.[kp]?.nome || kp, d: _dataHoje(), pcx: v.pcx > 0 ? [+v.pcx] : [], pemb: v.pemb > 0 ? [+v.pemb] : [], qemb: v.qemb > 0 ? [Math.round(v.qemb)] : [], pal: [], st: 'final', ua: 0, dev: 'legado', h: _hash(k) }; })); };
@@ -3612,8 +3520,6 @@ function _restaurarExtras(x) {
         if (x.histDel) { const T = _lsGet('pesagem_hist_del', {}); Object.entries(x.histDel).forEach(([k, v]) => { T[k] = Math.max(T[k] || 0, v); }); _lsSet('pesagem_hist_del', T); }
         if (x.ajustes) _mesclar2(_K.aj, x.ajustes);
         if (x.quarentena) _lsSet(_K.q, Object.assign({}, x.quarentena, _lsGet(_K.q, {})));
-        if (x.cadastro?.length) { const C = _cadastro(); let add = 0; x.cadastro.forEach(c => { if (!C.some(o => _semAcento(o.nome) === _semAcento(c.nome))) { C.push(c); add++; } }); if (add) _lsSet('pesagem_produtos', C); }
-        if (x.perfis?.length) { const P = _lsGet('pesagem_perfis_tara', []); let add = 0; x.perfis.forEach(c => { if (!P.some(o => o.nome === c.nome)) { P.push(c); add++; } }); if (add) _lsSet('pesagem_perfis_tara', P); }
         _bump(); _atualizarDatalist(); _atualizarListaForn();
     } catch (e) { console.warn('restaurar extras', e); }
 }
@@ -3626,15 +3532,6 @@ function _restaurarExtras(x) {
         localStorage.setItem('pesagem_aprendizado_antigo', velho); localStorage.removeItem('pesagem_aprendizado');
     } catch (e) { console.warn('migração', e); }
 })();
-
-/* Teclado completo (mostra o microfone do teclado do celular) */
-function _aplicarTeclado() {
-    document.querySelectorAll('input[inputmode="decimal"],input[data-im="decimal"]').forEach(i => {
-        if (i.id && i.id.startsWith('cfg-')) return;
-        i.dataset.im = 'decimal'; i.setAttribute('inputmode', appConfig.tecladoCompleto ? 'text' : 'decimal');
-    });
-}
-function definirTeclado(v) { appConfig.tecladoCompleto = !!v; salvarConfig(); _aplicarTeclado(); }
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
@@ -3649,8 +3546,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const fo = document.getElementById('fornecedor');
         fo.addEventListener('change', () => { _atualizarDatalist(); _preencherAprendido(); });
         document.getElementById('produto').addEventListener('change', () => setTimeout(_preencherAprendido, 0));
-        const c = document.getElementById('cfg-tecfull'); if (c) c.checked = !!appConfig.tecladoCompleto;
-        _aplicarTeclado(); new MutationObserver(() => { if (appConfig.tecladoCompleto) _aplicarTeclado(); }).observe(document.body, { childList: true, subtree: true });
     }, 50);
 });
 
@@ -3675,7 +3570,6 @@ function _candProdutos() {
         const mesmo = kf === kfAt;
         add(P.nome, _fmtPerfil(_mediaProd(F.nome, P.nome)), mesmo ? 0 : 2, P.n, mesmo ? '' : F.nome);
     }));
-    _cadastro().forEach(x => add(x.nome, [x.pcx && `Cx ${x.pcx} kg`, x.pemb && `Emb ${x.pemb} kg`, x.qemb && `${x.qemb}/cx`].filter(Boolean).join(' · ') || 'cadastrado', 1, 0, ''));
     return [...mapa.values()];
 }
 function _rank(nome, q) {
@@ -3801,12 +3695,6 @@ const _txt64 = t => { let b = ''; _u8(t).forEach(x => { b += String.fromCharCode
 const _b64txt = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), ch => ch.charCodeAt(0)));
 const _ehNosso = p => /^(conferencias|aprendizado|cadastro)\//.test(p) && p.endsWith('.json') && p !== 'aprendizado/medias_auto.json';
 
-function _aplicarLista(key, j) {
-    if (!j || !Array.isArray(j.itens)) return;
-    const em = +localStorage.getItem(key + '_em') || 0, loc = _lsGet(key, []);
-    if (!em && loc.length && j.em > 0) { const nm = x => _semAcento(x.nome || ''), U = [...j.itens]; loc.forEach(x => { if (!U.some(y => nm(y) === nm(x))) U.push(x); }); localStorage.setItem(key, JSON.stringify(U)); localStorage.setItem(key + '_em', String(Math.max(j.em, Date.now()))); }
-    else if (j.em > em) { localStorage.setItem(key, JSON.stringify(j.itens)); localStorage.setItem(key + '_em', String(j.em)); }
-}
 async function _mesclarConf(j) {
     if (!j?.id || !j.estado) return;
     const T = _lsGet('pesagem_hist_del', {}); if (T[j.id] && T[j.id] >= (j.ua || j.ts)) return;
@@ -3827,8 +3715,6 @@ async function _aplicarRemoto(path, j) {
     else if (path === 'aprendizado/ajustes_manuais.json') _restaurarExtras({ ajustes: j });
     else if (path === 'aprendizado/quarentena.json') _restaurarExtras({ quarentena: j });
     else if (path === 'cadastro/apelidos.json') _restaurarExtras({ apelidos: j });
-    else if (path === 'cadastro/produtos.json') _aplicarLista('pesagem_produtos', j);
-    else if (path === 'cadastro/perfis_tara.json') _aplicarLista('pesagem_perfis_tara', j);
 }
 async function _puxar(c, R) {
     const st = _syncSt(); let n = 0;
@@ -3846,8 +3732,6 @@ async function _arquivosLocais(c) {
     H.forEach(x => { if (T[x.id] && T[x.id] >= (x.ua || x.ts)) return; const e = JSON.parse(JSON.stringify(x)); if (!c.fotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); F.set(_pathConf(x.id), _stable(e)); });
     if (Object.keys(T).length) F.set('conferencias/_apagadas.json', _stable(T));
     F.set('aprendizado/ajustes_manuais.json', _stable(_lsGet(_K.aj, {}))); F.set('aprendizado/quarentena.json', _stable(_lsGet(_K.q, {}))); F.set('cadastro/apelidos.json', _stable(_apel()));
-    F.set('cadastro/produtos.json', _stable({ em: +localStorage.getItem('pesagem_produtos_em') || 0, itens: _cadastro() }));
-    F.set('cadastro/perfis_tara.json', _stable({ em: +localStorage.getItem('pesagem_perfis_tara_em') || 0, itens: _lsGet('pesagem_perfis_tara', []) }));
     return F;
 }
 function _mediasAutoTxt() {
@@ -3855,7 +3739,6 @@ function _mediasAutoTxt() {
     return _stable({ esquema: 2, medias });
 }
 async function _empurrar(c, R) {
-    ['pesagem_produtos', 'pesagem_perfis_tara'].forEach(k => { if (!+localStorage.getItem(k + '_em') && _lsGet(k, []).length) localStorage.setItem(k + '_em', String(Date.now())); });
     const F = await _arquivosLocais(c), mudou = [], del = [], T = _lsGet('pesagem_hist_del', {}), st = _syncSt();
     for (const [path, txt] of F) { const sha = _blobSha(txt), rem = R.tree.get(path); if (rem === sha || (!rem && _trivial(txt))) continue; mudou.push({ path, txt, sha }); }
     R.tree.forEach((sha, path) => { const m = /^conferencias\/(?:[^/]+\/)*([^/]+)\.json$/.exec(path); if (m && m[1] !== '_apagadas' && T[m[1]] && !F.has(path)) del.push(path); });
