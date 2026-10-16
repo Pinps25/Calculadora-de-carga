@@ -1252,6 +1252,38 @@
             html.dark .validade-dias.warn { background: #3b2a14; border-color: #c96a00; color: #ffb454; }
             html.dark .validade-dias.bad { background: #3a1f1d; border-color: #c0392b; color: #ff8a80; }
         }
+
+        /* ─── Salvar e enviar / Painel da Prevenção ─── */
+        .app-header { position: relative; }
+        .header-save { position: absolute; right: 20px; bottom: 3px; font-size: 9px; }
+        .btn-enviar { flex: none; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: #1a6b3c; color: #fff; font: 700 11px 'Sora', sans-serif; cursor: pointer; white-space: nowrap; }
+        .btn-enviar:disabled { opacity: .6; }
+        html.modo-prev #btn-enviar:not([onclick^="prevAtualizar"]) { display: none; }
+        #prev-view { display: none; min-height: 100vh; background: #f0f3f6; padding-bottom: 40px; }
+        html.modo-prev body > .card, html.modo-prev .btn-bar, html.modo-prev #validity-screen { display: none !important; }
+        html.modo-prev #prev-view { display: block; }
+        html.modo-prev .so-conf, html.modo-prev .sec-conf { display: none !important; }
+        .prev-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; font: 600 12px 'DM Mono', monospace; color: #6b7a8d; }
+        .prev-bar input[type=checkbox] { width: 18px; height: 18px; padding: 0; margin: 0; flex: none; }
+        .prev-bar label { display: flex; gap: 6px; align-items: center; font-family: 'Sora', sans-serif; }
+        .prev-card { background: #fff; border: 1px solid #dde3ea; border-left: 5px solid #27ae60; border-radius: 12px; padding: 12px 14px; margin: 0 14px 10px; cursor: pointer; font-family: 'Sora', sans-serif; }
+        .prev-card.andamento { border-left-color: #f0a020; }
+        .prev-card .pc-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .prev-card .pc-nome { font-weight: 800; font-size: 14px; color: #1c2b3a; }
+        .prev-card .pc-sub { font: 500 11px 'DM Mono', monospace; color: #6b7a8d; margin-top: 3px; }
+        .prev-badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+        .prev-badge.andamento { background: #fff4e0; color: #b9770e; } .prev-badge.final { background: #e8f5ee; color: #1a6b3c; }
+        .prev-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .prev-chip { font: 700 11px 'Sora', sans-serif; padding: 3px 9px; border-radius: 8px; background: #f0f3f6; color: #1c2b3a; }
+        .prev-chip.bad { background: #fdecea; color: #c0392b; } .prev-chip.warn { background: #fff4e0; color: #b9770e; } .prev-chip.ok { background: #e8f5ee; color: #1a6b3c; }
+        @media screen {
+            html.dark #prev-view { background: #0f161d; }
+            html.dark .prev-card { background: #18222c; border-color: #2c3a48; }
+            html.dark .prev-card .pc-nome { color: #e6edf3; } html.dark .prev-card .pc-sub, html.dark .prev-bar { color: #93a3b5; }
+            html.dark .prev-badge.andamento, html.dark .prev-chip.warn { background: #3b2a14; color: #ffb454; }
+            html.dark .prev-badge.final, html.dark .prev-chip.ok { background: #153325; color: #4cd68a; }
+            html.dark .prev-chip { background: #243140; color: #e6edf3; } html.dark .prev-chip.bad { background: #3a1f1d; color: #ff8a80; }
+        }
         /* ─── RESPONSIVE ─── */
         @media (max-width: 520px) {
             .tara-row { font-size: 9px; }
@@ -1315,7 +1347,7 @@
         <button class="btn-close-drawer" onclick="fecharDrawer()">✕</button>
     </div>
     <div class="drawer-body">
-        <div class="drawer-section">
+        <div class="drawer-section sec-conf">
             <span class="drawer-section-title">👤 Identificação</span>
             <div class="drawer-field">
                 <label class="drawer-label">Conferente</label>
@@ -1335,7 +1367,7 @@
                 </button>
             </div>
         </div>
-        <div class="drawer-section">
+        <div class="drawer-section sec-conf">
             <span class="drawer-section-title">💾 Dados da Sessão</span>
             <div style="display:flex; gap:8px;">
                 <button class="btn-drawer-action" onclick="abrirHistorico()">🗂 Histórico</button>
@@ -1346,18 +1378,26 @@
         <div class="drawer-section">
             <span class="drawer-section-title">🧰 Ferramentas</span>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button class="btn-drawer-action" onclick="abrirPainel()">📈 Painel da carga</button>
-                <button class="btn-drawer-action" onclick="abrirNF()">🧾 Comparar NF</button>
-                <button class="btn-drawer-action" onclick="abrirAmostragem()">⚖ Amostragem</button>
-                <button class="btn-drawer-action" onclick="definirPIN()">🔐 PIN supervisor</button>
-                <button class="btn-drawer-action" onclick="abrirAssinaturas()">✍ Assinaturas</button>
-                <button class="btn-drawer-action" onclick="abrirCargas()">🚚 Cargas</button>
-                <button class="btn-drawer-action" onclick="abrirAprendizado()">📚 Aprendizado</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirPainel()">📈 Painel da carga</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirNF()">🧾 Comparar NF</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirAmostragem()">⚖ Amostragem</button>
+                <button class="btn-drawer-action so-conf" onclick="definirPIN()">🔐 PIN supervisor</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirAssinaturas()">✍ Assinaturas</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirCargas()">🚚 Cargas</button>
+                <button class="btn-drawer-action so-conf" onclick="abrirAprendizado()">📚 Aprendizado</button>
                 <button class="btn-drawer-action" onclick="abrirSync()">☁ Sincronizar</button>
             </div>
         </div>
         <div class="drawer-section">
             <span class="drawer-section-title">⚙ Recursos Ativos</span>
+            <div class="drawer-field">
+                <label class="drawer-label">Nome deste aparelho</label>
+                <input type="text" id="cfg-disp-nome" class="drawer-input" placeholder="Ex.: Celular do João" autocomplete="off" onchange="salvarDispositivo()">
+            </div>
+            <div class="drawer-field">
+                <label class="drawer-label">Função deste aparelho</label>
+                <select id="cfg-disp-funcao" class="drawer-input" onchange="salvarDispositivo()"><option value="conferente">Conferente (faz as conferências)</option><option value="prevencao">Prevenção (só acompanha)</option></select>
+            </div>
             <div class="drawer-field">
                 <label class="drawer-label">Tolerância de tara (alerta laranja, %)</label>
                 <input type="number" id="cfg-tol" class="drawer-input" min="1" max="100" step="1" value="45" inputmode="decimal" onchange="aplicarConfig()">
@@ -1419,6 +1459,7 @@
             </button>
             <button class="btn-undo" id="btn-undo" onclick="desfazer()" title="Desfazer (Ctrl+Z)">↩</button>
             <h1>Conferência de <span>Pesagem</span></h1>
+            <button class="btn-enviar" id="btn-enviar" onclick="salvarEEnviar()" title="Salvar e enviar para a prevenção">☁ Enviar</button>
             <span class="header-save" id="save-indicator">✔ Salvo</span>
         </div>
     </div>
@@ -1560,6 +1601,17 @@
         </div>
     </div>
 </section>
+
+<!-- Painel da Prevenção (somente leitura) -->
+<div id="prev-view">
+    <div class="app-header"><div class="header-top">
+        <button class="btn-hamburger" onclick="abrirDrawer()" aria-label="Menu configurações"><span></span><span></span><span></span></button>
+        <h1>Painel da <span>Prevenção</span></h1>
+        <button class="btn-enviar" style="display:block" onclick="prevAtualizar(true)">🔄 Atualizar</button>
+    </div></div>
+    <div class="prev-bar"><span id="prev-quando">Ainda não atualizado</span><label><input type="checkbox" id="prev-so-andamento" onchange="prevRender()"> só em andamento</label></div>
+    <div id="prev-lista"></div>
+</div>
 
 <!-- Fixed Bottom Bar -->
 <div class="btn-bar">
@@ -2993,10 +3045,11 @@ const _hdb = () => new Promise((ok, er) => { const r = indexedDB.open('PesagemHi
 const _hTx = async (modo, fn) => { const db = await _hdb(); return new Promise((ok, er) => { const tx = db.transaction('h', modo), rq = fn(tx.objectStore('h')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = tx.onabort = () => er(tx.error); }); };
 const _hLista = async () => ((await _hTx('readonly', st => st.getAll())) || []).sort((a, b) => b.ts - a.ts);
 
-async function histSalvar() {
+async function histSalvar(status = 'final') {
     lerFormularioParaState(); if (!_temDados()) return false;
+    if (status === 'auto') { const ex = await _hTx('readonly', st => st.get(_sid())); status = ex?.status || 'andamento'; }
     const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0);
-    const e = { id: _sid(), cid: _sid(), ua: Date.now(), status: 'final', v: 2, ts: Date.now(), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', quando: new Date().toLocaleString('pt-BR'),
+    const e = { id: _sid(), cid: _sid(), ua: Date.now(), status, disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() }, conferente: (state.conferente || '').trim(), v: 2, ts: Date.now(), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', quando: new Date().toLocaleString('pt-BR'),
         nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: JSON.parse(JSON.stringify(exportarEstado())) };
     await _hTx('readwrite', st => st.put(e));
     for (const x of (await _hLista()).slice(60)) await _hTx('readwrite', st => st.delete(x.id));
@@ -3010,17 +3063,20 @@ async function _migrarHistorico() {
 }
 async function abrirHistorico() {
     let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
-    const A = _lsGet('pesagem_auditoria', []);
-    let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button><button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada PDF gerado fica salvo aqui automaticamente, com fotos. Baixe só quando quiser.</p>`;
-    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}</span></div><button style="${_BTN}" onclick="histAbrir('${x.id}')">Abrir</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    const A = _lsGet('pesagem_auditoria', []), sync = !!_syncCfg()?.token;
+    let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada PDF gerado fica salvo aqui automaticamente, com fotos. Baixe só quando quiser.</p>`;
+    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${x.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}${x.disp ? '<br>' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN2}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN}" onclick="histAbrir('${x.id}')">Abrir</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
     if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
+async function histAtualizar() { await sincronizar(true, '🔄 Histórico atualizado.'); abrirHistorico(); }
 async function histSalvarAgora() { const ok = await histSalvar(); toast(ok ? '🗂 Conferência salva no histórico.' : 'Nada para salvar ainda.', ok ? 'success' : 'info'); abrirHistorico(); }
 async function histAbrir(id) {
     const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
-    mostrarConfirm('Abrir esta conferência? Os dados atuais serão substituídos (a atual é guardada no histórico antes).', '🗂', async () => {
-        _aprender(true); try { await histSalvar(); } catch {}
+    const outro = x.status === 'andamento' && x.disp && x.disp.id !== _device();
+    const aviso = outro ? `ATENÇÃO: esta conferência está EM ANDAMENTO no aparelho "${x.disp.nome}" (${x.conferente || 'sem conferente'}, atualizada ${_haTxt(x.ua || x.ts)}). Abrir aqui pode gerar conflito. ` : '';
+    mostrarConfirm(aviso + 'Abrir esta conferência? Os dados atuais serão substituídos (a atual é guardada no histórico antes).', outro ? '⚠' : '🗂', async () => {
+        _aprender(true); try { await histSalvar('auto'); } catch {}
         importarEstado(x.estado); if (!x.estado.cid && !String(x.id).startsWith('old-')) _setCid(x.id);
         renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success');
     }, 'warning');
@@ -3682,6 +3738,7 @@ async function _ghEstado(c) {
     const rp = _repoPath(c);
     let ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
     if (ref.status !== 200) {
+        if (_funcao() === 'prevencao') throw new Error('O repositório ainda está vazio. Peça ao conferente para enviar.');
         await _gh(`${rp}/contents/LEIA-ME.md`, { method: 'PUT', body: { message: 'inicio: dados do app Conferência de Pesagem', content: _txt64('# Dados do app Conferência de Pesagem\n\nGerado automaticamente. Não edite à mão.\n') }, ok: [404, 409, 422] });
         ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
         if (ref.status !== 200) throw new Error('Branch "' + c.branch + '" não encontrada.');
@@ -3761,18 +3818,21 @@ function _syncAgendar(ms) {
     if (_syncBusy || !_syncCfg()?.token || _syncCfg().bloqueado) return;
     clearTimeout(_syncTimer); _syncTimer = setTimeout(() => sincronizar(false), ms || 4000);
 }
-async function sincronizar(manual) {
+async function sincronizar(manual, msg) {
     const c = _syncCfg(); if (!c?.token || _syncBusy) return;
-    if (!manual && (c.bloqueado || (!_syncPend && Date.now() - _syncSt().last < 15000))) return;
+    if (!manual && c.bloqueado) return;
+    if (!manual && !_syncPend) { const falta = 6000 - (Date.now() - _syncSt().last); if (falta > 0) { _syncAgendar(falta + 300); return; } }
     if (!navigator.onLine) { _syncPend = true; _syncErr = 'Sem internet. Envio pendente.'; if (manual) toast('Sem internet: envio pendente.', 'info'); _syncUI(); return; }
     _syncBusy = true; _syncErr = ''; _syncUI();
     try {
         let ok = false;
-        for (let i = 0; i < 4 && !ok; i++) { const R = await _ghEstado(c); await _puxar(c, R); ok = (await _empurrar(c, R)) === 'ok'; }
+        const ro = _funcao() === 'prevencao';
+        for (let i = 0; i < 4 && !ok; i++) { const R = await _ghEstado(c); await _puxar(c, R); ok = ro ? true : (await _empurrar(c, R)) === 'ok'; }
         if (!ok) throw new Error('Conflito persistente. Tente de novo.');
         const st = _syncSt(); st.last = Date.now(); _lsSet(_SS, st); _syncPend = false;
         _atualizarDatalist(); _atualizarListaForn();
-        if (manual) toast('☁ Sincronizado.', 'success');
+        if (manual) toast(msg || '☁ Sincronizado.', 'success');
+        if (_funcao() === 'prevencao') prevRender();
     } catch (e) {
         if (e.auth) { _syncErr = e.status === 401 ? 'Token recusado ou expirado. Gere outro e reconecte.' : 'Sem permissão. O token precisa de "Contents: Read and write" neste repositório.'; const c2 = _syncCfg(); c2.bloqueado = true; _lsSet(_SC, c2); if (!_syncAvisou) { _syncAvisou = true; toast('☁ ' + _syncErr, 'error', 6000); } }
         else { _syncPend = true; _syncErr = String(e.message || e).slice(0, 140); if (manual) toast('☁ ' + _syncErr, 'warning', 5000); }
@@ -3786,7 +3846,7 @@ function _syncStatusHtml() {
 }
 function abrirSync() {
     const c = _syncCfg();
-    if (!c) { _modal('☁ Sincronização com o GitHub', `<p style="font-size:12px;color:#6b7a8d;margin:0 0 10px">Guarda seus dados num repositório <b>privado</b> do GitHub e sincroniza entre aparelhos. O token fica só neste aparelho.</p><label style="font-size:11px">Repositório (usuario/repositorio)</label><input id="sy-repo" style="${_INP}" placeholder="seu-usuario/pesagem-dados" autocapitalize="off" autocomplete="off"><label style="font-size:11px">Token (fine-grained, Contents: Read and write)</label><input id="sy-token" type="password" style="${_INP}" autocomplete="off"><label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="sy-fotos"> Enviar fotos também (usa mais espaço)</label><button style="${_BTN}" onclick="syncConectar()">Conectar e sincronizar</button><div id="sync-status" style="margin-top:12px"></div>`); return; }
+    if (!c) { _modal('☁ Sincronização com o GitHub', `<p style="font-size:12px;color:#6b7a8d;margin:0 0 10px">Guarda seus dados num repositório <b>privado</b> do GitHub e sincroniza entre aparelhos. O token fica só neste aparelho.</p>${_funcao() === 'prevencao' ? '<p style="font-size:12px;margin:0 0 10px">Este aparelho é da <b>Prevenção</b>: use um token <b>somente leitura</b> (Contents: Read-only).</p>' : ''}<label style="font-size:11px">Repositório (usuario/repositorio)</label><input id="sy-repo" style="${_INP}" placeholder="seu-usuario/pesagem-dados" autocapitalize="off" autocomplete="off"><label style="font-size:11px">Token (fine-grained, Contents: Read and write)</label><input id="sy-token" type="password" style="${_INP}" autocomplete="off"><label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="sy-fotos"> Enviar fotos também (usa mais espaço)</label><button style="${_BTN}" onclick="syncConectar()">Conectar e sincronizar</button><div id="sync-status" style="margin-top:12px"></div>`); return; }
     _modal('☁ Sincronização com o GitHub', `<div id="sync-status">${_syncStatusHtml()}</div><label style="font-size:12px;display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" id="sy-fotos" ${c.fotos ? 'checked' : ''} onchange="syncFotos(this.checked)"> Enviar fotos também (usa mais espaço)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="syncAgora()">Sincronizar agora</button><button style="${_BTN2}" onclick="syncDesconectar()">Desconectar</button></div><p style="font-size:11px;color:#6b7a8d;margin-top:10px">Envia sozinho ao gerar o PDF, ao abrir o app e ao voltar a ter internet.</p>`);
 }
 function syncFotos(v) { const c = _syncCfg(); c.fotos = !!v; _lsSet(_SC, c); _syncAgendar(1000); }
@@ -3802,7 +3862,7 @@ async function syncConectar() {
     try {
         const r = await _gh(_repoPath(tmp));
         if (r.json.private !== true) { localStorage.removeItem(_SC); el.innerHTML = '<span style="color:#c0392b;font-size:12px">Este repositório é PÚBLICO. Use um repositório privado.</span>'; return; }
-        if (r.json.permissions && r.json.permissions.push === false) { localStorage.removeItem(_SC); el.innerHTML = '<span style="color:#c0392b;font-size:12px">O token não tem permissão de escrita (Contents: Read and write).</span>'; return; }
+        if (r.json.permissions && r.json.permissions.push === false && _funcao() !== 'prevencao') { localStorage.removeItem(_SC); el.innerHTML = '<span style="color:#c0392b;font-size:12px">O token não tem permissão de escrita (Contents: Read and write).</span>'; return; }
         tmp.branch = r.json.default_branch || 'main'; _lsSet(_SC, tmp); _syncAvisou = false;
         await sincronizar(true); abrirSync();
     } catch (e) { localStorage.removeItem(_SC); el.innerHTML = `<span style="color:#c0392b;font-size:12px">${e.status === 404 ? 'Repositório não encontrado (ou o token não enxerga ele).' : e.auth ? 'Token recusado.' : _esc(e.message)}</span>`; }
@@ -3812,6 +3872,77 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('online', () => _syncAgendar(1500));
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - _syncSt().last > 120000) _syncAgendar(1500); });
     setInterval(() => { if (document.visibilityState === 'visible') _syncAgendar(500); }, 600000);
+});
+
+/* ══════════ APARELHOS · SALVAR E ENVIAR · PAINEL DA PREVENÇÃO ══════════ */
+const _disp = () => Object.assign({ nome: '', funcao: 'conferente' }, _lsGet('pesagem_dispositivo', {}));
+const _funcao = () => _disp().funcao === 'prevencao' ? 'prevencao' : 'conferente';
+const _nomeDisp = () => (_disp().nome || '').trim() || ('Aparelho ' + _device().slice(-4));
+document.documentElement.classList.toggle('modo-prev', _funcao() === 'prevencao');
+function _haTxt(ts) { const m = Math.max(0, Math.round((Date.now() - ts) / 60000)); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : `há ${Math.round(m / 1440)} d`; }
+const _diasAte = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(_dataHoje() + 'T00:00:00')) / 864e5);
+function salvarDispositivo() {
+    const antes = _funcao(), d = { nome: document.getElementById('cfg-disp-nome').value.trim(), funcao: document.getElementById('cfg-disp-funcao').value };
+    _lsSet('pesagem_dispositivo', d);
+    if (d.funcao !== antes) { toast(d.funcao === 'prevencao' ? '👁 Modo Prevenção ativado. Reiniciando…' : '✏ Modo Conferente ativado. Reiniciando…', 'success'); setTimeout(() => location.reload(), 800); }
+    else toast('📱 Aparelho salvo.', 'success');
+}
+async function salvarEEnviar() {
+    lerFormularioParaState(); if (!_temDados()) { toast('Nada para enviar ainda.', 'info'); return; }
+    const b = document.getElementById('btn-enviar'); b.disabled = true;
+    try {
+        await histSalvar('andamento');
+        if (!_syncCfg()?.token) { toast('💾 Salvo no histórico. Conecte o GitHub em ☰ › Sincronizar para enviar.', 'warning', 5000); return; }
+        const c = _syncCfg(); if (c.bloqueado) { c.bloqueado = false; _lsSet(_SC, c); _syncAvisou = false; }
+        await sincronizar(true, '☁ Enviado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    } catch (e) { toast('Não consegui salvar: ' + (e.message || e), 'error'); } finally { b.disabled = false; }
+}
+/* cálculo de uma conferência guardada, usando as MESMAS regras do app */
+function _calcEntry(estado) {
+    const sv = { p: state.produtos, i: state.idAtivo };
+    try {
+        state.produtos = estado.produtos.map(p => Object.assign(criarProduto(), p, { avulsos: Object.assign({ qcx: '', qemb: '', peso: '' }, p.avulsos || {}), pallets: (p.pallets || []).map(pl => criarPallet(pl)) }));
+        return state.produtos.map((p, i) => { state.idAtivo = i; return { p, g: calcularResultadosGlobais() }; });
+    } finally { state.produtos = sv.p; state.idAtivo = sv.i; }
+}
+function _resumoEntry(e) {
+    let liq = 0, red = 0, ora = 0, menor = null;
+    const prods = _calcEntry(e.estado).map(({ p, g }) => {
+        liq += g.totais.liqTotal; const pal = g.resultadosPallets.filter(r => r.bto > 0), r = pal.filter(x => x.estado === 'VERMELHO').length, o = pal.filter(x => x.estado === 'LARANJA').length;
+        red += r; ora += o; const dias = p.validade ? _diasAte(p.validade) : null; if (dias != null && (menor === null || dias < menor)) menor = dias;
+        return { p, g, pal, dias, r, o };
+    });
+    return { prods, liq, red, ora, menor };
+}
+async function prevRender() {
+    const el = document.getElementById('prev-lista'); if (!el) return;
+    let L = []; try { L = await _hLista(); } catch {}
+    if (document.getElementById('prev-so-andamento')?.checked) L = L.filter(x => x.status === 'andamento');
+    L.sort((a, b) => ((b.status === 'andamento') - (a.status === 'andamento')) || ((b.ua || b.ts) - (a.ua || a.ts)));
+    const st = _syncSt(); document.getElementById('prev-quando').textContent = st.last ? 'Atualizado às ' + new Date(st.last).toLocaleTimeString('pt-BR') : 'Ainda não atualizado';
+    el.innerHTML = L.length ? L.map(e => {
+        let r; try { r = _resumoEntry(e); } catch { r = { liq: e.liq || 0, red: 0, ora: 0, menor: null }; }
+        const chips = [r.red ? `<span class="prev-chip bad">🔴 ${r.red} bloqueado(s)</span>` : '', r.ora ? `<span class="prev-chip warn">🟠 ${r.ora} em atenção</span>` : '', (!r.red && !r.ora) ? '<span class="prev-chip ok">🟢 sem alertas</span>' : '', r.menor != null ? `<span class="prev-chip ${r.menor < 0 ? 'bad' : r.menor <= 30 ? 'warn' : ''}">⏳ ${r.menor < 0 ? 'vencido' : r.menor + ' d'}</span>` : ''].join('');
+        return `<div class="prev-card ${e.status === 'andamento' ? 'andamento' : ''}" onclick="verConferencia('${e.id}')"><div class="pc-top"><span class="pc-nome">${_esc(e.titulo)}</span><span class="prev-badge ${e.status === 'andamento' ? 'andamento' : 'final'}">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span></div><div class="pc-sub">${_esc(e.conferente || 'sem conferente')} · ${_esc(e.disp?.nome || '—')}<br>${e.nProd} produto(s) · ${_kg(r.liq)} kg · ${_haTxt(e.ua || e.ts)}</div><div class="prev-chips">${chips}</div></div>`;
+    }).join('') : '<p style="padding:0 16px;font-size:13px;color:#6b7a8d">Nenhuma conferência ainda. Toque em 🔄 Atualizar.</p>';
+}
+async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(!!manual, '🔄 Atualizado.'); else if (manual) toast('Conecte o GitHub em ☰ › Sincronizar.', 'warning'); prevRender(); }
+async function verConferencia(id) {
+    const e = await _hTx('readonly', st => st.get(id)); if (!e) return;
+    let r; try { r = _resumoEntry(e); } catch { toast('Não consegui abrir esta conferência.', 'error'); return; }
+    const dot = { OK: '🟢', LARANJA: '🟠', VERMELHO: '🔴', INVALIDO: '⚪' };
+    let h = `<div style="font-size:12px;margin-bottom:10px"><b>${_esc(e.titulo)}</b> <span style="font-size:10px">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span><br><span style="color:#6b7a8d">Conferente: ${_esc(e.conferente || '—')} · Aparelho: ${_esc(e.disp?.nome || '—')}<br>Atualizada ${_haTxt(e.ua || e.ts)} (${_esc(e.quando)})</span></div>`;
+    if (r.red || r.ora) h += `<div style="background:#fff4e0;border:1px solid #f0c27a;border-radius:10px;padding:8px 10px;font-size:12px;margin-bottom:10px;color:#7a4e0a">${r.red ? `🔴 ${r.red} pallet(s) bloqueado(s) ` : ''}${r.ora ? `🟠 ${r.ora} em atenção` : ''}</div>`;
+    h += r.prods.map(({ p, g, pal, dias }) => `<div style="border:1px solid #dde3ea;border-radius:10px;padding:10px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:13px">${_esc(p.nome || 'Sem nome')}</b><b style="color:#1a6b3c;font-size:13px">${_kg(g.totais.liqTotal)} kg</b></div>${p.validade ? `<div style="font-size:11px;color:#6b7a8d;margin:3px 0 6px">Validade ${p.validade.split('-').reverse().join('/')} · ${dias < 0 ? 'vencido há ' + Math.abs(dias) + ' d' : dias === 0 ? 'vence HOJE' : 'faltam ' + dias + ' d'}</div>` : ''}<table style="width:100%;border-collapse:collapse;font:500 11px 'DM Mono',monospace"><tr style="color:#6b7a8d;text-align:left"><th></th><th>Bruto</th><th>Líquido</th><th>Tara</th><th></th></tr>${pal.map((x, i) => `<tr style="border-top:1px solid #eef1f4"><td style="padding:4px 0">P${x.idx + 1}</td><td>${_kg(x.bto)}</td><td><b>${_kg(x.liqPallet)}</b></td><td>${(x.percTara * 100).toFixed(0)}%</td><td>${dot[x.estado] || ''}</td></tr>`).join('')}</table></div>`).join('');
+    _modal('👁 Conferência (somente leitura)', h);
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const d = _disp(), n = document.getElementById('cfg-disp-nome'), f = document.getElementById('cfg-disp-funcao');
+        if (n) n.value = d.nome || ''; if (f) f.value = _funcao();
+        if (_funcao() === 'prevencao') prevRender();
+    }, 200);
+    setInterval(() => { if (_funcao() === 'prevencao' && document.visibilityState === 'visible') prevAtualizar(false); }, 45000);
 });
 </script>
 </body>
