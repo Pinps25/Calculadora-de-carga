@@ -1284,6 +1284,46 @@
             html.dark .prev-badge.final, html.dark .prev-chip.ok { background: #153325; color: #4cd68a; }
             html.dark .prev-chip { background: #243140; color: #e6edf3; } html.dark .prev-chip.bad { background: #3a1f1d; color: #ff8a80; }
         }
+
+        /* ─── Cofre do histórico: diálogo, tela de leitura, identidade ─── */
+        .conf-id-info { font: 600 11px 'DM Mono', monospace; color: #6b7a8d; margin: 2px 0 10px; line-height: 1.5; }
+        #dlg-cofre { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 9700; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .dc-box { background: #fff; color: #1c2b3a; border-radius: 16px; max-width: 460px; width: 100%; max-height: 90vh; overflow: auto; padding: 18px; font-family: 'Sora', sans-serif; }
+        .dc-box h3 { margin: 0 0 6px; font-size: 16px; } .dc-sub { font: 500 11px 'DM Mono', monospace; color: #6b7a8d; margin: 0 0 10px; }
+        .dc-mot { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: #c0392b; font-weight: 600; } .dc-mot li { margin-bottom: 4px; }
+        .dc-diff { background: #f0f3f6; border-radius: 10px; padding: 10px; font: 500 12px 'DM Mono', monospace; margin-bottom: 12px; line-height: 1.6; }
+        .dc-btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #dde3ea; background: #f0f3f6; color: #1c2b3a; font: 700 13px 'Sora', sans-serif; margin-top: 8px; cursor: pointer; }
+        .dc-btn.pri { background: #1a6b3c; color: #fff; border-color: #1a6b3c; } .dc-btn.cancel { background: transparent; color: #6b7a8d; }
+        .vc-full { position: fixed; inset: 0; z-index: 9400; background: #f0f3f6; overflow: auto; font-family: 'Sora', sans-serif; color: #1c2b3a; }
+        .vc-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; background: #1c2b3a; color: #fff; padding: 12px 14px; font-weight: 700; font-size: 13px; }
+        .vc-bar button { background: #27ae60; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; font: 700 12px 'Sora', sans-serif; }
+        .vc-body { padding: 14px; max-width: 640px; margin: 0 auto; padding-bottom: 60px; }
+        .vc-id, .vc-prod, .vc-revs, .vc-total { background: #fff; border: 1px solid #dde3ea; border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+        .vc-forn { font-size: 20px; font-weight: 800; } .vc-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+        .vc-b { font: 700 11px 'Sora', sans-serif; padding: 3px 9px; border-radius: 99px; background: #f0f3f6; } .vc-b.ok { background: #e8f5ee; color: #1a6b3c; } .vc-b.warn { background: #fff4e0; color: #b9770e; } .vc-b.bad { background: #fdecea; color: #c0392b; }
+        .vc-sub { font: 500 11px 'DM Mono', monospace; color: #6b7a8d; line-height: 1.6; }
+        .vc-alerta { border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-weight: 700; font-size: 13px; } .vc-alerta button { margin-left: 8px; font-size: 11px; }
+        .vc-alerta.ok { background: #e8f5ee; color: #1a6b3c; } .vc-alerta.warn { background: #fff4e0; color: #b9770e; } .vc-alerta.bad { background: #fdecea; color: #c0392b; }
+        .vc-total { font-size: 14px; text-align: center; } .vc-total b { font-size: 22px; color: #1a6b3c; display: block; }
+        .vc-ptop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } .vc-pnome { font-size: 17px; font-weight: 800; } .vc-liq { font-size: 20px; font-weight: 800; color: #1a6b3c; white-space: nowrap; }
+        .vc-val, .vc-meta { font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin: 8px 0; background: #f0f3f6; } .vc-val.ok, .vc-meta.ok { background: #e8f5ee; color: #1a6b3c; } .vc-val.warn { background: #fff4e0; color: #b9770e; } .vc-val.bad, .vc-meta.bad { background: #fdecea; color: #c0392b; }
+        .vc-grid, .vc-pal { margin-top: 8px; } .vc-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid #eef1f4; font-size: 13px; } .vc-row span { color: #6b7a8d; } .vc-row b { font-family: 'DM Mono', monospace; text-align: right; }
+        .vc-row.dest { border-bottom: 0; background: #e8f5ee; border-radius: 8px; padding: 8px 10px; margin-top: 4px; } .vc-row.dest span, .vc-row.dest b { color: #1a6b3c; font-weight: 800; }
+        .vc-pal { border: 1px solid #dde3ea; border-left: 5px solid #27ae60; border-radius: 12px; padding: 10px 12px; margin-top: 12px; } .vc-pal.warn { border-left-color: #f0a020; background: #fffaf0; } .vc-pal.bad { border-left-color: #c0392b; background: #fff6f5; }
+        .vc-pal.bad .vc-row.dest { background: #fdecea; } .vc-pal.bad .vc-row.dest span, .vc-pal.bad .vc-row.dest b { color: #c0392b; }
+        .vc-pal.warn .vc-row.dest { background: #fff4e0; } .vc-pal.warn .vc-row.dest span, .vc-pal.warn .vc-row.dest b { color: #b9770e; }
+        .vc-phead { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; } .vc-foto { width: 90px; border-radius: 8px; margin: 4px 0; }
+        .vc-rtit { font-weight: 800; font-size: 14px; margin-bottom: 8px; } .vc-rev { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eef1f4; font-size: 12px; } .vc-rev span { color: #6b7a8d; font: 500 11px 'DM Mono', monospace; } .vc-rev.atual { background: #f6faf7; }
+        .vc-rbtn { display: flex; flex-direction: column; gap: 4px; } .vc-rbtn button { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 1px solid #dde3ea; background: #f0f3f6; font-weight: 700; }
+        @media screen {
+            html.dark .conf-id-info { color: #93a3b5; }
+            html.dark .dc-box { background: #18222c; color: #e6edf3; } html.dark .dc-diff { background: #243140; } html.dark .dc-btn { background: #243140; color: #e6edf3; border-color: #2c3a48; } html.dark .dc-btn.pri { background: #1a6b3c; } html.dark .dc-mot { color: #ff8a80; }
+            html.dark .vc-full { background: #0f161d; color: #e6edf3; } html.dark .vc-id, html.dark .vc-prod, html.dark .vc-revs, html.dark .vc-total { background: #18222c; border-color: #2c3a48; }
+            html.dark .vc-row { border-color: #243140; } html.dark .vc-row.dest, html.dark .vc-val.ok, html.dark .vc-meta.ok, html.dark .vc-alerta.ok, html.dark .vc-b.ok { background: #153325; } html.dark .vc-row.dest span, html.dark .vc-row.dest b, html.dark .vc-liq, html.dark .vc-total b, html.dark .vc-val.ok, html.dark .vc-meta.ok, html.dark .vc-alerta.ok, html.dark .vc-b.ok { color: #4cd68a; }
+            html.dark .vc-b, html.dark .vc-val, html.dark .vc-meta { background: #243140; } html.dark .vc-alerta.warn, html.dark .vc-val.warn, html.dark .vc-b.warn { background: #3b2a14; color: #ffb454; } html.dark .vc-alerta.bad, html.dark .vc-val.bad, html.dark .vc-meta.bad, html.dark .vc-b.bad { background: #3a1f1d; color: #ff8a80; }
+            html.dark .vc-pal.bad .vc-row.dest { background: #3a1f1d; } html.dark .vc-pal.bad .vc-row.dest span, html.dark .vc-pal.bad .vc-row.dest b { color: #ff8a80; } html.dark .vc-pal.warn .vc-row.dest { background: #3b2a14; } html.dark .vc-pal.warn .vc-row.dest span, html.dark .vc-pal.warn .vc-row.dest b { color: #ffb454; }
+            html.dark .vc-pal { border-color: #2c3a48; } html.dark .vc-pal.warn { background: #2b2414; } html.dark .vc-pal.bad { background: #2f1b19; } html.dark .vc-rev { border-color: #243140; } html.dark .vc-rev.atual { background: #1c2b22; } html.dark .vc-rbtn button { background: #243140; color: #e6edf3; border-color: #2c3a48; }
+        }
         /* ─── RESPONSIVE ─── */
         @media (max-width: 520px) {
             .tara-row { font-size: 9px; }
@@ -1349,6 +1389,7 @@
     <div class="drawer-body">
         <div class="drawer-section sec-conf">
             <span class="drawer-section-title">👤 Identificação</span>
+            <div id="conf-id-info" class="conf-id-info"></div>
             <div class="drawer-field">
                 <label class="drawer-label">Conferente</label>
                 <input type="text" id="conferente" class="drawer-input" placeholder="Nome do conferente">
@@ -1680,7 +1721,7 @@ function aplicarConfig() {
 
 const FORMATO_3 = { minimumFractionDigits: 3, maximumFractionDigits: 3 };
 
-const state = { cid:'', conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
+const state = { cid:'', tk:'', baseRev:'', conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
 
 function criarProduto() {
     return {
@@ -1867,15 +1908,15 @@ async function carregar() {
 }
 
 function exportarEstado() {
-    return { versao:'V8', esquema:2, cid:_cid(), conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
+    return { versao:'V8', esquema:2, cid:_cid(), tk:state.tk || '', baseRev:state.baseRev || '', conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
 }
 
-function importarEstado(raw) {
+function importarEstado(raw, opts = {}) {
     if (!raw || !Array.isArray(raw.produtos)) throw new Error('Formato inválido');
     state.conferente  = raw.conferente  || '';
     state.fornecedor  = raw.fornecedor  || '';
     state.dataPesagem = raw.dataPesagem || '';
-    _setCid(raw.cid || (window._boot && localStorage.getItem('pesagem_cid_atual')) || _gerarCid());
+    _setCid(raw.cid || (opts.boot && localStorage.getItem('pesagem_cid_atual')) || _gerarCid()); state.tk = raw.tk || ''; state.baseRev = raw.baseRev || '';
     state.produtos = raw.produtos.map(p => ({
         ...criarProduto(), ...p,
         validade:      p.validade      || p.pallets?.[0]?.val || '',
@@ -2398,11 +2439,11 @@ function importarBackup(e) {
         try {
             const raw = JSON.parse(ev.target.result);
             if (Array.isArray(raw.historico)) {
-                for (const x of raw.historico) { const ex = await _hTx('readonly', st => st.get(x.id)); if (!ex || ex.ts < x.ts) await _hTx('readwrite', st => st.put(x)); }
+                for (const x of raw.historico) await _mesclarConf(x);
                 _restaurarExtras(raw.extras);
                 if (raw.atual && !_temDados()) { importarEstado(raw.atual); renderizarTudo(); }
                 toast(`✅ Backup completo restaurado (${raw.historico.length} item(ns) no histórico).`, 'success');
-            } else { importarEstado(raw); _restaurarExtras(raw.extras); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
+            } else { importarEstado(raw); _limparUndo(); _restaurarExtras(raw.extras); renderizarTudo(); toast('✅ Backup carregado com sucesso!', 'success'); }
         }
         catch(err) { toast(`❌ Falha ao carregar backup: ${err.message}`, 'error'); }
         finally { esconderLoading(); e.target.value = ''; }
@@ -2566,15 +2607,14 @@ function gerarLaudo() {
     _aprender();
     html += _anexoFotos(produtosValidos);
     document.getElementById('print-area').innerHTML = html;
-    histSalvar().then(() => toast('🗂 Salvo no histórico.', 'info', 2000)).catch(() => toast('Não consegui salvar no histórico.', 'warning'));
-    setTimeout(() => window.print(), 800);
+    histSalvar('final').then(ok => { if (ok === false) { toast('PDF cancelado: a conferência NÃO foi salva.', 'warning', 4000); return; } toast('🗂 ' + (_ultimoSalvar.msg || 'Salvo no histórico.'), 'info', 2500); setTimeout(() => window.print(), 300); }).catch(() => { toast('Não consegui salvar no histórico.', 'warning'); setTimeout(() => window.print(), 300); });
 }
 
 /* ─── Limpar tudo ─── */
 
 function confirmarLimpeza() {
     mostrarConfirm('ATENÇÃO: Isso apagará TODOS os dados. Tem certeza?', '🗑', async () => {
-        _aprender(true); _pausaApr = true; try { await histSalvar(); } catch {} _novoSid();
+        _aprender(true); _pausaApr = true; try { await histSalvar('final', { silencioso: true }); } catch {} _novoSid();
         esconderLoading();
         try {
             if (idb) { idb.close(); idb = null; }
@@ -2609,7 +2649,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         await iniciarIDB();
         const salvo = await carregar();
         if (salvo) {
-            try { importarEstado(salvo); mostrarIndicadorSalvo('Banco Restaurado!'); }
+            try { importarEstado(salvo, { boot: true }); mostrarIndicadorSalvo('Banco Restaurado!'); }
             catch(e) { console.warn('Dados corrompidos, iniciando do zero:', e.message); }
         }
         renderizarTudo();
@@ -2813,13 +2853,16 @@ function salvarHistorico() {
 function desfazer() {
     if (_historico.length === 0) return;
     try {
-        importarEstado(JSON.parse(_historico.pop()));
+        const snap = JSON.parse(_historico.pop()), eu = { cid: state.cid, tk: state.tk, baseRev: state.baseRev };
+        if (snap.cid && eu.cid && snap.cid !== eu.cid) { _limparUndo(); toast('Desfazer indisponível: essas edições eram de OUTRA conferência.', 'warning', 4500); return; }
+        importarEstado(snap); _setCid(eu.cid); state.tk = eu.tk; state.baseRev = eu.baseRev;
         renderizarTudo();
         atualizarBotaoUndo();
         toast('Ação desfeita', 'info', 1800);
     } catch(e) { toast('Erro ao desfazer', 'error'); }
 }
 
+function _limparUndo() { _historico.length = 0; atualizarBotaoUndo(); }
 function atualizarBotaoUndo() {
     const btn = document.getElementById('btn-undo');
     if (!btn) return;
@@ -3043,17 +3086,137 @@ function calcularAmostra() {
 /* 12 · Histórico (IndexedDB, com fotos) + 14 · Auditoria */
 const _hdb = () => new Promise((ok, er) => { const r = indexedDB.open('PesagemHistoricoDB', 1); r.onupgradeneeded = () => r.result.createObjectStore('h', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => er(r.error); });
 const _hTx = async (modo, fn) => { const db = await _hdb(); return new Promise((ok, er) => { const tx = db.transaction('h', modo), rq = fn(tx.objectStore('h')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = tx.onabort = () => er(tx.error); }); };
-const _hLista = async () => ((await _hTx('readonly', st => st.getAll())) || []).sort((a, b) => b.ts - a.ts);
+/* ══════════ COFRE DO HISTÓRICO · identidade, token, revisões e selo ══════════ */
+let _ultimoSalvar = {};
+const _tkNovo = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
+const _tkLegado = id => 'L' + _sha1(_u8('legado|' + id)).slice(0, 23);
+function _semFotos(est) { const c = JSON.parse(JSON.stringify(est)); delete c.baseRev; (c.produtos || []).forEach(p => (p.pallets || []).forEach(pl => { pl.foto = ''; delete pl.collapsed; })); return c; }
+function _revHash(id, n, prev, status, est) { return _sha1(_u8(_stable({ id, n, prev: prev || '', status, estado: _semFotos(est) }))); }
+function _migrarRegistro(e) {
+    if (!e || e.revs || !e.estado) return e;
+    const rev = { n: 1, prev: null, status: e.status || 'final', ua: e.ua || e.ts || 0, quando: e.quando || '', titulo: e.titulo || '', conferente: e.conferente || '', disp: e.disp || null, nProd: e.nProd || 0, liq: typeof e.liq === 'number' ? e.liq : null, estado: e.estado };
+    rev.h = _revHash(e.id, 1, null, rev.status, e.estado);
+    return Object.assign({}, e, { v: 3, tk: e.tk || _tkLegado(e.id), tkLegado: !e.tk, n: 1, h: rev.h, revs: [rev] });
+}
+const _cabeca = rec => rec.revs.reduce((a, b) => (!a || b.n > a.n || (b.n === a.n && ((b.ua || 0) > (a.ua || 0) || ((b.ua || 0) === (a.ua || 0) && b.h > a.h)))) ? b : a, null);
+function _ramos(rec) { const pais = new Set(rec.revs.map(r => r.prev).filter(Boolean)); return rec.revs.filter(r => !pais.has(r.h)).length; }
+function _espelhar(rec) { const h = _cabeca(rec); Object.assign(rec, { n: h.n, h: h.h, status: h.status, ua: h.ua, ts: h.ua, quando: h.quando, titulo: h.titulo, conferente: h.conferente, disp: h.disp, nProd: h.nProd, liq: h.liq, estado: h.estado }); rec.conflito = _ramos(rec) > 1; return rec; }
+function _seloOk(rec, todas) { return (todas ? rec.revs : [_cabeca(rec)]).every(r => _revHash(rec.id, r.n, r.prev, r.status, r.estado) === r.h); }
+function _selo(rec) {
+    if (!_seloOk(rec)) return { ico: '⚠', txt: 'selo inválido', cls: 'bad' };
+    if (rec.conflito) return { ico: '🔀', txt: 'versões divergentes', cls: 'warn' };
+    return rec.status === 'final' ? { ico: '🔒', txt: 'selada', cls: 'ok' } : { ico: '✏', txt: 'em andamento', cls: 'warn' };
+}
+const _hLista = async () => ((await _hTx('readonly', st => st.getAll())) || []).map(_migrarRegistro).sort((a, b) => (b.ua || b.ts || 0) - (a.ua || a.ts || 0));
+const _hGet = async id => { const e = await _hTx('readonly', st => st.get(id)); return e ? _migrarRegistro(e) : null; };
+function _herdarFotos(novo, antigo) { try { novo.produtos.forEach((p, pi) => p.pallets.forEach((pl, li) => { if (!pl.foto) { const f = antigo?.produtos?.[pi]?.pallets?.[li]?.foto; if (f) pl.foto = f; } })); } catch {} }
 
-async function histSalvar(status = 'final') {
+/* comparação entre o que está na tela e o que já foi salvo */
+const _nomesProd = est => new Set((est.produtos || []).map(p => _kk(p.nome || '')).filter(Boolean));
+function _liqEstado(est) { try { return _calcEntry(est).reduce((a, x) => a + x.g.totais.liqTotal, 0); } catch { return 0; } }
+const _sigPallets = p => JSON.stringify((p.pallets || []).map(pl => [pl.bto, pl.pal, pl.pcx, pl.qcx, pl.pemb, pl.qemb]));
+function _resumoMudancas(a, b) {
+    const L = [], fa = (a.fornecedor || '').trim(), fb = (b.fornecedor || '').trim();
+    if (_kk(fa) !== _kk(fb)) L.push(`Fornecedor: "${fa || '—'}" → "${fb || '—'}"`);
+    if ((a.conferente || '').trim() !== (b.conferente || '').trim()) L.push(`Conferente: "${(a.conferente || '—')}" → "${(b.conferente || '—')}"`);
+    const pa = new Map((a.produtos || []).map(p => [_kk(p.nome || ''), p])), pb = new Map((b.produtos || []).map(p => [_kk(p.nome || ''), p]));
+    pb.forEach((p, k) => {
+        if (!pa.has(k)) { L.push(`+ produto ${p.nome || '(sem nome)'}`); return; }
+        const x = pa.get(k), n1 = (x.pallets || []).filter(pl => pl.bto).length, n2 = (p.pallets || []).filter(pl => pl.bto).length;
+        if (n1 !== n2) L.push(`${p.nome}: pallets ${n1} → ${n2}`); else if (_sigPallets(x) !== _sigPallets(p)) L.push(`${p.nome}: pesos/quantidades alterados`);
+        if ((x.validade || '') !== (p.validade || '')) L.push(`${p.nome}: validade alterada`);
+    });
+    pa.forEach((p, k) => { if (!pb.has(k)) L.push(`− produto ${p.nome || '(sem nome)'}`); });
+    const l1 = _liqEstado(a), l2 = _liqEstado(b); if (Math.abs(l1 - l2) > 0.0005) L.push(`Líquido total: ${_kg(l1)} → ${_kg(l2)} kg`);
+    return L;
+}
+function _diagnosticar(rec, atual) {
+    const head = _cabeca(rec), dg = { motivos: [], linhas: _resumoMudancas(head.estado, atual) };
+    dg.mudou = _revHash(rec.id, 0, '', 'x', atual) !== _revHash(rec.id, 0, '', 'x', head.estado);
+    if (state.tk && rec.tk && state.tk !== rec.tk) { dg.tokenInvalido = true; dg.motivos.push('A chave (token) desta conferência NÃO confere com a do histórico.'); }
+    if (dg.mudou) {
+        const fa = _kk(head.estado.fornecedor || ''), fb = _kk(atual.fornecedor || '');
+        if (fa && fb && fa !== fb) { dg.fornecedorMudou = true; dg.motivos.push(`O fornecedor mudou: "${head.estado.fornecedor}" → "${atual.fornecedor}". Isso parece ser OUTRA conferência.`); }
+        const PA = (head.estado.produtos || []).filter(p => p.nome || (p.pallets || []).some(pl => pl.bto)), PB = (atual.produtos || []).filter(p => p.nome || (p.pallets || []).some(pl => pl.bto));
+        const bruto = p => (p.pallets || []).map(pl => pl.bto).filter(Boolean).join(','), mesmo = (x, y) => { const a1 = _kk(x.nome || ''), b1 = _kk(y.nome || ''); return (a1 && a1 === b1) || (a1.length >= 4 && b1.length >= 4 && (_lev(a1, b1) <= 2 || a1.includes(b1) || b1.includes(a1))) || (bruto(x) && bruto(x) === bruto(y)); };
+        if (PA.length && PB.length && PB.filter(y => PA.some(x => mesmo(x, y))).length / Math.max(PA.length, PB.length) < 0.5) { dg.produtosMudaram = true; dg.motivos.push('Os produtos são muito diferentes dos que foram salvos antes.'); }
+        const baseOk = state.baseRev ? state.baseRev === head.h : (head.disp?.id === _device());
+        if (!baseOk) { dg.conflito = true; dg.motivos.push('Existe uma versão diferente no histórico (feita em outra tela, aba ou aparelho).'); }
+    }
+    dg.problema = !!(dg.tokenInvalido || dg.fornecedorMudou || dg.produtosMudaram || dg.conflito);
+    return dg;
+}
+function _overlayCofre(html) {
+    return new Promise(res => {
+        document.getElementById('dlg-cofre')?.remove();
+        const o = document.createElement('div'); o.id = 'dlg-cofre'; o.innerHTML = `<div class="dc-box">${html}</div>`;
+        o.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) { o.remove(); res(b.dataset.r); } });
+        document.body.appendChild(o);
+    });
+}
+function _dialogoSalvar(rec, dg) {
+    const head = _cabeca(rec);
+    return _overlayCofre(`<h3>⚠ Esta conferência já está salva</h3><p class="dc-sub">Revisão ${head.n} · ${_haTxt(head.ua)} · ${_esc(head.disp?.nome || '—')} · 🔑 ${_esc(rec.tk.slice(-4))}</p><ul class="dc-mot">${dg.motivos.map(m => `<li>${_esc(m)}</li>`).join('')}</ul>${dg.linhas.length ? `<div class="dc-diff"><b>O que mudou em relação à salva:</b><br>${dg.linhas.map(l => _esc(l)).join('<br>')}</div>` : ''}<button class="dc-btn pri" data-r="novo">Salvar como NOVA conferência (recomendado)</button>${dg.tokenInvalido ? '' : `<button class="dc-btn" data-r="mesmo">Corrigir esta mesma (cria a revisão ${head.n + 1})</button>`}<button class="dc-btn cancel" data-r="cancelar">Cancelar</button>`);
+}
+async function _acharDuplicata(atual) {
+    const f = _kk(atual.fornecedor || ''); if (!f) return null;
+    const sig = p => _kk(p.nome || '') + '|' + (p.pallets || []).map(pl => pl.bto).filter(Boolean).join(','), mine = new Set((atual.produtos || []).filter(p => p.nome && (p.pallets || []).some(pl => pl.bto)).map(sig));
+    if (!mine.size) return null;
+    for (const r of await _hLista()) { if (r.id === atual.cid || _kk(r.estado.fornecedor || '') !== f || (r.estado.dataPesagem || '') !== (atual.dataPesagem || '')) continue; if ((r.estado.produtos || []).some(p => mine.has(sig(p)))) return r; }
+    return null;
+}
+function _dialogoDuplicata(dup) {
+    return _overlayCofre(`<h3>⚠ Parece duplicata</h3><p class="dc-sub">Já existe uma conferência de <b>${_esc(dup.titulo)}</b> na mesma data com os mesmos pesos (rev ${dup.n}, ${_haTxt(dup.ua)}, ${_esc(dup.disp?.nome || '—')}).</p><button class="dc-btn pri" data-r="ver">Ver a que já existe</button><button class="dc-btn" data-r="mesmo">Salvar mesmo assim (é outra carga)</button><button class="dc-btn cancel" data-r="cancelar">Cancelar</button>`);
+}
+const _atualizarIdInfo = async () => {
+    const el = document.getElementById('conf-id-info'); if (!el) return;
+    if (!state.cid) { el.textContent = ''; return; }
+    const rec = await _hGet(state.cid).catch(() => null);
+    if (!rec) { el.innerHTML = `🆕 Conferência nova · 🔑 ${state.tk ? _esc(state.tk.slice(-4)) : '····'} · ainda não salva`; return; }
+    const h = _cabeca(rec), s2 = _selo(rec), novo = state.baseRev && state.baseRev !== h.h;
+    el.innerHTML = `${s2.ico} Rev ${h.n} · 🔑 ${_esc(rec.tk.slice(-4))} · salva ${_haTxt(h.ua)}${novo ? ' · <b style="color:#c0392b">⚠ há versão mais nova no histórico</b>' : ''}`;
+};
+let _idTimer = null; const _idInfoDeb = () => { clearTimeout(_idTimer); _idTimer = setTimeout(_atualizarIdInfo, 400); };
+
+async function histSalvar(status = 'final', opt = {}) {
+    if (_funcao() === 'prevencao') return false;
     lerFormularioParaState(); if (!_temDados()) return false;
-    if (status === 'auto') { const ex = await _hTx('readonly', st => st.get(_sid())); status = ex?.status || 'andamento'; }
-    const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0);
-    const e = { id: _sid(), cid: _sid(), ua: Date.now(), status, disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() }, conferente: (state.conferente || '').trim(), v: 2, ts: Date.now(), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', quando: new Date().toLocaleString('pt-BR'),
-        nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: JSON.parse(JSON.stringify(exportarEstado())) };
-    await _hTx('readwrite', st => st.put(e));
-    for (const x of (await _hLista()).slice(60)) await _hTx('readwrite', st => st.delete(x.id));
-    _syncAgendar(3000);
+    let rec = await _hGet(_cid());
+    if (status === 'auto') status = rec?.status || 'andamento';
+    if (rec && !state.tk) state.tk = rec.tk;
+    if (!state.tk) state.tk = _tkNovo();
+    const atual = JSON.parse(JSON.stringify(exportarEstado())); delete atual.baseRev;
+    let origem = null;
+    if (rec) {
+        const dg = _diagnosticar(rec, atual), head = _cabeca(rec);
+        if (!dg.mudou && !dg.tokenInvalido) {
+            const fotosDif = JSON.stringify((atual.produtos || []).map(p => (p.pallets || []).map(pl => pl.foto || ''))) !== JSON.stringify((head.estado.produtos || []).map(p => (p.pallets || []).map(pl => pl.foto || '')));
+            if (rec.status === status) { if (fotosDif) { head.estado = atual; _espelhar(rec); await _hTx('readwrite', st => st.put(rec)); } state.baseRev = rec.h; _ultimoSalvar = { msg: `Sem mudanças (rev ${rec.n}).`, n: rec.n }; return true; }
+        } else if (dg.problema) {
+            const r = opt.silencioso ? 'novo' : await _dialogoSalvar(rec, dg);
+            if (r === 'cancelar') return false;
+            if (r === 'novo') { origem = { cid: rec.id, rev: head.h }; _setCid(_gerarCid()); state.tk = _tkNovo(); atual.cid = state.cid; atual.tk = state.tk; rec = null; }
+        }
+    } else if (!opt.silencioso) {
+        const dup = await _acharDuplicata(atual);
+        if (dup) { const r = await _dialogoDuplicata(dup); if (r === 'cancelar') return false; if (r === 'ver') { verConferencia(dup.id); return false; } }
+    }
+    const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0), cid = state.cid, prev = rec ? _cabeca(rec) : null, n = prev ? prev.n + 1 : 1;
+    const resumo = prev ? _resumoMudancas(prev.estado, atual) : [];
+    const rev = { n, prev: prev?.h || null, status, ua: Date.now(), quando: new Date().toLocaleString('pt-BR'), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', conferente: (state.conferente || '').trim(), disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() }, nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: atual };
+    if (prev && prev.status === 'final' && status !== 'final') rev.reaberta = true;
+    rev.h = _revHash(cid, n, rev.prev, status, atual);
+    const novo = rec || { id: cid, cid, tk: state.tk, criada: Date.now(), v: 3, revs: [] };
+    if (origem) novo.origem = origem;
+    if (prev) prev.estado = _semFotos(prev.estado);
+    novo.revs.push(rev);
+    while (novo.revs.length > 40) { const i = novo.revs.findIndex(r => r.status !== 'final' && r.n > 1 && r.h !== rev.h); if (i < 0) break; novo.revs.splice(i, 1); novo.podada = true; }
+    _espelhar(novo);
+    await _hTx('readwrite', st => st.put(novo));
+    state.baseRev = rev.h; try { persistir(); } catch {}
+    for (const x of (await _hLista())) { if (x.status === 'andamento' && x.id !== cid && Date.now() - (x.ua || 0) > 60 * 864e5) await _hTx('readwrite', st => st.delete(x.id)); }
+    _ultimoSalvar = { msg: prev ? `Revisão ${n} salva${resumo.length ? ' (' + resumo.slice(0, 2).join('; ') + ')' : ''}.` : (origem ? 'Salva como NOVA conferência.' : 'Conferência salva (rev 1).'), n, nova: !prev };
+    _syncAgendar(3000); _atualizarIdInfo();
     return true;
 }
 async function _migrarHistorico() {
@@ -3064,28 +3227,31 @@ async function _migrarHistorico() {
 async function abrirHistorico() {
     let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
     const A = _lsGet('pesagem_auditoria', []), sync = !!_syncCfg()?.token;
-    let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada PDF gerado fica salvo aqui automaticamente, com fotos. Baixe só quando quiser.</p>`;
-    h += L.length ? L.map(x => `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${x.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}${x.disp ? '<br>' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN2}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN}" onclick="histAbrir('${x.id}')">Abrir</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada conferência tem identidade e chave próprias. Salvar de novo cria uma <b>revisão</b>; nada é sobrescrito. Conferência finalizada fica <b>selada</b> 🔒.</p>`;
+    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px;min-width:0"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
     if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
 async function histAtualizar() { await sincronizar(true, '🔄 Histórico atualizado.'); abrirHistorico(); }
-async function histSalvarAgora() { const ok = await histSalvar(); toast(ok ? '🗂 Conferência salva no histórico.' : 'Nada para salvar ainda.', ok ? 'success' : 'info'); abrirHistorico(); }
+async function histSalvarAgora() { const ok = await histSalvar('auto'); toast(ok ? '🗂 ' + (_ultimoSalvar.msg || 'Conferência salva no histórico.') : (ok === false ? 'Nada foi salvo.' : 'Nada para salvar ainda.'), ok ? 'success' : 'info'); abrirHistorico(); }
 async function histAbrir(id) {
-    const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
-    const outro = x.status === 'andamento' && x.disp && x.disp.id !== _device();
-    const aviso = outro ? `ATENÇÃO: esta conferência está EM ANDAMENTO no aparelho "${x.disp.nome}" (${x.conferente || 'sem conferente'}, atualizada ${_haTxt(x.ua || x.ts)}). Abrir aqui pode gerar conflito. ` : '';
-    mostrarConfirm(aviso + 'Abrir esta conferência? Os dados atuais serão substituídos (a atual é guardada no histórico antes).', outro ? '⚠' : '🗂', async () => {
-        _aprender(true); try { await histSalvar('auto'); } catch {}
-        importarEstado(x.estado); if (!x.estado.cid && !String(x.id).startsWith('old-')) _setCid(x.id);
-        renderizarTudo(); _fecharModal(); toast('Conferência aberta.', 'success');
+    if (_funcao() === 'prevencao') return;
+    const x = await _hGet(id); if (!x) return;
+    if (id === state.cid) { toast('Esta conferência já está aberta na tela.', 'info'); _fecharModal(); return; }
+    const outro = x.status === 'andamento' && x.disp && x.disp.id !== _device(), s2 = _selo(x);
+    const aviso = (outro ? `ATENÇÃO: está EM ANDAMENTO no aparelho "${x.disp.nome}" (${x.conferente || 'sem conferente'}, atualizada ${_haTxt(x.ua || x.ts)}). Abrir aqui pode gerar conflito. ` : '') + (s2.cls === 'bad' ? 'ATENÇÃO: o selo desta conferência é inválido (o conteúdo foi alterado fora do app). ' : '') + (x.status === 'final' ? `Esta conferência está FINALIZADA (selada, rev ${x.n}). Reabrir cria uma NOVA REVISÃO; a versão selada continua guardada. ` : '');
+    mostrarConfirm(aviso + 'Abrir esta conferência? O que está na tela agora é guardado antes (nunca sobrescreve outra conferência).', (outro || s2.cls === 'bad') ? '⚠' : '🗂', async () => {
+        _aprender(true); try { await histSalvar('auto', { silencioso: true }); } catch {}
+        const est = JSON.parse(JSON.stringify(x.estado)); if (!est.dataPesagem) est.dataPesagem = new Date(x.criada || x.ts || Date.now()).toISOString().slice(0, 10);
+        importarEstado(est); _setCid(x.id); state.tk = x.tk; state.baseRev = x.h;
+        _limparUndo(); renderizarTudo(); _fecharModal(); _atualizarIdInfo(); toast(`Conferência aberta (rev ${x.n}).`, 'success');
     }, 'warning');
 }
 async function histBaixar(id) {
     const x = await _hTx('readonly', st => st.get(id)); if (!x) return;
     _baixarArquivo(`Pesagem_${String(x.titulo).replace(/[^\w]+/g, '_')}_${String(x.quando).split(',')[0].replace(/\//g, '-')}.json`, JSON.stringify(x.estado), 'application/json');
 }
-function histExcluir(id) { mostrarConfirm('Excluir esta conferência do histórico?', '🗑', async () => { await _hTx('readwrite', st => st.delete(id)); const T = _lsGet('pesagem_hist_del', {}); T[id] = Date.now(); _lsSet('pesagem_hist_del', T); _syncAgendar(3000); abrirHistorico(); }, 'error'); }
+function histExcluir(id) { mostrarConfirm('Excluir esta conferência do histórico? Se estiver FINALIZADA (selada), todas as revisões dela serão apagadas. Isso não tem volta.', '🗑', async () => { await _hTx('readwrite', st => st.delete(id)); const T = _lsGet('pesagem_hist_del', {}); T[id] = Date.now(); _lsSet('pesagem_hist_del', T); _syncAgendar(3000); abrirHistorico(); }, 'error'); }
 async function baixarBackupCompleto() {
     lerFormularioParaState();
     const out = { app: 'Conferência de Pesagem', tipo: 'backup_completo', exportado_em: new Date().toISOString(), atual: _temDados() ? exportarEstado() : null, historico: await _hLista(), extras: _extrasBackup() };
@@ -3229,7 +3395,7 @@ async function abrirCarga(id) {
     _aprender(true); lerFormularioParaState();
     if (_temDados()) await _estacionarAtual();
     await _cTx('readwrite', st => st.delete(id));
-    importarEstado(x.estado); if (x.sid && !x.estado.cid) _setCid(x.sid); renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
+    importarEstado(x.estado); if (x.sid && !x.estado.cid) _setCid(x.sid); _limparUndo(); renderizarTudo(); _fecharModal(); toast(`🚚 Carga "${x.titulo}" aberta.`, 'success');
 }
 async function excluirCarga(id) { mostrarConfirm('Excluir esta carga guardada?', '🗑', async () => { await _cTx('readwrite', st => st.delete(id)); abrirCargas(); }); }
 
@@ -3247,7 +3413,7 @@ function _syncValidadeTxt() { const h = _vHid(), t = _vTxt(); if (h && t) { t.va
 function _setValidadeHid(iso) { const h = _vHid(); if (h.value === iso) return; h.value = iso; h.dispatchEvent(new Event('input', { bubbles: true })); h.dispatchEvent(new Event('change', { bubbles: true })); }
 (function () {
     const orig = renderizarTudo;
-    renderizarTudo = function () { orig.apply(this, arguments); _syncValidadeTxt(); };
+    renderizarTudo = function () { orig.apply(this, arguments); _syncValidadeTxt(); _idInfoDeb(); };
 })();
 
 /* ══════════ FASE 1 · MODELO DE DADOS V2 (conferência · observações · médias · apelidos) ══════════ */
@@ -3266,7 +3432,7 @@ function _chaveSimilar(obj, k) { if (!k || obj[k] || /\d/.test(k) || k.length < 
 
 /* identidade da conferência (cid) — gravada dentro da própria conferência */
 function _gerarCid() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function _setCid(v) { state.cid = v; try { localStorage.setItem('pesagem_cid_atual', v); } catch {} }
+function _setCid(v) { if (state.cid !== v) { state.tk = ''; state.baseRev = ''; } state.cid = v; try { localStorage.setItem('pesagem_cid_atual', v); } catch {} }
 function _cid() {
     if (!state.cid) { let v = null; try { v = localStorage.getItem('pesagem_cid_atual') || localStorage.getItem('pesagem_sid'); localStorage.removeItem('pesagem_sid'); } catch {} _setCid(v || _gerarCid()); }
     return state.cid;
@@ -3518,7 +3684,7 @@ const _mes = (d, ts) => /^\d{4}-\d{2}/.test(d || '') ? d.slice(0, 7) : new Date(
 async function baixarPacote(semFotos) {
     lerFormularioParaState();
     const f = {}, J = x => JSON.stringify(x, null, 1), O = _obsAll(), M = _medias(), H = await _hLista(), agora = new Date().toISOString();
-    H.forEach(x => { const e = JSON.parse(JSON.stringify(x)); if (semFotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); f[_pathConf(e.id)] = J(e); });
+    H.forEach(x => { const e = JSON.parse(JSON.stringify(x)); if (semFotos) [e.estado, ...e.revs.map(r => r.estado)].forEach(es => es.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; }))); f[_pathConf(e.id)] = J(e); });
     const porMes = {}; Object.values(O).forEach(o => { (porMes[_mesDeId(o.cid)] = porMes[_mesDeId(o.cid)] || {})[o.k] = o; });
     Object.entries(porMes).forEach(([m, v]) => { f[`aprendizado/obs/${m}.json`] = J(v); });
     const medias = {}; Object.values(M.F).forEach(Fo => Object.values(Fo.p).forEach(P => { (medias[Fo.nome] = medias[Fo.nome] || {})[P.nome] = { pesagens: P.n, confianca: P.conf, ultima: P.ult, pcx: +P.pcx.toFixed(4), min: P.min, max: P.max, pemb: P.pemb, qemb: P.qemb, hashObs: P.h }; }));
@@ -3537,7 +3703,7 @@ async function importarPacote(e) {
         const Z = _unzip(await file.arrayBuffer()), ex = { obs: {} }; let nconf = 0;
         for (const [nome, txt] of Object.entries(Z)) {
             const j = JSON.parse(txt);
-            if (nome.startsWith('conferencias/')) { const a = await _hTx('readonly', st => st.get(j.id)); if (!a || (a.ua || a.ts) < (j.ua || j.ts)) { await _hTx('readwrite', st => st.put(j)); nconf++; } }
+            if (nome.startsWith('conferencias/')) { await _mesclarConf(j); nconf++; }
             else if (nome.startsWith('aprendizado/obs/')) Object.assign(ex.obs, j);
             else if (nome.endsWith('ajustes_manuais.json')) ex.ajustes = j;
             else if (nome.endsWith('quarentena.json')) ex.quarentena = j.decisoes; else if (nome.endsWith('apelidos.json')) ex.apelidos = j;
@@ -3752,14 +3918,19 @@ const _txt64 = t => { let b = ''; _u8(t).forEach(x => { b += String.fromCharCode
 const _b64txt = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), ch => ch.charCodeAt(0)));
 const _ehNosso = p => /^(conferencias|aprendizado|cadastro)\//.test(p) && p.endsWith('.json') && p !== 'aprendizado/medias_auto.json';
 
-async function _mesclarConf(j) {
-    if (!j?.id || !j.estado) return;
-    const T = _lsGet('pesagem_hist_del', {}); if (T[j.id] && T[j.id] >= (j.ua || j.ts)) return;
-    const a = await _hTx('readonly', st => st.get(j.id));
-    if (!a || (a.ua || a.ts) < (j.ua || j.ts)) {
-        if (a) { try { j.estado.produtos.forEach((p, pi) => p.pallets.forEach((pl, li) => { if (!pl.foto) { const lf = a.estado?.produtos?.[pi]?.pallets?.[li]?.foto; if (lf) pl.foto = lf; } })); } catch {} }
-        await _hTx('readwrite', st => st.put(j));
-    }
+async function _mesclarConf(j0) {
+    const j = _migrarRegistro(j0); if (!j?.id || !j.revs?.length) return;
+    const T = _lsGet('pesagem_hist_del', {}); if (T[j.id] && T[j.id] >= (j.ua || j.ts || 0)) return;
+    const a = await _hGet(j.id);
+    if (!a) { _espelhar(j); await _hTx('readwrite', st => st.put(j)); return; }
+    if (a.tk !== j.tk) { const id2 = j.id + '~' + String(j.tk).slice(0, 6); if (!(await _hGet(id2))) { const c = Object.assign({}, j, { id: id2, colisao: true }); c.revs = c.revs.map(r => r); _espelhar(c); await _hTx('readwrite', st => st.put(c)); } return; }
+    const mapa = new Map(a.revs.map(r => [r.h, r])); let novas = 0; j.revs.forEach(r => { if (!mapa.has(r.h)) { mapa.set(r.h, r); novas++; } });
+    if (!novas) return;
+    const m = Object.assign({}, a, { revs: [...mapa.values()].sort((x, y) => x.n - y.n || (x.ua || 0) - (y.ua || 0)) });
+    const antigaCabeca = _cabeca(a); _espelhar(m);
+    const nova = _cabeca(m); if (nova.h !== antigaCabeca.h) _herdarFotos(nova.estado, antigaCabeca.estado);
+    m.revs.forEach(r => { if (r.h !== nova.h) r.estado = _semFotos(r.estado); });
+    await _hTx('readwrite', st => st.put(m));
 }
 async function _mesclarTomb(j) {
     const T = _lsGet('pesagem_hist_del', {}); Object.entries(j || {}).forEach(([k, v]) => { T[k] = Math.max(T[k] || 0, v); }); _lsSet('pesagem_hist_del', T);
@@ -3786,7 +3957,7 @@ async function _arquivosLocais(c) {
     const F = new Map(), O = _obsAll(), H = await _hLista(), T = _lsGet('pesagem_hist_del', {}), porMes = {};
     Object.values(O).forEach(o => { (porMes[_mesDeId(o.cid)] = porMes[_mesDeId(o.cid)] || {})[o.k] = o; });
     Object.entries(porMes).forEach(([m, v]) => F.set(`aprendizado/obs/${m}.json`, _stable(v)));
-    H.forEach(x => { if (T[x.id] && T[x.id] >= (x.ua || x.ts)) return; const e = JSON.parse(JSON.stringify(x)); if (!c.fotos) e.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; })); F.set(_pathConf(x.id), _stable(e)); });
+    H.forEach(x => { if (T[x.id] && T[x.id] >= (x.ua || x.ts)) return; const e = JSON.parse(JSON.stringify(x)); delete e.estado; if (!c.fotos) e.revs.forEach(r => r.estado.produtos.forEach(p => p.pallets.forEach(pl => { pl.foto = ''; }))); F.set(_pathConf(x.id), _stable(e)); });
     if (Object.keys(T).length) F.set('conferencias/_apagadas.json', _stable(T));
     F.set('aprendizado/ajustes_manuais.json', _stable(_lsGet(_K.aj, {}))); F.set('aprendizado/quarentena.json', _stable(_lsGet(_K.q, {}))); F.set('cadastro/apelidos.json', _stable(_apel()));
     return F;
@@ -3833,6 +4004,7 @@ async function sincronizar(manual, msg) {
         _atualizarDatalist(); _atualizarListaForn();
         if (manual) toast(msg || '☁ Sincronizado.', 'success');
         if (_funcao() === 'prevencao') prevRender();
+        _atualizarIdInfo();
     } catch (e) {
         if (e.auth) { _syncErr = e.status === 401 ? 'Token recusado ou expirado. Gere outro e reconecte.' : 'Sem permissão. O token precisa de "Contents: Read and write" neste repositório.'; const c2 = _syncCfg(); c2.bloqueado = true; _lsSet(_SC, c2); if (!_syncAvisou) { _syncAvisou = true; toast('☁ ' + _syncErr, 'error', 6000); } }
         else { _syncPend = true; _syncErr = String(e.message || e).slice(0, 140); if (manual) toast('☁ ' + _syncErr, 'warning', 5000); }
@@ -3891,10 +4063,10 @@ async function salvarEEnviar() {
     lerFormularioParaState(); if (!_temDados()) { toast('Nada para enviar ainda.', 'info'); return; }
     const b = document.getElementById('btn-enviar'); b.disabled = true;
     try {
-        await histSalvar('andamento');
+        const okS = await histSalvar('andamento'); if (okS === false) return;
         if (!_syncCfg()?.token) { toast('💾 Salvo no histórico. Conecte o GitHub em ☰ › Sincronizar para enviar.', 'warning', 5000); return; }
         const c = _syncCfg(); if (c.bloqueado) { c.bloqueado = false; _lsSet(_SC, c); _syncAvisou = false; }
-        await sincronizar(true, '☁ Enviado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+        await sincronizar(true, '☁ ' + (_ultimoSalvar.msg || 'Enviado') + ' · ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     } catch (e) { toast('Não consegui salvar: ' + (e.message || e), 'error'); } finally { b.disabled = false; }
 }
 /* cálculo de uma conferência guardada, usando as MESMAS regras do app */
@@ -3923,24 +4095,56 @@ async function prevRender() {
     el.innerHTML = L.length ? L.map(e => {
         let r; try { r = _resumoEntry(e); } catch { r = { liq: e.liq || 0, red: 0, ora: 0, menor: null }; }
         const chips = [r.red ? `<span class="prev-chip bad">🔴 ${r.red} bloqueado(s)</span>` : '', r.ora ? `<span class="prev-chip warn">🟠 ${r.ora} em atenção</span>` : '', (!r.red && !r.ora) ? '<span class="prev-chip ok">🟢 sem alertas</span>' : '', r.menor != null ? `<span class="prev-chip ${r.menor < 0 ? 'bad' : r.menor <= 30 ? 'warn' : ''}">⏳ ${r.menor < 0 ? 'vencido' : r.menor + ' d'}</span>` : ''].join('');
-        return `<div class="prev-card ${e.status === 'andamento' ? 'andamento' : ''}" onclick="verConferencia('${e.id}')"><div class="pc-top"><span class="pc-nome">${_esc(e.titulo)}</span><span class="prev-badge ${e.status === 'andamento' ? 'andamento' : 'final'}">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span></div><div class="pc-sub">${_esc(e.conferente || 'sem conferente')} · ${_esc(e.disp?.nome || '—')}<br>${e.nProd} produto(s) · ${_kg(r.liq)} kg · ${_haTxt(e.ua || e.ts)}</div><div class="prev-chips">${chips}</div></div>`;
+        return `<div class="prev-card ${e.status === 'andamento' ? 'andamento' : ''}" onclick="verConferencia('${e.id}')"><div class="pc-top"><span class="pc-nome">${_esc(e.titulo)}</span><span class="prev-badge ${e.status === 'andamento' ? 'andamento' : 'final'}">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span></div><div class="pc-sub">${_esc(e.conferente || 'sem conferente')} · ${_esc(e.disp?.nome || '—')}<br>rev ${e.n || 1} · ${_selo(e).ico} ${_selo(e).txt} · 🔑 ${_esc((e.tk || '').slice(-4))}<br>${e.nProd} produto(s) · ${_kg(r.liq)} kg · ${_haTxt(e.ua || e.ts)}</div><div class="prev-chips">${chips}</div></div>`;
     }).join('') : '<p style="padding:0 16px;font-size:13px;color:#6b7a8d">Nenhuma conferência ainda. Toque em 🔄 Atualizar.</p>';
 }
 async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(!!manual, '🔄 Atualizado.'); else if (manual) toast('Conecte o GitHub em ☰ › Sincronizar.', 'warning'); prevRender(); }
-async function verConferencia(id) {
-    const e = await _hTx('readonly', st => st.get(id)); if (!e) return;
-    let r; try { r = _resumoEntry(e); } catch { toast('Não consegui abrir esta conferência.', 'error'); return; }
-    const dot = { OK: '🟢', LARANJA: '🟠', VERMELHO: '🔴', INVALIDO: '⚪' };
-    let h = `<div style="font-size:12px;margin-bottom:10px"><b>${_esc(e.titulo)}</b> <span style="font-size:10px">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span><br><span style="color:#6b7a8d">Conferente: ${_esc(e.conferente || '—')} · Aparelho: ${_esc(e.disp?.nome || '—')}<br>Atualizada ${_haTxt(e.ua || e.ts)} (${_esc(e.quando)})</span></div>`;
-    if (r.red || r.ora) h += `<div style="background:#fff4e0;border:1px solid #f0c27a;border-radius:10px;padding:8px 10px;font-size:12px;margin-bottom:10px;color:#7a4e0a">${r.red ? `🔴 ${r.red} pallet(s) bloqueado(s) ` : ''}${r.ora ? `🟠 ${r.ora} em atenção` : ''}</div>`;
-    h += r.prods.map(({ p, g, pal, dias }) => `<div style="border:1px solid #dde3ea;border-radius:10px;padding:10px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:13px">${_esc(p.nome || 'Sem nome')}</b><b style="color:#1a6b3c;font-size:13px">${_kg(g.totais.liqTotal)} kg</b></div>${p.validade ? `<div style="font-size:11px;color:#6b7a8d;margin:3px 0 6px">Validade ${p.validade.split('-').reverse().join('/')} · ${dias < 0 ? 'vencido há ' + Math.abs(dias) + ' d' : dias === 0 ? 'vence HOJE' : 'faltam ' + dias + ' d'}</div>` : ''}<table style="width:100%;border-collapse:collapse;font:500 11px 'DM Mono',monospace"><tr style="color:#6b7a8d;text-align:left"><th></th><th>Bruto</th><th>Líquido</th><th>Tara</th><th></th></tr>${pal.map((x, i) => `<tr style="border-top:1px solid #eef1f4"><td style="padding:4px 0">P${x.idx + 1}</td><td>${_kg(x.bto)}</td><td><b>${_kg(x.liqPallet)}</b></td><td>${(x.percTara * 100).toFixed(0)}%</td><td>${dot[x.estado] || ''}</td></tr>`).join('')}</table></div>`).join('');
-    _modal('👁 Conferência (somente leitura)', h);
+async function verConferencia(id, revH) {
+    const rec = await _hGet(id); if (!rec) return;
+    const head = _cabeca(rec), rev = revH ? (rec.revs.find(r => r.h === revH) || head) : head, est = rev.estado, antiga = rev.h !== head.h;
+    let calc; try { calc = _calcEntry(est); } catch { toast('Não consegui abrir esta conferência.', 'error'); return; }
+    const sel = _selo(rec), okRev = _revHash(rec.id, rev.n, rev.prev, rev.status, rev.estado) === rev.h, ro = _funcao() === 'prevencao';
+    const dot = { OK: '🟢 OK', LARANJA: '🟠 Tara elevada', VERMELHO: '🔴 Bloqueado', INVALIDO: '⚪ Inválido' };
+    const kgf = v => _kg(v || 0) + ' kg', row = (a, b, cls = '') => `<div class="vc-row ${cls}"><span>${a}</span><b>${b}</b></div>`;
+    let red = 0, ora = 0, liqTot = 0;
+    const prods = calc.map(({ p, g }, pi) => {
+        const pal = g.resultadosPallets.filter(r => r.bto > 0), t = g.totais, dias = p.validade ? _diasAte(p.validade) : null; liqTot += t.liqTotal;
+        pal.forEach(r => { if (r.estado === 'VERMELHO') red++; if (r.estado === 'LARANJA') ora++; });
+        const av = p.avulsos || {}, temAv = av.qcx || av.qemb || av.peso, meta = _num(p.pesoDesejado || ''), dif = meta ? t.liqTotal - meta : null;
+        return `<div class="vc-prod"><div class="vc-ptop"><span class="vc-pnome">${_esc(p.nome || 'Sem nome')}</span><span class="vc-liq">${kgf(t.liqTotal)}</span></div>
+            ${p.validade ? `<div class="vc-val ${dias < 0 || dias === 0 ? 'bad' : dias <= 30 ? 'warn' : 'ok'}">📅 Validade ${p.validade.split('-').reverse().join('/')} — ${dias < 0 ? 'VENCIDO há ' + Math.abs(dias) + ' dia(s)' : dias === 0 ? 'VENCE HOJE' : 'faltam ' + dias + ' dia(s)'}</div>` : ''}
+            <div class="vc-grid">${row('Peso bruto total', kgf(t.somaBruto))}${row('Tara dos pallets', kgf(t.taraMadTotal))}${row('Tara das caixas', kgf(t.taraCxTotal))}${row('Tara das embalagens', kgf(t.taraEmbTotal))}${row('Total de caixas', _fN(t.somaQcx, 0))}${row('Total de embalagens', _fN(t.somaQemb, 0))}${row('PESO LÍQUIDO', kgf(t.liqTotal), 'dest')}</div>
+            ${dif !== null ? `<div class="vc-meta ${dif >= 0 ? 'ok' : 'bad'}">🎯 Meta ${kgf(meta)} → ${dif >= 0 ? '+' : ''}${_kg(dif)} kg ${dif >= 0 ? '✔' : '(abaixo da meta)'}</div>` : ''}
+            ${temAv ? `<div class="vc-meta">➕ Avulsos: ${av.qcx || 0} caixa(s) · ${av.qemb || 0} embalagem(ns) · ${av.peso || 0} kg</div>` : ''}
+            ${pal.map(r => { const pl = (p.pallets || [])[r.idx] || {}; return `<div class="vc-pal ${r.estado === 'VERMELHO' ? 'bad' : r.estado === 'LARANJA' ? 'warn' : ''}"><div class="vc-phead"><b>📦 Pallet ${r.idx + 1}</b><span>${dot[r.estado] || ''}</span></div>${pl.foto ? `<img class="vc-foto" src="${pl.foto}" alt="foto">` : ''}
+                ${row('Peso bruto', kgf(r.bto))}${row('Peso do pallet', kgf(r.taraMad))}${row('Peso da caixa', _kg(r.pcxKg) + ' kg')}${row('Quantidade de caixas', _fN(r.qcx, 0))}${row('Peso da embalagem', _fN(r.pembKg * 1000, 1) + ' g')}${row('Embalagens por caixa', _fN(r.qemb, 0))}${row('Tara das caixas', kgf(r.taraCx))}${row('Tara das embalagens', kgf(r.taraEmb))}${row('Tara total', kgf(r.taraTotal) + ' (' + (r.percTara * 100).toFixed(1).replace('.', ',') + '%)')}${row('LÍQUIDO DO PALLET', kgf(r.liqPallet), 'dest')}</div>`; }).join('')}</div>`;
+    }).join('');
+    const revs = [...rec.revs].sort((a, b) => b.n - a.n || (b.ua || 0) - (a.ua || 0)).map(r => { const pv = rec.revs.find(x => x.h === r.prev), ch = pv ? _resumoMudancas(pv.estado, r.estado) : ['Primeira versão']; return `<div class="vc-rev ${r.h === rev.h ? 'atual' : ''}"><div><b>Rev ${r.n}</b> · ${r.status === 'final' ? '🔒 finalizada' : '✏ em andamento'}${r.reaberta ? ' · reaberta' : ''}<br><span>${_esc(r.quando)} · ${_esc(r.conferente || '—')} · ${_esc(r.disp?.nome || '—')}</span><br><span>${ch.slice(0, 3).map(l => _esc(l)).join(' · ') || 'sem mudanças de conteúdo'}</span></div><div class="vc-rbtn">${r.h === rev.h ? '<span>vendo</span>' : `<button onclick="verConferencia('${rec.id}','${r.h}')">Ver</button>`}${ro ? '' : `<button onclick="histRestaurarRev('${rec.id}','${r.h}')">Restaurar como nova</button>`}</div></div>`; }).join('');
+    document.getElementById('ver-conf')?.remove();
+    const o = document.createElement('div'); o.id = 'ver-conf'; o.className = 'vc-full';
+    o.innerHTML = `<div class="vc-bar"><button onclick="document.getElementById('ver-conf').remove()">← Voltar</button><span>👁 Somente leitura</span></div><div class="vc-body">
+        <div class="vc-id"><div class="vc-forn">${_esc(rec.titulo)}</div><div class="vc-badges"><span class="vc-b ${sel.cls}">${sel.ico} ${sel.txt}</span><span class="vc-b">Rev ${rev.n} de ${head.n}</span><span class="vc-b">🔑 ${_esc((rec.tk || '').slice(-4))}</span></div><div class="vc-sub">Conferente: ${_esc(rev.conferente || '—')} · Aparelho: ${_esc(rev.disp?.nome || '—')}<br>${_esc(rev.quando)} (${_haTxt(rev.ua)}) · Data da pesagem: ${est.dataPesagem ? est.dataPesagem.split('-').reverse().join('/') : '—'}<br>Selo: ${okRev ? '✔ íntegro' : '⚠ INVÁLIDO (alterado fora do app)'} · ${rev.h.slice(0, 10)}${rec.origem ? '<br>Copiada de outra conferência (' + _esc(rec.origem.cid.slice(-4)) + ')' : ''}</div></div>
+        ${antiga ? `<div class="vc-alerta warn">Você está vendo a revisão ${rev.n}, que é ANTIGA. <button onclick="verConferencia('${rec.id}')">Ver a mais recente</button></div>` : ''}
+        ${rec.conflito ? '<div class="vc-alerta warn">🔀 Há versões divergentes desta conferência (feitas em lugares diferentes). Todas estão guardadas abaixo.</div>' : ''}
+        ${(red || ora) ? `<div class="vc-alerta ${red ? 'bad' : 'warn'}">${red ? `🔴 ${red} pallet(s) bloqueado(s) ` : ''}${ora ? `🟠 ${ora} em atenção` : ''}</div>` : '<div class="vc-alerta ok">🟢 Sem alertas</div>'}
+        <div class="vc-total">Peso líquido total da conferência: <b>${kgf(liqTot)}</b></div>${prods}
+        <div class="vc-revs"><div class="vc-rtit">🕘 Revisões (nada é sobrescrito)</div>${revs}</div></div>`;
+    document.body.appendChild(o);
+}
+async function histRestaurarRev(id, h) {
+    const rec = await _hGet(id); const r = rec?.revs.find(x => x.h === h); if (!r) return;
+    mostrarConfirm(`Criar uma NOVA conferência a partir da revisão ${r.n}? A conferência original e todas as revisões continuam intactas.`, '🗂', async () => {
+        _aprender(true); try { await histSalvar('auto', { silencioso: true }); } catch {}
+        importarEstado(JSON.parse(JSON.stringify(r.estado))); _setCid(_gerarCid()); state.tk = ''; state.baseRev = '';
+        _limparUndo(); renderizarTudo(); document.getElementById('ver-conf')?.remove(); _fecharModal(); toast('Nova conferência criada a partir da revisão. Salve para registrar.', 'success', 4000);
+    }, 'warning');
 }
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const d = _disp(), n = document.getElementById('cfg-disp-nome'), f = document.getElementById('cfg-disp-funcao');
         if (n) n.value = d.nome || ''; if (f) f.value = _funcao();
         if (_funcao() === 'prevencao') prevRender();
+        setTimeout(_atualizarIdInfo, 1200);
     }, 200);
     setInterval(() => { if (_funcao() === 'prevencao' && document.visibilityState === 'visible') prevAtualizar(false); }, 45000);
 });
