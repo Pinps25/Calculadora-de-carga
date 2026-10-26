@@ -947,6 +947,15 @@
         .pallet-block.collapsed { padding-bottom: 6px; }
 
         /* ─── CLEAR BUTTON ─── */
+        .produto-id-row { display: flex; align-items: stretch; gap: 6px; }
+        .produto-id-row .input-clear-wrap { flex: 1; min-width: 0; }
+        .btn-scan-ean {
+            flex-shrink: 0; width: 40px; display: flex; align-items: center; justify-content: center;
+            background: #1a6b3c; color: #fff; border: none; border-radius: 7px; font-size: 16px; cursor: pointer;
+        }
+        .btn-scan-ean:active { opacity: .75; }
+        .btn-scan-ean[disabled] { background: #b7c1cb; cursor: not-allowed; }
+        html.dark .btn-scan-ean[disabled] { background: #3a4552; }
         .input-clear-wrap { position: relative; display: flex; align-items: center; }
         .input-clear-wrap input { padding-right: 30px !important; width: 100%; }
         .btn-clear-field {
@@ -1354,6 +1363,13 @@
     <span id="loading-msg">Carregando...</span>
 </div>
 
+<!-- Scanner de código de barras (embalagem) -->
+<div id="scanner-ean-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:4000;flex-direction:column;align-items:center;justify-content:center;">
+    <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
+    <p style="color:#fff;font:600 13px Sora,sans-serif;margin:16px 0;text-align:center;padding:0 24px">Aponte para o código de barras da embalagem</p>
+    <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
+</div>
+
 <!-- Modal: Foto -->
 <div class="modal-backdrop" id="modal-foto">
     <img id="foto-expandida" src="" alt="Foto ampliada">
@@ -1520,9 +1536,12 @@
                         Produto
                         <button class="btn-del-item" id="btn-del-item">✖ Excluir Item</button>
                     </label>
-                    <div class="input-clear-wrap">
-                        <input type="text" id="produto" placeholder="Nome do produto...">
-                        <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                    <div class="produto-id-row">
+                        <div class="input-clear-wrap">
+                            <input type="text" id="produto" placeholder="Nome do produto...">
+                            <button class="btn-clear-field" data-action="clear-field" tabindex="-1">✕</button>
+                        </div>
+                        <button class="btn-scan-ean" id="btn-scan-ean" type="button" title="Identificar produto pelo código de barras da embalagem" onclick="abrirScannerEAN()">📷</button>
                     </div>
                 </div>
             </div>
@@ -3538,6 +3557,78 @@ function _codigoProduto(kf, kp) {
     const doCsv = (_csvMemCache || _lsGet(_K.csv, { mapa: {} }).mapa || {})[kf + '|' + kp];
     return { ean, kg: doCsv?.kg || '', fatiado: doCsv?.fatiado || '', peca: doCsv?.peca || '', noCsv: !!doCsv };
 }
+
+/* Procura um EAN em todos os produtos já aprendidos (em qualquer
+   fornecedor). Devolve {kf, kp, nomeForn, nomeProd} ou null. */
+function _buscarPorEAN(codigo) {
+    const C = _codigos(), F = _medias().F;
+    for (const chave in C) {
+        if (C[chave].ean !== codigo) continue;
+        const [kf, kp] = chave.split('|'), Fo = F[kf], P = Fo?.p[kp];
+        if (Fo && P) return { kf, kp, nomeForn: Fo.nome, nomeProd: P.nome };
+    }
+    return null;
+}
+
+/* ==========================================================================
+   SCANNER DE CÓDIGO DE BARRAS (embalagem) — BarcodeDetector nativo
+   (Chrome/Android; não existe no Safari/iPhone, por isso o aviso claro).
+   Ao achar um código já conhecido, preenche fornecedor+produto e puxa a
+   média aprendida na hora. Se não conhecer, guarda o código "pendente" pro
+   item atual — assim que esse item virar uma pesagem de verdade (_aprender,
+   que já roda sozinho no autosave), o código é associado ao produto, sem
+   precisar voltar na tela de Aprendizado pra colar o código de novo.
+   ========================================================================== */
+const _eanPendente = {}; // { [índice do produto em state.produtos]: código }
+let _scannerStream = null, _scannerRodando = false;
+
+async function abrirScannerEAN() {
+    if (!('BarcodeDetector' in window)) {
+        toast('📷 Esse navegador não lê código de barras (funciona no Chrome/Android). Digite o nome do produto normalmente.', 'error');
+        return;
+    }
+    const overlay = document.getElementById('scanner-ean-overlay'), video = document.getElementById('scanner-ean-video');
+    try {
+        _scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch (e) {
+        toast('Não consegui acessar a câmera (permissão negada?).', 'error');
+        return;
+    }
+    video.srcObject = _scannerStream;
+    await video.play();
+    overlay.style.display = 'flex';
+    _scannerRodando = true;
+    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    const loop = async () => {
+        if (!_scannerRodando) return;
+        try {
+            const codigos = await detector.detect(video);
+            if (codigos.length) { pararScannerEAN(); _resolverEAN(codigos[0].rawValue.trim()); return; }
+        } catch (e) { /* frame inválido, ignora e tenta de novo */ }
+        if (_scannerRodando) setTimeout(loop, 350);
+    };
+    loop();
+}
+
+function pararScannerEAN() {
+    _scannerRodando = false;
+    if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+    document.getElementById('scanner-ean-overlay').style.display = 'none';
+}
+
+function _resolverEAN(codigo) {
+    const achado = _buscarPorEAN(codigo);
+    if (achado) {
+        const fo = document.getElementById('fornecedor'), pd = document.getElementById('produto');
+        fo.value = achado.nomeForn; fo.dispatchEvent(new Event('change'));
+        pd.value = achado.nomeProd; pd.dispatchEvent(new Event('change'));
+        _preencherAprendido();
+        toast(`🏷️ ${achado.nomeProd} identificado.`, 'success');
+    } else {
+        _eanPendente[state.idAtivo] = codigo;
+        toast('Código não encontrado. Digite o nome do produto — o código fica guardado e é salvo junto assim que essa pesagem for registrada.', 'info');
+    }
+}
 function _registrarAliases(forn, prod) {
     const O = Object.values(_obsAll()).filter(o => !o.del), A = _apel(); let mud = false;
     const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[_canonFA(A, _kk(o.forn))] = 1; });
@@ -3555,8 +3646,13 @@ function _aprender(silencioso, auto) {
         lerFormularioParaState();
         const O = _obsAll(), cid = _cid(), now = Date.now(), dev = _device(), forn = (state.fornecedor || '').trim() || 'Sem fornecedor';
         const atuais = new Set(), ok = (v, mx) => v > 0 && v <= mx; let mudou = 0;
-        state.produtos.forEach(pr => {
+        state.produtos.forEach((pr, idxProduto) => {
             const nome = (pr.nome || '').trim(); if (!nome) return;
+            if (_eanPendente[idxProduto]) {
+                const A = _apel(), kf = _canonFA(A, _kk(forn)), kp = _canonPA(A, kf, _kk(nome));
+                _salvarCodigoEAN(kf, kp, _eanPendente[idxProduto]);
+                delete _eanPendente[idxProduto];
+            }
             const pls = pr.pallets.filter(pl => parseSeguro(pl.bto).valor > 0); if (!pls.length) return;
             const o = { pcx: [], pemb: [], qemb: [], pal: [] };
             pls.forEach(pl => {
