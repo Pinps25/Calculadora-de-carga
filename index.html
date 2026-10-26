@@ -3599,12 +3599,13 @@ function _codigoProduto(kf, kp) {
     return { ean, kg: doCsv?.kg || '', fatiado: doCsv?.fatiado || '', peca: doCsv?.peca || '', noCsv: !!doCsv };
 }
 
-/* Codifica o peso líquido de UM item do laudo como código de barras.
-   Prefixo "W:" existe só pra, no futuro leitor (Entrada rápida), dar pra
-   diferenciar um código de peso de um código de produto sem depender da
-   ordem em que as duas etiquetas forem bipadas. */
+/* Codifica o peso líquido de UM item do laudo como código de barras: só o
+   número, "kg.gramas" (ex: 12.345). Sem prefixo — a própria presença do
+   "." já diferencia esse código de um código de produto (EAN/UPC são só
+   dígitos, nunca têm ponto), então o futuro leitor (Entrada rápida)
+   continua conseguindo saber qual é qual, em qualquer ordem de leitura. */
 function _codificarPeso(kg) {
-    return 'W:' + Math.max(0, kg).toFixed(3).padStart(7, '0');
+    return Math.max(0, kg).toFixed(3);
 }
 
 /* Procura um EAN em todos os produtos já aprendidos (em qualquer
