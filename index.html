@@ -10,6 +10,7 @@
     
     <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
 <script>
   let _swReg = null;
@@ -947,6 +948,11 @@
         .pallet-block.collapsed { padding-bottom: 6px; }
 
         /* ─── CLEAR BUTTON ─── */
+        .lp-barcodes { display: flex; gap: 6px; margin-top: 3px; }
+        .lp-barcode-item { flex: 1; min-width: 0; text-align: center; border-top: 1px dotted #c7ced6; padding-top: 2px; }
+        .lp-barcode-item svg { width: 100%; height: auto; max-height: 11mm; }
+        .lp-barcode-item .lp-bc-legenda { display: block; font: 600 6pt Sora, sans-serif; color: #6b7a8d; margin-top: 1px; }
+        .lp-barcode-item .lp-bc-ausente { font: 600 7pt Sora, sans-serif; color: #b7c1cb; padding: 3mm 0; }
         .produto-id-row { display: flex; align-items: stretch; gap: 6px; }
         .produto-id-row .input-clear-wrap { flex: 1; min-width: 0; }
         .btn-scan-ean {
@@ -2580,6 +2586,20 @@ function gerarLaudo() {
             aQemb > 0 && chip('Qtd EMB Av.', aQemb + ' un')
         ].filter(Boolean).join('');
 
+        // Dois códigos de barras do item: produto (EAN lido da embalagem) + peso líquido desta pesagem
+        const A = _apel(), kfProd = _canonFA(A, _kk(state.fornecedor)), kpProd = _canonPA(A, kfProd, _kk(prod.nome));
+        const eanProduto = _codigoProduto(kfProd, kpProd).ean;
+        const codigoPeso = liqTotal > 0 ? _codificarPeso(liqTotal) : '';
+        const barcodesHtml = `
+                <div class="lp-barcodes">
+                    <div class="lp-barcode-item">${eanProduto
+                        ? `<svg class="lp-bc" data-code="${_esc(eanProduto)}" data-formato="CODE128"></svg><span class="lp-bc-legenda">PRODUTO</span>`
+                        : `<span class="lp-bc-ausente">sem código de produto</span>`}</div>
+                    <div class="lp-barcode-item">${codigoPeso
+                        ? `<svg class="lp-bc" data-code="${_esc(codigoPeso)}" data-formato="CODE128"></svg><span class="lp-bc-legenda">PESO LÍQUIDO</span>`
+                        : `<span class="lp-bc-ausente">sem peso</span>`}</div>
+                </div>`;
+
         return `
         <div class="lp-slot">
             <div class="lp-head">
@@ -2598,6 +2618,7 @@ function gerarLaudo() {
                     <span class="lp-val">VAL ${fmtVal(prod.validade)}</span>
                     ${pdHtml}
                 </div>
+                ${barcodesHtml}
             </div>
         </div>`;
     }
@@ -2626,7 +2647,27 @@ function gerarLaudo() {
     _aprender();
     html += _anexoFotos(produtosValidos);
     document.getElementById('print-area').innerHTML = html;
+    _renderizarBarcodesLaudo();
     histSalvar('final').then(ok => { if (ok === false) { toast('PDF cancelado: a conferência NÃO foi salva.', 'warning', 4000); return; } toast('🗂 ' + (_ultimoSalvar.msg || 'Salvo no histórico.'), 'info', 2500); setTimeout(() => window.print(), 300); }).catch(() => { toast('Não consegui salvar no histórico.', 'warning'); setTimeout(() => window.print(), 300); });
+}
+
+/* Converte os <svg class="lp-bc" data-code="..."> deixados pelo htmlSlot()
+   em código de barras de verdade. Precisa rodar DEPOIS do HTML já estar no
+   DOM (JsBarcode desenha em cima de um elemento real, não dá pra fazer
+   isso só com string). CODE128 pra tudo, de propósito: aceita qualquer
+   texto/dígitos sem validar checksum, então nunca quebra a impressão por
+   causa de um código escaneado em formato diferente (EAN-8, UPC-A, etc.). */
+function _renderizarBarcodesLaudo() {
+    if (typeof JsBarcode === 'undefined') return; // sem internet na hora de carregar a página — laudo sai sem os códigos, resto funciona normal
+    document.querySelectorAll('#print-area svg.lp-bc').forEach(svg => {
+        try {
+            JsBarcode(svg, svg.dataset.code, {
+                format: svg.dataset.formato || 'CODE128',
+                displayValue: true, fontSize: 11, fontOptions: 'bold',
+                height: 30, margin: 2, width: 1.4
+            });
+        } catch (e) { svg.outerHTML = '<span class="lp-bc-ausente">código inválido</span>'; }
+    });
 }
 
 /* ─── Limpar tudo ─── */
@@ -3556,6 +3597,14 @@ function _codigoProduto(kf, kp) {
     const ean = _codigos()[kf + '|' + kp]?.ean || '';
     const doCsv = (_csvMemCache || _lsGet(_K.csv, { mapa: {} }).mapa || {})[kf + '|' + kp];
     return { ean, kg: doCsv?.kg || '', fatiado: doCsv?.fatiado || '', peca: doCsv?.peca || '', noCsv: !!doCsv };
+}
+
+/* Codifica o peso líquido de UM item do laudo como código de barras.
+   Prefixo "W:" existe só pra, no futuro leitor (Entrada rápida), dar pra
+   diferenciar um código de peso de um código de produto sem depender da
+   ordem em que as duas etiquetas forem bipadas. */
+function _codificarPeso(kg) {
+    return 'W:' + Math.max(0, kg).toFixed(3).padStart(7, '0');
 }
 
 /* Procura um EAN em todos os produtos já aprendidos (em qualquer
