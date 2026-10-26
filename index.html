@@ -3417,7 +3417,7 @@ function _setValidadeHid(iso) { const h = _vHid(); if (h.value === iso) return; 
 })();
 
 /* ══════════ FASE 1 · MODELO DE DADOS V2 (conferência · observações · médias · apelidos) ══════════ */
-const _K = { obs: 'pesagem_obs_v2', ap: 'pesagem_apelidos_v2', aj: 'pesagem_ajustes_v2', ia: 'pesagem_medias_ia_v2', q: 'pesagem_quarentena_v2', dev: 'pesagem_device', exp: 'pesagem_exp_ia' };
+const _K = { obs: 'pesagem_obs_v2', ap: 'pesagem_apelidos_v2', aj: 'pesagem_ajustes_v2', ia: 'pesagem_medias_ia_v2', q: 'pesagem_quarentena_v2', dev: 'pesagem_device', exp: 'pesagem_exp_ia', cod: 'pesagem_codigos_produto_v1', csv: 'pesagem_csv_cache_v1' };
 let _ver = 0, _cache = null, _pausaApr = false;
 window._boot = true; setTimeout(() => { window._boot = false; }, 5000);
 const _bump = () => { _ver++; _cache = null; _syncAgendar(8000); };
@@ -3448,6 +3448,96 @@ function _canonPA(A, kfc, kr) { let k = kr; for (let i = 0; i < 6; i++) { const 
 const _canonF = kr => _canonFA(_apel(), kr);
 const _canonP = (kfc, kr) => _canonPA(_apel(), kfc, kr);
 const _obsAll = () => _lsGet(_K.obs, {});
+
+/* ==========================================================================
+   CÓDIGOS DE PRODUTO — integração com o Dados.csv (repositório Pinps25/KG,
+   leitura pública, sem token) + códigos próprios salvos aqui no Aprendizado
+   (ex: EAN lido da embalagem). Segue o mesmo padrão de armazenamento de
+   _K.ap/_K.aj: um mapa separado, cruzado em cima do que _medias() já
+   calcula — nunca dentro de _medias() em si, pra não arriscar mexer na
+   lógica estatística que já funciona.
+   ========================================================================== */
+const CSV_URL_PUBLICO = 'https://raw.githubusercontent.com/Pinps25/KG/main/Dados.csv';
+const CSV_CACHE_VALIDADE_MS = 6 * 60 * 60 * 1000; // 6h — evita bater no GitHub toda hora que abre o Aprendizado
+let _csvMemCache = null; // cache em memória pra não reparsear o texto a cada chamada na mesma sessão
+
+/* Parser de CSV minimalista (sem libs externas, consistente com o resto do
+   app): lida com campos entre aspas contendo vírgula/aspas escapadas. */
+function _parseCsvSimples(texto) {
+    const linhas = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.length);
+    const parseLinha = l => {
+        const campos = []; let atual = '', dentroAspas = false;
+        for (let i = 0; i < l.length; i++) {
+            const c = l[i];
+            if (dentroAspas) {
+                if (c === '"' && l[i + 1] === '"') { atual += '"'; i++; }
+                else if (c === '"') { dentroAspas = false; }
+                else atual += c;
+            } else if (c === '"') { dentroAspas = true; }
+            else if (c === ',') { campos.push(atual); atual = ''; }
+            else atual += c;
+        }
+        campos.push(atual);
+        return campos;
+    };
+    if (!linhas.length) return [];
+    const cab = parseLinha(linhas[0]).map(h => h.trim().toLowerCase());
+    return linhas.slice(1).map(l => {
+        const campos = parseLinha(l), obj = {};
+        cab.forEach((h, i) => obj[h] = (campos[i] || '').trim());
+        return obj;
+    });
+}
+
+/* Busca o Dados.csv público (sem token) e devolve um mapa já indexado por
+   chave canônica "fornecedor|produto", pronto pra cruzar com o Aprendizado.
+   forcar=true ignora o cache de 6h (botão "atualizar" manual). */
+async function buscarCsvPublico(forcar) {
+    if (!forcar && _csvMemCache) return _csvMemCache;
+    if (!forcar) {
+        const cache = _lsGet(_K.csv, null);
+        if (cache && Date.now() - cache.em < CSV_CACHE_VALIDADE_MS) { _csvMemCache = cache.mapa; return cache.mapa; }
+    }
+    try {
+        const res = await fetch(CSV_URL_PUBLICO + '?_=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const texto = await res.text(), linhas = _parseCsvSimples(texto), mapa = {};
+        linhas.forEach(l => {
+            const kf = _kk(l.fornecedor || ''), kp = _kk(l.produto || '');
+            if (!kf || !kp) return;
+            mapa[kf + '|' + kp] = { categoria: l.categoria || '', kg: l.kg || '', fatiado: l.fatiado || '', peca: l.peca || '' };
+        });
+        _csvMemCache = mapa;
+        _lsSet(_K.csv, { em: Date.now(), mapa });
+        return mapa;
+    } catch (e) {
+        console.warn('[Dados.csv]', e.message);
+        const cache = _lsGet(_K.csv, null); // sem internet/erro: usa cache antigo se existir, mesmo vencido
+        if (cache) { _csvMemCache = cache.mapa; return cache.mapa; }
+        return {};
+    }
+}
+
+/* Mapa { 'kf|kp': { ean, atualizadoEm } } — dados que só existem aqui no
+   Aprendizado (hoje: só o EAN lido da embalagem; o kg/fatiado/peça vem do
+   Dados.csv e é só leitura por aqui, pra não ter dois lugares editando a
+   mesma coisa). */
+const _codigos = () => _lsGet(_K.cod, {});
+function _salvarCodigoEAN(kf, kp, ean) {
+    const C = _codigos(), chave = kf + '|' + kp;
+    if (ean) C[chave] = { ean, atualizadoEm: Date.now() }; else delete C[chave];
+    _lsSet(_K.cod, C);
+}
+
+/* Junta as duas fontes pra um produto específico: EAN (local) + kg/fatiado/
+   peça (Dados.csv, por nome canônico). Síncrono — usa o que já estiver em
+   cache de memória/localStorage; buscarCsvPublico() deve ter sido chamado
+   antes (ex: ao abrir a tela de Aprendizado). */
+function _codigoProduto(kf, kp) {
+    const ean = _codigos()[kf + '|' + kp]?.ean || '';
+    const doCsv = (_csvMemCache || _lsGet(_K.csv, { mapa: {} }).mapa || {})[kf + '|' + kp];
+    return { ean, kg: doCsv?.kg || '', fatiado: doCsv?.fatiado || '', peca: doCsv?.peca || '', noCsv: !!doCsv };
+}
 function _registrarAliases(forn, prod) {
     const O = Object.values(_obsAll()).filter(o => !o.del), A = _apel(); let mud = false;
     const kfr = _kk(forn), conF = {}; O.forEach(o => { conF[_canonFA(A, _kk(o.forn))] = 1; });
@@ -3561,7 +3651,8 @@ function _preencherAprendido() {
 
 /* ── tela Aprendizado ── */
 let _aprLista = [], _quarLista = [], _apeLista = [];
-function abrirAprendizado() {
+async function abrirAprendizado(forcarCsv) {
+    await buscarCsvPublico(forcarCsv); // popula _csvMemCache; usa cache de 6h se já tiver, então é rápido na maioria das vezes
     const { F, quar } = _medias(), A = _apel(), J = _lsGet(_K.aj, {}), I = _lsGet(_K.ia, {});
     _aprLista = []; _quarLista = quar; _apeLista = [...Object.keys(A.f).map(k => ['f', k]), ...Object.keys(A.p).map(k => ['p', k])];
     let tot = 0, h = '';
@@ -3569,18 +3660,29 @@ function abrirAprendizado() {
     const forns = Object.entries(F).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
     h += forns.length ? forns.map(([kf, Fo]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(Fo.nome)}</b>` + Object.entries(Fo.p).map(([kp, P]) => {
         tot += P.n; const m = _mediaProd(Fo.nome, P.nome), i = _aprLista.push({ kf, kp }) - 1, cf = { alta: '🟢', 'média': '🟡', baixa: '🔴' }[P.conf];
-        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${P.regime ? ' 🔄' : ''}${m.fontes.pcx === 'manual' ? ' 🔧' : ''}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
+        const cod = _codigoProduto(kf, kp), codBadge = cod.ean ? ' 🏷️' : (cod.noCsv ? ' #️⃣' : '');
+        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${P.regime ? ' 🔄' : ''}${m.fontes.pcx === 'manual' ? ' 🔧' : ''}${codBadge}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
     }).join('') + '</div>').join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
-    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="document.getElementById('lg-file').click()">📥 Dados antigos (arquivo)</button><button style="${_BTN2}" onclick="reaplicarAntigo()">↻ Reaplicar do aparelho</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button></div><input type="file" id="lg-file" accept=".json" style="display:none" onchange="importarLegado(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="document.getElementById('lg-file').click()">📥 Dados antigos (arquivo)</button><button style="${_BTN2}" onclick="reaplicarAntigo()">↻ Reaplicar do aparelho</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button><button style="${_BTN2};grid-column:1/-1" onclick="abrirAprendizado(true)">🔄 Atualizar códigos (Dados.csv)</button></div><input type="file" id="lg-file" accept=".json" style="display:none" onchange="importarLegado(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
     if (_apeLista.length) h += `<details style="margin-top:12px"><summary style="font-size:12px;font-weight:700;cursor:pointer">Nomes unificados (${_apeLista.length})</summary>` + _apeLista.map(([t, k], i) => `<div style="display:flex;gap:6px;align-items:center;font:500 11px 'DM Mono',monospace;padding:4px 0"><span style="flex:1">${_esc(k.split('|').pop())} → ${_esc(A[t][k])}</span><button style="${_BTN2}" onclick="desfazerApelido(${i})">desfazer</button></div>`).join('') + '</details>';
-    h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. · 🔄 padrão mudou. Prioridade: 🔧 ajuste manual › média automática (as pesagens recentes pesam mais).</p>`;
+    h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. · 🔄 padrão mudou. Prioridade: 🔧 ajuste manual › média automática (as pesagens recentes pesam mais). · 🏷️ tem código de barras · #️⃣ tem código de pesagem (Dados.csv) mas ainda sem código de barras</p>`;
     _modal('📚 Aprendizado por fornecedor', h);
 }
 function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; const Q = _lsGet(_K.q, {}); Q[q.key] = dec; _lsSet(_K.q, Q); _bump(); abrirAprendizado(); }
 function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; A.d[t + ':' + k] = Date.now(); _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
 function editarAjuste(i) {
     const { kf, kp } = _aprLista[i], P = _medias().F[kf].p[kp], J = _lsGet(_K.aj, {})[kf]?.[kp] || {}, f = v => v > 0 ? _fN(v, 4) : '';
-    _corpo(`<label style="font-size:11px">Nome do produto</label><div style="display:flex;gap:6px"><input id="rn-nome" style="${_INP};flex:1" value="${_esc(P.nome)}"><button style="${_BTN};margin:4px 0 10px" onclick="renomearProduto(${i})">Renomear</button></div><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div><button style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:10px 14px;font:700 12px Sora,sans-serif;margin-top:14px;width:100%" onclick="apagarProduto(${i})">🗑 Apagar este produto do aprendizado</button>`);
+    const cod = _codigoProduto(kf, kp);
+    const linhaCsv = cod.noCsv
+        ? `<div style="font-size:11px;color:#6b7a8d;margin:-4px 0 10px">Do Dados.csv: Cx <b>${_esc(cod.kg) || '--'}</b> · Fatiado <b>${_esc(cod.fatiado) || '--'}</b> · Peça <b>${_esc(cod.peca) || '--'}</b> (editar esses códigos continua sendo lá, no pwa-pesagem)</div>`
+        : `<div style="font-size:11px;color:#b36b00;margin:-4px 0 10px">⚠ Esse produto ainda não está cadastrado no Dados.csv (sem código de pesagem pra Cx/fatiado/peça).</div>`;
+    _corpo(`<label style="font-size:11px">Nome do produto</label><div style="display:flex;gap:6px"><input id="rn-nome" style="${_INP};flex:1" value="${_esc(P.nome)}"><button style="${_BTN};margin:4px 0 10px" onclick="renomearProduto(${i})">Renomear</button></div><p style="font-size:11px;color:#6b7a8d;margin:4px 0 10px">Automático: Cx ${_fN(P.pcx)} kg · Emb ${_fN(P.pemb * 1000, 1)} g · ${P.qemb}/cx. Preencha só o que quiser fixar (vale mais que a média automática).</p><label style="font-size:11px">Peso da caixa (kg)</label><input id="aj-pcx" style="${_INP}" inputmode="decimal" value="${f(J.pcx)}"><label style="font-size:11px">Peso da embalagem (kg)</label><input id="aj-pemb" style="${_INP}" inputmode="decimal" value="${f(J.pemb)}"><label style="font-size:11px">Embalagens por caixa</label><input id="aj-qemb" style="${_INP}" inputmode="numeric" value="${J.qemb || ''}"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button style="${_BTN}" onclick="salvarAjuste(${i})">Salvar ajuste</button><button style="${_BTN2}" onclick="salvarAjuste(${i},true)">Remover ajuste</button></div><hr style="border:none;border-top:1px dotted #dde3ea;margin:4px 0 14px"><label style="font-size:11px">🏷️ Código de barras (EAN da embalagem)</label><input id="aj-ean" style="${_INP}" inputmode="numeric" placeholder="Ainda sem leitor — digite por enquanto" value="${_esc(cod.ean)}">${linhaCsv}<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="salvarCodigoEAN(${i})">Salvar código</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div><button style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:10px 14px;font:700 12px Sora,sans-serif;margin-top:14px;width:100%" onclick="apagarProduto(${i})">🗑 Apagar este produto do aprendizado</button>`);
+}
+function salvarCodigoEAN(i) {
+    const { kf, kp } = _aprLista[i], ean = document.getElementById('aj-ean').value.trim().replace(/\D/g, '');
+    _salvarCodigoEAN(kf, kp, ean);
+    toast(ean ? '🏷️ Código salvo.' : 'Código removido.', 'success');
+    abrirAprendizado();
 }
 function salvarAjuste(i, remover) {
     const { kf, kp } = _aprLista[i], Aj = _lsGet(_K.aj, {}), g = id => _num(document.getElementById(id).value) || 0;
