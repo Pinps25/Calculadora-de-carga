@@ -1373,8 +1373,13 @@
 <div id="scanner-ean-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:4000;flex-direction:column;align-items:center;justify-content:center;">
     <p id="scanner-ean-titulo" style="color:#fff;font:700 14px Sora,sans-serif;margin:0 0 10px;text-align:center">📷 Identificar produto</p>
     <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
+    <div id="scanner-ean-zoom" style="display:none;align-items:center;justify-content:center;gap:16px;margin-top:10px">
+        <button id="scanner-ean-zoom-menos" type="button" onclick="ajustarZoomScanner(-1)" aria-label="Diminuir zoom" style="background:#263238;color:#fff;border:1px solid #607d8b;border-radius:8px;padding:8px 16px;font-size:20px">−</button>
+        <span id="scanner-ean-zoom-valor" style="color:#fff;font:700 13px 'DM Mono',monospace;min-width:44px;text-align:center">1.0×</span>
+        <button id="scanner-ean-zoom-mais" type="button" onclick="ajustarZoomScanner(1)" aria-label="Aumentar zoom" style="background:#263238;color:#fff;border:1px solid #607d8b;border-radius:8px;padding:8px 16px;font-size:20px">+</button>
+    </div>
     <p id="scanner-ean-status" style="color:#9fe2bf;font:700 13px 'DM Mono',monospace;margin:14px 0 2px;text-align:center;padding:0 24px;min-height:18px"></p>
-    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Mantenha o código centralizado, bem iluminado e a cerca de 10–20 cm da câmera · afaste devagar se ficar embaçado; toque no código para tentar focar</p>
+    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Mantenha o código centralizado e bem iluminado, a cerca de 20–30 cm da câmera. Se ficar embaçado, afaste o celular; use +/− para ampliar sem aproximar. Toque no código para tentar focar</p>
     <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
 </div>
 
@@ -3633,6 +3638,7 @@ function _buscarPorEAN(codigo) {
    ========================================================================== */
 const _eanPendente = {}; // { [índice do produto em state.produtos]: código }
 let _scannerStream = null, _scannerRodando = false;
+let _scannerZoomAtual = 1, _scannerZoomMin = 1, _scannerZoomMax = 1, _scannerZoomStep = 0.5;
 
 /* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
    Devolve false (sem lançar exceção) se não der certo, pra cada modo
@@ -3710,6 +3716,56 @@ function _configurarToqueParaFocar(video, stream) {
     };
 }
 
+/* Zoom por hardware/API quando a lente disponibiliza. Isso permite ampliar
+   o código sem aproximar o telefone além da distância mínima de foco. */
+async function _configurarZoomScanner(stream) {
+    _scannerZoomAtual = _scannerZoomMin = _scannerZoomMax = 1;
+    _scannerZoomStep = 0.5;
+    const painel = document.getElementById('scanner-ean-zoom');
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track || typeof track.getCapabilities !== 'function') {
+        if (painel) painel.style.display = 'none';
+        return;
+    }
+    try {
+        const z = track.getCapabilities().zoom;
+        if (!z || !Number.isFinite(z.min) || !Number.isFinite(z.max) || z.max <= z.min) {
+            if (painel) painel.style.display = 'none';
+            return;
+        }
+        _scannerZoomMin = z.min;
+        _scannerZoomMax = z.max;
+        _scannerZoomStep = Number.isFinite(z.step) && z.step > 0 ? z.step : Math.max(0.1, (z.max-z.min)/10);
+        const settings = track.getSettings?.() || {};
+        _scannerZoomAtual = Number.isFinite(settings.zoom) ? settings.zoom : z.min;
+        if (painel) painel.style.display = 'flex';
+        _atualizarBotoesZoomScanner();
+    } catch (_) { if (painel) painel.style.display = 'none'; }
+}
+
+function _atualizarBotoesZoomScanner() {
+    const menos = document.getElementById('scanner-ean-zoom-menos');
+    const mais = document.getElementById('scanner-ean-zoom-mais');
+    const valor = document.getElementById('scanner-ean-zoom-valor');
+    if (menos) menos.disabled = _scannerZoomAtual <= _scannerZoomMin + 0.001;
+    if (mais) mais.disabled = _scannerZoomAtual >= _scannerZoomMax - 0.001;
+    if (valor) valor.textContent = `${_scannerZoomAtual.toFixed(1)}×`;
+}
+
+async function ajustarZoomScanner(direcao) {
+    const track = _scannerStream?.getVideoTracks?.()[0];
+    if (!track || typeof track.applyConstraints !== 'function') return;
+    const novo = Math.max(_scannerZoomMin, Math.min(_scannerZoomMax, _scannerZoomAtual + direcao * _scannerZoomStep));
+    if (Math.abs(novo - _scannerZoomAtual) < 0.001) return;
+    try {
+        await track.applyConstraints({ advanced: [{ zoom: novo }] });
+        _scannerZoomAtual = novo;
+        _atualizarBotoesZoomScanner();
+    } catch (_) {
+        toast('Este modo de câmera não permite ajustar o zoom. Afaste um pouco o código para focar.', 'info', 2200);
+    }
+}
+
 function _aguardarVideoPronto(video, timeoutMs = 5000) {
     if (video.readyState >= 2 && video.videoWidth > 0) return Promise.resolve();
     return new Promise((resolve, reject) => {
@@ -3777,6 +3833,7 @@ async function _iniciarCamera(tituloTexto) {
         await video.play();
         await _aguardarVideoPronto(video);
         await _ajustarFocoContinuo(_scannerStream);
+        await _configurarZoomScanner(_scannerStream);
         _configurarToqueParaFocar(video, _scannerStream);
         document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
         document.getElementById('scanner-ean-status').textContent = 'Mantenha o código centralizado e mova o celular devagar para focar.';
@@ -3840,6 +3897,9 @@ async function abrirScannerEAN() {
 
 function pararScannerEAN() {
     _scannerRodando = false;
+    const painelZoom = document.getElementById('scanner-ean-zoom');
+    if (painelZoom) painelZoom.style.display = 'none';
+    _scannerZoomAtual = _scannerZoomMin = _scannerZoomMax = 1;
     if (_scannerStream) {
         _scannerStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
         _scannerStream = null;
