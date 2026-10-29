@@ -1371,8 +1371,10 @@
 
 <!-- Scanner de código de barras (embalagem) -->
 <div id="scanner-ean-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:4000;flex-direction:column;align-items:center;justify-content:center;">
+    <p id="scanner-ean-titulo" style="color:#fff;font:700 14px Sora,sans-serif;margin:0 0 10px;text-align:center">📷 Identificar produto</p>
     <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
-    <p style="color:#fff;font:600 13px Sora,sans-serif;margin:16px 0;text-align:center;padding:0 24px">Aponte para o código de barras da embalagem</p>
+    <p id="scanner-ean-status" style="color:#9fe2bf;font:700 13px 'DM Mono',monospace;margin:14px 0 2px;text-align:center;padding:0 24px;min-height:18px"></p>
+    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Aponte para o código de barras · se ficar embaçado, toque na tela em cima dele pra focar</p>
     <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
 </div>
 
@@ -3632,22 +3634,102 @@ function _buscarPorEAN(codigo) {
 const _eanPendente = {}; // { [índice do produto em state.produtos]: código }
 let _scannerStream = null, _scannerRodando = false;
 
-async function abrirScannerEAN() {
+/* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
+   Devolve false (sem lançar exceção) se não der certo, pra cada modo
+   decidir sozinho o que avisar. */
+/* Entre as câmeras traseiras do aparelho, evita a ultra-wide: ela dá uma
+   visão mais aberta, mas em troca tem distância mínima de foco pior —
+   exatamente o sintoma de "código pequeno sempre embaçado". Só dá pra ver
+   o nome/label de cada câmera DEPOIS da permissão já ter sido concedida
+   (por isso primeiro abre genérica, já com facingMode:environment, e só
+   então checa se existe uma opção melhor pra trocar). */
+async function _escolherCameraTraseiraIdeal() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const traseiras = devices.filter(d => d.kind === 'videoinput' && !/front|frontal|user/i.test(d.label));
+        if (traseiras.length <= 1) return null;
+        const ruim = /ultra|wide angle|0\.5|grande angular/i;
+        const melhor = traseiras.find(d => !ruim.test(d.label));
+        return melhor ? melhor.deviceId : null;
+    } catch (e) { return null; }
+}
+
+/* Força foco CONTÍNUO (em vez do foco único/fixo que alguns Android usam
+   por padrão em getUserMedia, que trava focado "no infinito" e nunca mais
+   reajusta pra perto — é exatamente o problema relatado). */
+async function _ajustarFocoContinuo(stream) {
+    const track = stream.getVideoTracks()[0];
+    if (!track || !track.getCapabilities) return;
+    try {
+        const cap = track.getCapabilities();
+        if (cap.focusMode && cap.focusMode.includes('continuous')) {
+            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        }
+    } catch (e) { /* aparelho não deixa controlar foco por software — segue sem travar */ }
+}
+
+/* Toque na imagem = refocar ali (fallback manual pra quando o foco
+   automático contínuo não existir ou não resolver sozinho). */
+function _configurarToqueParaFocar(video, stream) {
+    video.onclick = async (ev) => {
+        const track = stream.getVideoTracks()[0];
+        if (!track || !track.getCapabilities) return;
+        const cap = track.getCapabilities();
+        if (!cap.pointsOfInterest) return;
+        const rect = video.getBoundingClientRect();
+        const x = (ev.clientX - rect.left) / rect.width, y = (ev.clientY - rect.top) / rect.height;
+        try {
+            await track.applyConstraints({ advanced: [{ pointsOfInterest: [{ x, y }], focusMode: cap.focusMode?.includes('single-shot') ? 'single-shot' : undefined }] });
+            toast('🎯 Focando aí…', 'info', 1000);
+        } catch (e) {}
+    };
+}
+
+async function _iniciarCamera(tituloTexto) {
     if (!('BarcodeDetector' in window)) {
-        toast('📷 Esse navegador não lê código de barras (funciona no Chrome/Android). Digite o nome do produto normalmente.', 'error');
-        return;
+        toast('📷 Esse navegador não lê código de barras (funciona no Chrome/Android). Digite manualmente.', 'error');
+        return false;
     }
     const overlay = document.getElementById('scanner-ean-overlay'), video = document.getElementById('scanner-ean-video');
+    const pedirStream = (deviceId) => navigator.mediaDevices.getUserMedia({
+        video: deviceId
+            ? { deviceId: { exact: deviceId }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            : { facingMode: { ideal: 'environment' }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
     try {
-        _scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        _scannerStream = await pedirStream(null);
+        const idealId = await _escolherCameraTraseiraIdeal();
+        if (idealId && idealId !== _scannerStream.getVideoTracks()[0].getSettings().deviceId) {
+            try {
+                const melhor = await pedirStream(idealId);
+                _scannerStream.getTracks().forEach(t => t.stop());
+                _scannerStream = melhor;
+            } catch (e) { /* se der erro trocando, fica com a câmera genérica que já funcionou */ }
+        }
     } catch (e) {
         toast('Não consegui acessar a câmera (permissão negada?).', 'error');
-        return;
+        return false;
     }
     video.srcObject = _scannerStream;
     await video.play();
+    await _ajustarFocoContinuo(_scannerStream);
+    _configurarToqueParaFocar(video, _scannerStream);
+    document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
+    document.getElementById('scanner-ean-status').textContent = '';
     overlay.style.display = 'flex';
     _scannerRodando = true;
+    return true;
+}
+
+/* Botão único 📷 (ao lado do campo Produto) pra tudo que é leitura de
+   código de barras neste app: reconhece sozinho se o que foi lido é um
+   código de PRODUTO (embalagem do fabricante — só dígitos) ou um código de
+   PESO (algo que o próprio app já gerou, tem "." — ex: de um laudo antigo
+   ou etiqueta). Cada caso vai pro campo certo, sem precisar de botão
+   separado nem de escanear os dois numa sequência obrigatória. */
+async function abrirScannerEAN() {
+    if (!(await _iniciarCamera('📷 Ler código de barras'))) return;
+    const video = document.getElementById('scanner-ean-video');
     const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
     const loop = async () => {
         if (!_scannerRodando) return;
@@ -3663,20 +3745,67 @@ async function abrirScannerEAN() {
 function pararScannerEAN() {
     _scannerRodando = false;
     if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+    const video = document.getElementById('scanner-ean-video');
+    if (video) video.onclick = null;
     document.getElementById('scanner-ean-overlay').style.display = 'none';
 }
 
-function _resolverEAN(codigo) {
-    const achado = _buscarPorEAN(codigo);
+async function _resolverEAN(codigo) {
+    if (codigo.includes('.')) { // código de PESO (só o próprio app gera código com ponto)
+        const v = parseFloat(codigo);
+        if (isNaN(v) || v <= 0) { toast('Código de peso inválido.', 'error'); return; }
+        lerFormularioParaState();
+        state.produtos[state.idAtivo].avulsos.peso = v.toFixed(3).replace('.', ',');
+        renderizarTudo();
+        toast(`⚖️ Peso ${v.toFixed(3)} kg aplicado no item atual.`, 'success');
+        return;
+    }
+    const achado = _buscarPorEAN(codigo); // código de PRODUTO (embalagem do fabricante) — 1º tenta o seu registro local
     if (achado) {
         const fo = document.getElementById('fornecedor'), pd = document.getElementById('produto');
         fo.value = achado.nomeForn; fo.dispatchEvent(new Event('change'));
         pd.value = achado.nomeProd; pd.dispatchEvent(new Event('change'));
         _preencherAprendido();
         toast(`🏷️ ${achado.nomeProd} identificado.`, 'success');
-    } else {
+        return;
+    }
+
+    // Não achou no seu registro -> plano B: Open Food Facts (gratuita, sem
+    // chave). Viés forte pra produto de prateleira de supermercado, então
+    // pra itens de fornecedor/atacado é bem normal não achar nada — nesse
+    // caso cai direto no fluxo de sempre (digitar manualmente).
+    toast('Buscando na Open Food Facts…', 'info', 1800);
+    const sugestao = await _buscarOpenFoodFacts(codigo);
+    if (sugestao && confirm(`Não está no seu registro, mas achei na Open Food Facts:\n\n"${sugestao}"\n\nUsar esse nome?`)) {
+        const pd = document.getElementById('produto');
+        pd.value = sugestao; pd.dispatchEvent(new Event('change'));
         _eanPendente[state.idAtivo] = codigo;
-        toast('Código não encontrado. Digite o nome do produto — o código fica guardado e é salvo junto assim que essa pesagem for registrada.', 'info');
+        toast('Nome preenchido. Confira o fornecedor e o resto do item.', 'success');
+        return;
+    }
+
+    _eanPendente[state.idAtivo] = codigo;
+    toast('Código não encontrado. Digite o nome do produto — o código fica guardado e é salvo junto assim que essa pesagem for registrada.', 'info');
+}
+
+/* Consulta pontual, sem chave, na base aberta da Open Food Facts (licença
+   ODbL — uso comercial permitido, só precisa dar crédito). Silenciosa em
+   qualquer falha (sem internet, timeout, CORS, produto não cadastrado lá)
+   — sempre devolve null nesses casos, nunca trava o fluxo de scan. */
+async function _buscarOpenFoodFacts(codigo) {
+    try {
+        const ctrl = new AbortController(), timeout = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(codigo)}.json?fields=product_name,brands`, { signal: ctrl.signal });
+        clearTimeout(timeout);
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.status !== 1 || !data.product) return null;
+        const nome = (data.product.product_name || '').trim();
+        if (!nome) return null;
+        const marca = (data.product.brands || '').split(',')[0].trim();
+        return marca ? `${nome} (${marca})` : nome;
+    } catch (e) {
+        return null;
     }
 }
 function _registrarAliases(forn, prod) {
