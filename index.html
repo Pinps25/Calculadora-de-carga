@@ -1330,6 +1330,15 @@
         .vc-phead { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; } .vc-foto { width: 90px; border-radius: 8px; margin: 4px 0; }
         .vc-rtit { font-weight: 800; font-size: 14px; margin-bottom: 8px; } .vc-rev { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eef1f4; font-size: 12px; } .vc-rev span { color: #6b7a8d; font: 500 11px 'DM Mono', monospace; } .vc-rev.atual { background: #f6faf7; }
         .vc-rbtn { display: flex; flex-direction: column; gap: 4px; } .vc-rbtn button { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 1px solid #dde3ea; background: #f0f3f6; font-weight: 700; }
+        /* Tela "Conferência": barcodes grandes, de borda a borda, pro coletor ler direto da tela */
+        .vc-scan .vc-body { max-width: none; padding: 8px 0 60px; }
+        .vc-scan .vc-id, .vc-scan .vc-total, .vc-scan .vc-alerta, .vc-scan .vc-revs { margin-left: 10px; margin-right: 10px; }
+        .vc-scan .vc-prod { border-radius: 0; border-left: 0; border-right: 0; padding-left: 14px; padding-right: 14px; }
+        .vc-bcwrap { margin: 20px -14px 0; display: flex; flex-direction: column; gap: 28px; }
+        .vc-bcbloco { background: #ffffff; padding: 10px 0 8px; text-align: center; border-top: 1px solid #dde3ea; border-bottom: 1px solid #dde3ea; }
+        .vc-bcbloco svg { display: block; width: 100%; height: auto; }
+        .vc-bcleg { display: block; font: 800 11px 'Sora', sans-serif; color: #333; letter-spacing: .1em; margin-top: 2px; }
+        .vc-bcvazio { padding: 28px 14px; font: 600 13px 'Sora', sans-serif; color: #8a96a3; }
         @media screen {
             html.dark .conf-id-info { color: #93a3b5; }
             html.dark .dc-box { background: #18222c; color: #e6edf3; } html.dark .dc-diff { background: #243140; } html.dark .dc-btn { background: #243140; color: #e6edf3; border-color: #2c3a48; } html.dark .dc-btn.pri { background: #1a6b3c; } html.dark .dc-mot { color: #ff8a80; }
@@ -1373,13 +1382,8 @@
 <div id="scanner-ean-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:4000;flex-direction:column;align-items:center;justify-content:center;">
     <p id="scanner-ean-titulo" style="color:#fff;font:700 14px Sora,sans-serif;margin:0 0 10px;text-align:center">📷 Identificar produto</p>
     <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
-    <div id="scanner-ean-zoom" style="display:none;align-items:center;justify-content:center;gap:16px;margin-top:10px">
-        <button id="scanner-ean-zoom-menos" type="button" onclick="ajustarZoomScanner(-1)" aria-label="Diminuir zoom" style="background:#263238;color:#fff;border:1px solid #607d8b;border-radius:8px;padding:8px 16px;font-size:20px">−</button>
-        <span id="scanner-ean-zoom-valor" style="color:#fff;font:700 13px 'DM Mono',monospace;min-width:44px;text-align:center">1.0×</span>
-        <button id="scanner-ean-zoom-mais" type="button" onclick="ajustarZoomScanner(1)" aria-label="Aumentar zoom" style="background:#263238;color:#fff;border:1px solid #607d8b;border-radius:8px;padding:8px 16px;font-size:20px">+</button>
-    </div>
     <p id="scanner-ean-status" style="color:#9fe2bf;font:700 13px 'DM Mono',monospace;margin:14px 0 2px;text-align:center;padding:0 24px;min-height:18px"></p>
-    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Mantenha o código centralizado e bem iluminado, a cerca de 20–30 cm da câmera. Se ficar embaçado, afaste o celular; use +/− para ampliar sem aproximar. Toque no código para tentar focar</p>
+    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Aponte para o código de barras · se ficar embaçado, toque na tela em cima dele pra focar</p>
     <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
 </div>
 
@@ -1690,7 +1694,7 @@
 <div class="btn-bar">
     <button class="action-btn btn-clear"  onclick="confirmarLimpeza()">Limpar Tudo</button>
     <button class="action-btn btn-new"    onclick="novoProduto()">+ Novo Item</button>
-    <button class="action-btn btn-print"  id="btn-imprimir" onclick="gerarLaudo()">PDF + Histórico</button>
+    <button class="action-btn btn-print"  id="btn-imprimir" onclick="abrirTelaConferencia()">Conferência</button>
 </div>
 
 <!-- Print Area -->
@@ -2206,7 +2210,7 @@ function calcular(silencioso = false) {
     const btnImprimir = document.getElementById('btn-imprimir');
     const resultBox   = document.getElementById('result-box');
     btnImprimir.disabled  = effectiveBloqueio;
-    btnImprimir.innerText = effectiveBloqueio ? '⚠ Pendente Liberação' : 'PDF + Histórico';
+    btnImprimir.innerText = effectiveBloqueio ? '⚠ Pendente Liberação' : 'Conferência';
     btnImprimir.classList.toggle('blocked', effectiveBloqueio);
     resultBox.classList.toggle('bloqueado', effectiveBloqueio);
 
@@ -2488,22 +2492,21 @@ function importarBackup(e) {
    GERAÇÃO DO LAUDO -- V8 (3 produtos por página A4)
    ════════════════════════════════════════════════════════════════════ */
 
-function gerarLaudo() {
-    if (document.getElementById('btn-imprimir').disabled) return;
-    lerFormularioParaState();
-
-    const nome = gerarNomeArquivo();
+/* Monta o HTML do laudo impresso a partir de QUALQUER estado de conferência
+   (a atual ou uma salva no histórico) — não mexe no estado ao vivo nem no
+   DOM; quem chama decide o que fazer com o HTML (imprimir, etc). */
+function _montarHtmlLaudo(estadoFonte, nome) {
 
     /* ── Coleta produtos válidos ── */
-    const produtosValidos = state.produtos.filter(p =>
+    const produtosValidos = estadoFonte.produtos.filter(p =>
         p.nome || (p.pallets[0] && parseSeguro(p.pallets[0].bto).valor > 0)
     );
 
     /* ── Data + Hora formatada ── */
     const agora = new Date();
     const horaEmissao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const dataPesagemFmt = state.dataPesagem
-        ? new Date(state.dataPesagem + 'T12:00:00').toLocaleDateString('pt-BR')
+    const dataPesagemFmt = estadoFonte.dataPesagem
+        ? new Date(estadoFonte.dataPesagem + 'T12:00:00').toLocaleDateString('pt-BR')
         : agora.toLocaleDateString('pt-BR');
     const dataHora = `${dataPesagemFmt} · Emitido às ${horaEmissao}`;
 
@@ -2594,7 +2597,7 @@ function gerarLaudo() {
         ].filter(Boolean).join('');
 
         // Dois códigos de barras do item: produto (EAN lido da embalagem) + peso líquido desta pesagem
-        const A = _apel(), kfProd = _canonFA(A, _kk(state.fornecedor)), kpProd = _canonPA(A, kfProd, _kk(prod.nome));
+        const A = _apel(), kfProd = _canonFA(A, _kk(estadoFonte.fornecedor)), kpProd = _canonPA(A, kfProd, _kk(prod.nome));
         const eanProduto = _codigoProduto(kfProd, kpProd).ean;
         const codigoPeso = liqTotal > 0 ? _codificarPeso(liqTotal) : '';
         const barcodesHtml = `
@@ -2635,8 +2638,8 @@ function gerarLaudo() {
     <div class="print-cabecalho">
         <div class="print-cab-titulo">LAUDO DE <span>PESAGEM</span></div>
         <div class="print-cab-meta">
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Conferente</span><span class="print-cab-cell-val">${_esc((state.conferente || '--').toUpperCase())}</span></div>
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${_esc((state.fornecedor || '--').toUpperCase())}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Conferente</span><span class="print-cab-cell-val">${_esc((estadoFonte.conferente || '--').toUpperCase())}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${_esc((estadoFonte.fornecedor || '--').toUpperCase())}</span></div>
             <div class="print-cab-cell"><span class="print-cab-cell-label">Data / Hora</span><span class="print-cab-cell-val">${dataHora}</span></div>
             <div class="print-cab-cell"><span class="print-cab-cell-label">Referência</span><span class="print-cab-cell-val" style="font-size:7pt;">${_esc(nome)}</span></div>
         </div>
@@ -2651,11 +2654,8 @@ function gerarLaudo() {
     /* o último item viaja junto com as assinaturas, para a assinatura nunca ficar sozinha numa folha */
     let html = `<div class="lp-doc">${cabecalhoHtml}${todos.join('')}<div style="break-inside:avoid;page-break-inside:avoid">${ultimo}${sigHtml}</div></div>`;
 
-    _aprender();
     html += _anexoFotos(produtosValidos);
-    document.getElementById('print-area').innerHTML = html;
-    _renderizarBarcodesLaudo();
-    histSalvar('final').then(ok => { if (ok === false) { toast('PDF cancelado: a conferência NÃO foi salva.', 'warning', 4000); return; } toast('🗂 ' + (_ultimoSalvar.msg || 'Salvo no histórico.'), 'info', 2500); setTimeout(() => window.print(), 300); }).catch(() => { toast('Não consegui salvar no histórico.', 'warning'); setTimeout(() => window.print(), 300); });
+    return html;
 }
 
 /* Converte os <svg class="lp-bc" data-code="..."> deixados pelo htmlSlot()
@@ -3295,7 +3295,7 @@ async function abrirHistorico() {
     let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
     const A = _lsGet('pesagem_auditoria', []), sync = !!_syncCfg()?.token;
     let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada conferência tem identidade e chave próprias. Salvar de novo cria uma <b>revisão</b>; nada é sobrescrito. Conferência finalizada fica <b>selada</b> 🔒.</p>`;
-    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px;min-width:0"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px;min-width:0"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histImprimirLaudo('${x.id}')">🖨 Laudo</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
     if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
@@ -3638,276 +3638,121 @@ function _buscarPorEAN(codigo) {
    ========================================================================== */
 const _eanPendente = {}; // { [índice do produto em state.produtos]: código }
 let _scannerStream = null, _scannerRodando = false;
-let _scannerZoomAtual = 1, _scannerZoomMin = 1, _scannerZoomMax = 1, _scannerZoomStep = 0.5;
 
 /* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
    Devolve false (sem lançar exceção) se não der certo, pra cada modo
    decidir sozinho o que avisar. */
-/* Escolhe uma câmera traseira adequada para leitura de perto. Em aparelhos
-   Samsung, o Chrome pode expor várias lentes; a ultra-wide costuma ter uma
-   distância mínima de foco maior. Os nomes variam conforme a versão do SO,
-   portanto usamos uma pontuação heurística e mantemos fallback seguro. */
+/* Entre as câmeras traseiras do aparelho, evita a ultra-wide: ela dá uma
+   visão mais aberta, mas em troca tem distância mínima de foco pior —
+   exatamente o sintoma de "código pequeno sempre embaçado". Só dá pra ver
+   o nome/label de cada câmera DEPOIS da permissão já ter sido concedida
+   (por isso primeiro abre genérica, já com facingMode:environment, e só
+   então checa se existe uma opção melhor pra trocar). */
 async function _escolherCameraTraseiraIdeal() {
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(d => d.kind === 'videoinput');
-        if (!cameras.length) return null;
-        const frente = /front|frontal|user|selfie|facetime/i;
-        const ultra = /ultra[ -]?wide|ultra[ -]?grande|wide[ -]?angle|0[.,]5\s*x?|0\.5|grande angular|ultrawide/i;
-        const traseiras = cameras.filter(d => !frente.test(d.label));
-        if (!traseiras.length) return null;
-        const pontuar = d => {
-            const label = d.label || '';
-            let score = 0;
-            if (ultra.test(label)) score -= 100;
-            if (/telephoto|telefoto|zoom/i.test(label)) score += 4;
-            if (/main|primary|standard|principal|wide\s*\(1x\)|1[.,]0\s*x?/i.test(label)) score += 12;
-            if (/camera\s*0|camera2\s*0|facing back|traseira\s*0/i.test(label)) score += 8;
-            if (/back|rear|traseira|environment/i.test(label)) score += 3;
-            return score;
-        };
-        traseiras.sort((a, b) => pontuar(b) - pontuar(a));
-        return traseiras[0]?.deviceId || null;
+        const traseiras = devices.filter(d => d.kind === 'videoinput' && !/front|frontal|user/i.test(d.label));
+        if (traseiras.length <= 1) return null;
+        const ruim = /ultra|wide angle|0\.5|grande angular/i;
+        const melhor = traseiras.find(d => !ruim.test(d.label));
+        return melhor ? melhor.deviceId : null;
     } catch (e) { return null; }
 }
 
-/* Pede foco contínuo usando as capacidades reais da lente. Alguns Chrome
-   ignoram focusMode em getUserMedia, por isso a configuração é aplicada à
-   track depois que a câmera já abriu. Nunca falha a abertura por isso. */
+/* Força foco CONTÍNUO (em vez do foco único/fixo que alguns Android usam
+   por padrão em getUserMedia, que trava focado "no infinito" e nunca mais
+   reajusta pra perto — é exatamente o problema relatado). */
 async function _ajustarFocoContinuo(stream) {
-    const track = stream?.getVideoTracks?.()[0];
-    if (!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') return false;
+    const track = stream.getVideoTracks()[0];
+    if (!track || !track.getCapabilities) return;
     try {
         const cap = track.getCapabilities();
-        const modos = Array.isArray(cap.focusMode) ? cap.focusMode : [];
-        if (modos.includes('continuous')) {
-            try {
-                await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-            } catch (_) {
-                await track.applyConstraints({ focusMode: 'continuous' });
-            }
-            return true;
+        if (cap.focusMode && cap.focusMode.includes('continuous')) {
+            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
         }
-    } catch (e) { /* controle de foco não exposto pelo navegador/aparelho */ }
-    return false;
+    } catch (e) { /* aparelho não deixa controlar foco por software — segue sem travar */ }
 }
 
-/* O toque tenta refocar no ponto indicado quando o dispositivo oferece
-   pointsOfInterest. Esse recurso não existe em todos os Chrome/Android. */
+/* Toque na imagem = refocar ali (fallback manual pra quando o foco
+   automático contínuo não existir ou não resolver sozinho). */
 function _configurarToqueParaFocar(video, stream) {
     video.onclick = async (ev) => {
-        const track = stream?.getVideoTracks?.()[0];
-        if (!track || typeof track.getCapabilities !== 'function') return;
+        const track = stream.getVideoTracks()[0];
+        if (!track || !track.getCapabilities) return;
+        const cap = track.getCapabilities();
+        if (!cap.pointsOfInterest) return;
+        const rect = video.getBoundingClientRect();
+        const x = (ev.clientX - rect.left) / rect.width, y = (ev.clientY - rect.top) / rect.height;
         try {
-            const cap = track.getCapabilities();
-            if (!cap.pointsOfInterest) {
-                toast('O foco por toque não é compatível com esta câmera. Afaste um pouco o código e mantenha-o centralizado.', 'info', 2200);
-                return;
-            }
-            const rect = video.getBoundingClientRect();
-            if (!rect.width || !rect.height) return;
-            const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
-            const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
-            const advanced = [{ pointsOfInterest: [{ x, y }] }];
-            if (Array.isArray(cap.focusMode) && cap.focusMode.includes('single-shot')) advanced[0].focusMode = 'single-shot';
-            await track.applyConstraints({ advanced });
-            toast('🎯 Tentando focar nesse ponto…', 'info', 1000);
-        } catch (e) { /* câmera não oferece foco por toque */ }
+            await track.applyConstraints({ advanced: [{ pointsOfInterest: [{ x, y }], focusMode: cap.focusMode?.includes('single-shot') ? 'single-shot' : undefined }] });
+            toast('🎯 Focando aí…', 'info', 1000);
+        } catch (e) {}
     };
 }
 
-/* Zoom por hardware/API quando a lente disponibiliza. Isso permite ampliar
-   o código sem aproximar o telefone além da distância mínima de foco. */
-async function _configurarZoomScanner(stream) {
-    _scannerZoomAtual = _scannerZoomMin = _scannerZoomMax = 1;
-    _scannerZoomStep = 0.5;
-    const painel = document.getElementById('scanner-ean-zoom');
-    const track = stream?.getVideoTracks?.()[0];
-    if (!track || typeof track.getCapabilities !== 'function') {
-        if (painel) painel.style.display = 'none';
-        return;
-    }
-    try {
-        const z = track.getCapabilities().zoom;
-        if (!z || !Number.isFinite(z.min) || !Number.isFinite(z.max) || z.max <= z.min) {
-            if (painel) painel.style.display = 'none';
-            return;
-        }
-        _scannerZoomMin = z.min;
-        _scannerZoomMax = z.max;
-        _scannerZoomStep = Number.isFinite(z.step) && z.step > 0 ? z.step : Math.max(0.1, (z.max-z.min)/10);
-        const settings = track.getSettings?.() || {};
-        _scannerZoomAtual = Number.isFinite(settings.zoom) ? settings.zoom : z.min;
-        if (painel) painel.style.display = 'flex';
-        _atualizarBotoesZoomScanner();
-    } catch (_) { if (painel) painel.style.display = 'none'; }
-}
-
-function _atualizarBotoesZoomScanner() {
-    const menos = document.getElementById('scanner-ean-zoom-menos');
-    const mais = document.getElementById('scanner-ean-zoom-mais');
-    const valor = document.getElementById('scanner-ean-zoom-valor');
-    if (menos) menos.disabled = _scannerZoomAtual <= _scannerZoomMin + 0.001;
-    if (mais) mais.disabled = _scannerZoomAtual >= _scannerZoomMax - 0.001;
-    if (valor) valor.textContent = `${_scannerZoomAtual.toFixed(1)}×`;
-}
-
-async function ajustarZoomScanner(direcao) {
-    const track = _scannerStream?.getVideoTracks?.()[0];
-    if (!track || typeof track.applyConstraints !== 'function') return;
-    const novo = Math.max(_scannerZoomMin, Math.min(_scannerZoomMax, _scannerZoomAtual + direcao * _scannerZoomStep));
-    if (Math.abs(novo - _scannerZoomAtual) < 0.001) return;
-    try {
-        await track.applyConstraints({ advanced: [{ zoom: novo }] });
-        _scannerZoomAtual = novo;
-        _atualizarBotoesZoomScanner();
-    } catch (_) {
-        toast('Este modo de câmera não permite ajustar o zoom. Afaste um pouco o código para focar.', 'info', 2200);
-    }
-}
-
-function _aguardarVideoPronto(video, timeoutMs = 5000) {
-    if (video.readyState >= 2 && video.videoWidth > 0) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        let finalizado = false;
-        const limpar = () => {
-            video.removeEventListener('loadedmetadata', pronto);
-            video.removeEventListener('canplay', pronto);
-            clearTimeout(timer);
-        };
-        const pronto = () => {
-            if (finalizado) return;
-            if (video.videoWidth > 0) { finalizado = true; limpar(); resolve(); }
-        };
-        const timer = setTimeout(() => {
-            if (finalizado) return;
-            finalizado = true; limpar(); reject(new Error('A câmera não entregou imagem a tempo.'));
-        }, timeoutMs);
-        video.addEventListener('loadedmetadata', pronto);
-        video.addEventListener('canplay', pronto);
-    });
-}
-
 async function _iniciarCamera(tituloTexto) {
-    if (!navigator.mediaDevices?.getUserMedia) {
-        toast('📷 Este navegador não permite acesso à câmera. Abra o projeto no Chrome usando HTTPS ou localhost.', 'error');
-        return false;
-    }
     if (!('BarcodeDetector' in window)) {
         toast('📷 Esse navegador não lê código de barras (funciona no Chrome/Android). Digite manualmente.', 'error');
         return false;
     }
-    const overlay = document.getElementById('scanner-ean-overlay');
-    const video = document.getElementById('scanner-ean-video');
+    const overlay = document.getElementById('scanner-ean-overlay'), video = document.getElementById('scanner-ean-video');
     const pedirStream = (deviceId) => navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-            ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } }),
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30, max: 30 }
-        }
+        video: deviceId
+            ? { deviceId: { exact: deviceId }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            : { facingMode: { ideal: 'environment' }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
     });
-    let stream = null;
     try {
-        // Primeiro obtém permissão; assim o Chrome passa a revelar os nomes das lentes.
-        stream = await pedirStream(null);
-        const atualId = stream.getVideoTracks()[0]?.getSettings?.().deviceId;
+        _scannerStream = await pedirStream(null);
         const idealId = await _escolherCameraTraseiraIdeal();
-        if (idealId && idealId !== atualId) {
-            // Evita abrir duas lentes ao mesmo tempo (muitas vezes o Samsung bloqueia a troca).
-            stream.getTracks().forEach(t => t.stop());
-            stream = null;
+        if (idealId && idealId !== _scannerStream.getVideoTracks()[0].getSettings().deviceId) {
             try {
-                stream = await pedirStream(idealId);
-            } catch (trocaErro) {
-                // Se a lente escolhida não abrir, volta para a câmera traseira padrão.
-                stream = await pedirStream(null);
-            }
+                const melhor = await pedirStream(idealId);
+                _scannerStream.getTracks().forEach(t => t.stop());
+                _scannerStream = melhor;
+            } catch (e) { /* se der erro trocando, fica com a câmera genérica que já funcionou */ }
         }
-        _scannerStream = stream;
-        video.setAttribute('playsinline', '');
-        video.muted = true;
-        video.autoplay = true;
-        video.srcObject = _scannerStream;
-        await video.play();
-        await _aguardarVideoPronto(video);
-        await _ajustarFocoContinuo(_scannerStream);
-        await _configurarZoomScanner(_scannerStream);
-        _configurarToqueParaFocar(video, _scannerStream);
-        document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
-        document.getElementById('scanner-ean-status').textContent = 'Mantenha o código centralizado e mova o celular devagar para focar.';
-        overlay.style.display = 'flex';
-        _scannerRodando = true;
-        return true;
     } catch (e) {
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        _scannerStream = null;
-        video.srcObject = null;
-        const msg = e?.name === 'NotAllowedError'
-            ? 'Permita o acesso à câmera nas configurações do Chrome e tente novamente.'
-            : e?.name === 'NotFoundError'
-                ? 'Não encontrei uma câmera disponível neste aparelho.'
-                : 'Não consegui iniciar a câmera. Feche outros apps que estejam usando-a e tente novamente.';
-        toast('📷 ' + msg, 'error', 3500);
+        toast('Não consegui acessar a câmera (permissão negada?).', 'error');
         return false;
     }
+    video.srcObject = _scannerStream;
+    await video.play();
+    await _ajustarFocoContinuo(_scannerStream);
+    _configurarToqueParaFocar(video, _scannerStream);
+    document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
+    document.getElementById('scanner-ean-status').textContent = '';
+    overlay.style.display = 'flex';
+    _scannerRodando = true;
+    return true;
 }
 
-/* Botão único 📷: mantém o fluxo original para código de produto e de peso. */
+/* Botão único 📷 (ao lado do campo Produto) pra tudo que é leitura de
+   código de barras neste app: reconhece sozinho se o que foi lido é um
+   código de PRODUTO (embalagem do fabricante — só dígitos) ou um código de
+   PESO (algo que o próprio app já gerou, tem "." — ex: de um laudo antigo
+   ou etiqueta). Cada caso vai pro campo certo, sem precisar de botão
+   separado nem de escanear os dois numa sequência obrigatória. */
 async function abrirScannerEAN() {
     if (!(await _iniciarCamera('📷 Ler código de barras'))) return;
     const video = document.getElementById('scanner-ean-video');
-    let detector;
-    try {
-        const formatosPreferidos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'];
-        const suportados = typeof BarcodeDetector.getSupportedFormats === 'function'
-            ? await BarcodeDetector.getSupportedFormats()
-            : formatosPreferidos;
-        const formatos = formatosPreferidos.filter(f => suportados.includes(f));
-        if (!formatos.length) throw new Error('Nenhum formato de código de barras compatível.');
-        detector = new BarcodeDetector({ formats: formatos });
-    } catch (e) {
-        pararScannerEAN();
-        toast('Não foi possível preparar a leitura de código de barras neste Chrome.', 'error');
-        return;
-    }
-    let detectando = false;
+    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
     const loop = async () => {
-        if (!_scannerRodando || detectando) return;
-        detectando = true;
+        if (!_scannerRodando) return;
         try {
-            if (video.readyState >= 2 && video.videoWidth > 0) {
-                const codigos = await detector.detect(video);
-                if (codigos.length) {
-                    const codigo = String(codigos[0].rawValue || '').trim();
-                    if (codigo) {
-                        pararScannerEAN();
-                        _resolverEAN(codigo);
-                        return;
-                    }
-                }
-            }
-        } catch (e) { /* frame desfocado/inválido: continua tentando */ }
-        finally { detectando = false; }
-        if (_scannerRodando) setTimeout(loop, 180);
+            const codigos = await detector.detect(video);
+            if (codigos.length) { pararScannerEAN(); _resolverEAN(codigos[0].rawValue.trim()); return; }
+        } catch (e) { /* frame inválido, ignora e tenta de novo */ }
+        if (_scannerRodando) setTimeout(loop, 350);
     };
     loop();
 }
 
 function pararScannerEAN() {
     _scannerRodando = false;
-    const painelZoom = document.getElementById('scanner-ean-zoom');
-    if (painelZoom) painelZoom.style.display = 'none';
-    _scannerZoomAtual = _scannerZoomMin = _scannerZoomMax = 1;
-    if (_scannerStream) {
-        _scannerStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
-        _scannerStream = null;
-    }
+    if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
     const video = document.getElementById('scanner-ean-video');
-    if (video) { video.onclick = null; video.srcObject = null; }
-    const overlay = document.getElementById('scanner-ean-overlay');
-    if (overlay) overlay.style.display = 'none';
+    if (video) video.onclick = null;
+    document.getElementById('scanner-ean-overlay').style.display = 'none';
 }
 
 async function _resolverEAN(codigo) {
@@ -4636,7 +4481,57 @@ async function prevRender() {
     }).join('') : '<p style="padding:0 16px;font-size:13px;color:#6b7a8d">Nenhuma conferência ainda. Toque em 🔄 Atualizar.</p>';
 }
 async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(!!manual, '🔄 Atualizado.'); else if (manual) toast('Conecte o GitHub em ☰ › Sincronizar.', 'warning'); prevRender(); }
-async function verConferencia(id, revH) {
+/* ── TELA "CONFERÊNCIA" ─────────────────────────────────────────────────
+   É a mesma tela de leitura do histórico/prevenção (verConferencia), mas
+   aberta em modo scan: no fim de cada produto aparecem 2 códigos de barras
+   grandes (produto em cima, peso líquido embaixo) pro coletor ler direto da
+   tela do celular. Preto sobre branco fixo, independente do tema escuro. */
+function _blocoBarcodesScan(est, p, liqTotal) {
+    const A = _apel(), kf = _canonFA(A, _kk(est.fornecedor)), kp = _canonPA(A, kf, _kk(p.nome));
+    const ean = _codigoProduto(kf, kp).ean;
+    const peso = liqTotal > 0 ? _codificarPeso(liqTotal) : '';
+    const bloco = (codigo, legenda, vazio) => `<div class="vc-bcbloco">${codigo ? `<svg class="vc-bc" data-code="${_esc(codigo)}"></svg>` : `<div class="vc-bcvazio">${vazio}</div>`}<span class="vc-bcleg">${legenda}</span></div>`;
+    return `<div class="vc-bcwrap">${bloco(ean, 'CÓDIGO DO PRODUTO', 'Produto sem código de barras cadastrado — use o 📷 ao lado do nome')}${bloco(peso, 'PESO LÍQUIDO', 'Sem peso lançado')}</div>`;
+}
+
+function _renderizarBarcodesScan() {
+    if (typeof JsBarcode === 'undefined') { toast('Biblioteca de código de barras não carregou (sem internet?).', 'warning'); return; }
+    document.querySelectorAll('#ver-conf svg.vc-bc').forEach(svg => {
+        try {
+            JsBarcode(svg, svg.dataset.code, { format: 'CODE128', displayValue: true, fontSize: 22, fontOptions: 'bold', height: 110, margin: 16, width: 3, background: '#ffffff', lineColor: '#000000' });
+            // faz o SVG esticar até a borda da tela mantendo as proporções
+            if (!svg.getAttribute('viewBox')) svg.setAttribute('viewBox', `0 0 ${parseFloat(svg.getAttribute('width'))} ${parseFloat(svg.getAttribute('height'))}`);
+            svg.removeAttribute('width'); svg.removeAttribute('height');
+            svg.style.width = '100%'; svg.style.height = 'auto';
+        } catch (e) { svg.outerHTML = '<div class="vc-bcvazio">código inválido</div>'; }
+    });
+}
+
+/* Botão "Conferência" da barra de baixo: finaliza/salva no histórico (igual o
+   antigo "PDF + Histórico" fazia) e abre a tela com os códigos de barras. */
+async function abrirTelaConferencia() {
+    if (document.getElementById('btn-imprimir').disabled) return;
+    lerFormularioParaState();
+    _aprender();
+    let ok; try { ok = await histSalvar('final'); } catch (e) { toast('Não consegui salvar no histórico.', 'warning'); return; }
+    if (ok === false) { toast('A conferência NÃO foi salva — tela não aberta.', 'warning', 4000); return; }
+    if (!(await _hGet(state.cid))) { toast('Nada para conferir ainda — lance ao menos um item.', 'info'); return; }
+    toast('🗂 ' + (_ultimoSalvar.msg || 'Salvo no histórico.'), 'info', 2000);
+    verConferencia(state.cid, null, true);
+}
+
+/* Imprimir o laudo (PDF) agora mora no Histórico: monta a folha a partir da
+   conferência SALVA — não mexe na conferência que está aberta na tela. */
+async function histImprimirLaudo(id, revH) {
+    const rec = await _hGet(id); if (!rec) { toast('Conferência não encontrada.', 'error'); return; }
+    const rev = revH ? (rec.revs.find(r => r.h === revH) || _cabeca(rec)) : _cabeca(rec);
+    let html; try { html = _montarHtmlLaudo(rev.estado, `${rec.titulo} · rev ${rev.n}`); } catch (e) { toast('Não consegui montar o laudo desta conferência.', 'error'); return; }
+    document.getElementById('print-area').innerHTML = html;
+    _renderizarBarcodesLaudo();
+    setTimeout(() => window.print(), 300);
+}
+
+async function verConferencia(id, revH, modoScan) {
     const rec = await _hGet(id); if (!rec) return;
     const head = _cabeca(rec), rev = revH ? (rec.revs.find(r => r.h === revH) || head) : head, est = rev.estado, antiga = rev.h !== head.h;
     let calc; try { calc = _calcEntry(est); } catch { toast('Não consegui abrir esta conferência.', 'error'); return; }
@@ -4654,12 +4549,12 @@ async function verConferencia(id, revH) {
             ${dif !== null ? `<div class="vc-meta ${dif >= 0 ? 'ok' : 'bad'}">🎯 Meta ${kgf(meta)} → ${dif >= 0 ? '+' : ''}${_kg(dif)} kg ${dif >= 0 ? '✔' : '(abaixo da meta)'}</div>` : ''}
             ${temAv ? `<div class="vc-meta">➕ Avulsos: ${av.qcx || 0} caixa(s) · ${av.qemb || 0} embalagem(ns) · ${av.peso || 0} kg</div>` : ''}
             ${pal.map(r => { const pl = (p.pallets || [])[r.idx] || {}; return `<div class="vc-pal ${r.estado === 'VERMELHO' ? 'bad' : r.estado === 'LARANJA' ? 'warn' : ''}"><div class="vc-phead"><b>📦 Pallet ${r.idx + 1}</b><span>${dot[r.estado] || ''}</span></div>${pl.foto ? `<img class="vc-foto" src="${pl.foto}" alt="foto">` : ''}
-                ${row('Peso bruto', kgf(r.bto))}${row('Peso do pallet', kgf(r.taraMad))}${row('Peso da caixa', _kg(r.pcxKg) + ' kg')}${row('Quantidade de caixas', _fN(r.qcx, 0))}${row('Peso da embalagem', _fN(r.pembKg * 1000, 1) + ' g')}${row('Embalagens por caixa', _fN(r.qemb, 0))}${row('Tara das caixas', kgf(r.taraCx))}${row('Tara das embalagens', kgf(r.taraEmb))}${row('Tara total', kgf(r.taraTotal) + ' (' + (r.percTara * 100).toFixed(1).replace('.', ',') + '%)')}${row('LÍQUIDO DO PALLET', kgf(r.liqPallet), 'dest')}</div>`; }).join('')}</div>`;
+                ${row('Peso bruto', kgf(r.bto))}${row('Peso do pallet', kgf(r.taraMad))}${row('Peso da caixa', _kg(r.pcxKg) + ' kg')}${row('Quantidade de caixas', _fN(r.qcx, 0))}${row('Peso da embalagem', _fN(r.pembKg * 1000, 1) + ' g')}${row('Embalagens por caixa', _fN(r.qemb, 0))}${row('Tara das caixas', kgf(r.taraCx))}${row('Tara das embalagens', kgf(r.taraEmb))}${row('Tara total', kgf(r.taraTotal) + ' (' + (r.percTara * 100).toFixed(1).replace('.', ',') + '%)')}${row('LÍQUIDO DO PALLET', kgf(r.liqPallet), 'dest')}</div>`; }).join('')}${modoScan ? _blocoBarcodesScan(est, p, t.liqTotal) : ''}</div>`;
     }).join('');
     const revs = [...rec.revs].sort((a, b) => b.n - a.n || (b.ua || 0) - (a.ua || 0)).map(r => { const pv = rec.revs.find(x => x.h === r.prev), ch = pv ? _resumoMudancas(pv.estado, r.estado) : ['Primeira versão']; return `<div class="vc-rev ${r.h === rev.h ? 'atual' : ''}"><div><b>Rev ${r.n}</b> · ${r.status === 'final' ? '🔒 finalizada' : '✏ em andamento'}${r.reaberta ? ' · reaberta' : ''}<br><span>${_esc(r.quando)} · ${_esc(r.conferente || '—')} · ${_esc(r.disp?.nome || '—')}</span><br><span>${ch.slice(0, 3).map(l => _esc(l)).join(' · ') || 'sem mudanças de conteúdo'}</span></div><div class="vc-rbtn">${r.h === rev.h ? '<span>vendo</span>' : `<button onclick="verConferencia('${rec.id}','${r.h}')">Ver</button>`}${ro ? '' : `<button onclick="histRestaurarRev('${rec.id}','${r.h}')">Restaurar como nova</button>`}</div></div>`; }).join('');
     document.getElementById('ver-conf')?.remove();
-    const o = document.createElement('div'); o.id = 'ver-conf'; o.className = 'vc-full';
-    o.innerHTML = `<div class="vc-bar"><button onclick="document.getElementById('ver-conf').remove()">← Voltar</button><span>👁 Somente leitura</span></div><div class="vc-body">
+    const o = document.createElement('div'); o.id = 'ver-conf'; o.className = 'vc-full' + (modoScan ? ' vc-scan' : '');
+    o.innerHTML = `<div class="vc-bar"><button onclick="document.getElementById('ver-conf').remove()">← Voltar</button><span style="flex:1">${modoScan ? '📷 Conferência' : '👁 Somente leitura'}</span><button onclick="histImprimirLaudo('${rec.id}','${rev.h}')">🖨 Laudo</button></div><div class="vc-body">
         <div class="vc-id"><div class="vc-forn">${_esc(rec.titulo)}</div><div class="vc-badges"><span class="vc-b ${sel.cls}">${sel.ico} ${sel.txt}</span><span class="vc-b">Rev ${rev.n} de ${head.n}</span><span class="vc-b">🔑 ${_esc((rec.tk || '').slice(-4))}</span></div><div class="vc-sub">Conferente: ${_esc(rev.conferente || '—')} · Aparelho: ${_esc(rev.disp?.nome || '—')}<br>${_esc(rev.quando)} (${_haTxt(rev.ua)}) · Data da pesagem: ${est.dataPesagem ? est.dataPesagem.split('-').reverse().join('/') : '—'}<br>Selo: ${okRev ? '✔ íntegro' : '⚠ INVÁLIDO (alterado fora do app)'} · ${rev.h.slice(0, 10)}${rec.origem ? '<br>Copiada de outra conferência (' + _esc(rec.origem.cid.slice(-4)) + ')' : ''}</div></div>
         ${antiga ? `<div class="vc-alerta warn">Você está vendo a revisão ${rev.n}, que é ANTIGA. <button onclick="verConferencia('${rec.id}')">Ver a mais recente</button></div>` : ''}
         ${rec.conflito ? '<div class="vc-alerta warn">🔀 Há versões divergentes desta conferência (feitas em lugares diferentes). Todas estão guardadas abaixo.</div>' : ''}
@@ -4667,6 +4562,7 @@ async function verConferencia(id, revH) {
         <div class="vc-total">Peso líquido total da conferência: <b>${kgf(liqTot)}</b></div>${prods}
         <div class="vc-revs"><div class="vc-rtit">🕘 Revisões (nada é sobrescrito)</div>${revs}</div></div>`;
     document.body.appendChild(o);
+    if (modoScan) _renderizarBarcodesScan();
 }
 async function histRestaurarRev(id, h) {
     const rec = await _hGet(id); const r = rec?.revs.find(x => x.h === h); if (!r) return;
