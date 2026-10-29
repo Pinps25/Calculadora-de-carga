@@ -1374,7 +1374,7 @@
     <p id="scanner-ean-titulo" style="color:#fff;font:700 14px Sora,sans-serif;margin:0 0 10px;text-align:center">📷 Identificar produto</p>
     <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
     <p id="scanner-ean-status" style="color:#9fe2bf;font:700 13px 'DM Mono',monospace;margin:14px 0 2px;text-align:center;padding:0 24px;min-height:18px"></p>
-    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Aponte para o código de barras · se ficar embaçado, toque na tela em cima dele pra focar</p>
+    <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Mantenha o código centralizado, bem iluminado e a cerca de 10–20 cm da câmera · afaste devagar se ficar embaçado; toque no código para tentar focar</p>
     <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
 </div>
 
@@ -3637,117 +3637,217 @@ let _scannerStream = null, _scannerRodando = false;
 /* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
    Devolve false (sem lançar exceção) se não der certo, pra cada modo
    decidir sozinho o que avisar. */
-/* Entre as câmeras traseiras do aparelho, evita a ultra-wide: ela dá uma
-   visão mais aberta, mas em troca tem distância mínima de foco pior —
-   exatamente o sintoma de "código pequeno sempre embaçado". Só dá pra ver
-   o nome/label de cada câmera DEPOIS da permissão já ter sido concedida
-   (por isso primeiro abre genérica, já com facingMode:environment, e só
-   então checa se existe uma opção melhor pra trocar). */
+/* Escolhe uma câmera traseira adequada para leitura de perto. Em aparelhos
+   Samsung, o Chrome pode expor várias lentes; a ultra-wide costuma ter uma
+   distância mínima de foco maior. Os nomes variam conforme a versão do SO,
+   portanto usamos uma pontuação heurística e mantemos fallback seguro. */
 async function _escolherCameraTraseiraIdeal() {
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const traseiras = devices.filter(d => d.kind === 'videoinput' && !/front|frontal|user/i.test(d.label));
-        if (traseiras.length <= 1) return null;
-        const ruim = /ultra|wide angle|0\.5|grande angular/i;
-        const melhor = traseiras.find(d => !ruim.test(d.label));
-        return melhor ? melhor.deviceId : null;
+        const cameras = devices.filter(d => d.kind === 'videoinput');
+        if (!cameras.length) return null;
+        const frente = /front|frontal|user|selfie|facetime/i;
+        const ultra = /ultra[ -]?wide|ultra[ -]?grande|wide[ -]?angle|0[.,]5\s*x?|0\.5|grande angular|ultrawide/i;
+        const traseiras = cameras.filter(d => !frente.test(d.label));
+        if (!traseiras.length) return null;
+        const pontuar = d => {
+            const label = d.label || '';
+            let score = 0;
+            if (ultra.test(label)) score -= 100;
+            if (/telephoto|telefoto|zoom/i.test(label)) score += 4;
+            if (/main|primary|standard|principal|wide\s*\(1x\)|1[.,]0\s*x?/i.test(label)) score += 12;
+            if (/camera\s*0|camera2\s*0|facing back|traseira\s*0/i.test(label)) score += 8;
+            if (/back|rear|traseira|environment/i.test(label)) score += 3;
+            return score;
+        };
+        traseiras.sort((a, b) => pontuar(b) - pontuar(a));
+        return traseiras[0]?.deviceId || null;
     } catch (e) { return null; }
 }
 
-/* Força foco CONTÍNUO (em vez do foco único/fixo que alguns Android usam
-   por padrão em getUserMedia, que trava focado "no infinito" e nunca mais
-   reajusta pra perto — é exatamente o problema relatado). */
+/* Pede foco contínuo usando as capacidades reais da lente. Alguns Chrome
+   ignoram focusMode em getUserMedia, por isso a configuração é aplicada à
+   track depois que a câmera já abriu. Nunca falha a abertura por isso. */
 async function _ajustarFocoContinuo(stream) {
-    const track = stream.getVideoTracks()[0];
-    if (!track || !track.getCapabilities) return;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') return false;
     try {
         const cap = track.getCapabilities();
-        if (cap.focusMode && cap.focusMode.includes('continuous')) {
-            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        const modos = Array.isArray(cap.focusMode) ? cap.focusMode : [];
+        if (modos.includes('continuous')) {
+            try {
+                await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            } catch (_) {
+                await track.applyConstraints({ focusMode: 'continuous' });
+            }
+            return true;
         }
-    } catch (e) { /* aparelho não deixa controlar foco por software — segue sem travar */ }
+    } catch (e) { /* controle de foco não exposto pelo navegador/aparelho */ }
+    return false;
 }
 
-/* Toque na imagem = refocar ali (fallback manual pra quando o foco
-   automático contínuo não existir ou não resolver sozinho). */
+/* O toque tenta refocar no ponto indicado quando o dispositivo oferece
+   pointsOfInterest. Esse recurso não existe em todos os Chrome/Android. */
 function _configurarToqueParaFocar(video, stream) {
     video.onclick = async (ev) => {
-        const track = stream.getVideoTracks()[0];
-        if (!track || !track.getCapabilities) return;
-        const cap = track.getCapabilities();
-        if (!cap.pointsOfInterest) return;
-        const rect = video.getBoundingClientRect();
-        const x = (ev.clientX - rect.left) / rect.width, y = (ev.clientY - rect.top) / rect.height;
+        const track = stream?.getVideoTracks?.()[0];
+        if (!track || typeof track.getCapabilities !== 'function') return;
         try {
-            await track.applyConstraints({ advanced: [{ pointsOfInterest: [{ x, y }], focusMode: cap.focusMode?.includes('single-shot') ? 'single-shot' : undefined }] });
-            toast('🎯 Focando aí…', 'info', 1000);
-        } catch (e) {}
+            const cap = track.getCapabilities();
+            if (!cap.pointsOfInterest) {
+                toast('O foco por toque não é compatível com esta câmera. Afaste um pouco o código e mantenha-o centralizado.', 'info', 2200);
+                return;
+            }
+            const rect = video.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+            const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+            const advanced = [{ pointsOfInterest: [{ x, y }] }];
+            if (Array.isArray(cap.focusMode) && cap.focusMode.includes('single-shot')) advanced[0].focusMode = 'single-shot';
+            await track.applyConstraints({ advanced });
+            toast('🎯 Tentando focar nesse ponto…', 'info', 1000);
+        } catch (e) { /* câmera não oferece foco por toque */ }
     };
 }
 
+function _aguardarVideoPronto(video, timeoutMs = 5000) {
+    if (video.readyState >= 2 && video.videoWidth > 0) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        let finalizado = false;
+        const limpar = () => {
+            video.removeEventListener('loadedmetadata', pronto);
+            video.removeEventListener('canplay', pronto);
+            clearTimeout(timer);
+        };
+        const pronto = () => {
+            if (finalizado) return;
+            if (video.videoWidth > 0) { finalizado = true; limpar(); resolve(); }
+        };
+        const timer = setTimeout(() => {
+            if (finalizado) return;
+            finalizado = true; limpar(); reject(new Error('A câmera não entregou imagem a tempo.'));
+        }, timeoutMs);
+        video.addEventListener('loadedmetadata', pronto);
+        video.addEventListener('canplay', pronto);
+    });
+}
+
 async function _iniciarCamera(tituloTexto) {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        toast('📷 Este navegador não permite acesso à câmera. Abra o projeto no Chrome usando HTTPS ou localhost.', 'error');
+        return false;
+    }
     if (!('BarcodeDetector' in window)) {
         toast('📷 Esse navegador não lê código de barras (funciona no Chrome/Android). Digite manualmente.', 'error');
         return false;
     }
-    const overlay = document.getElementById('scanner-ean-overlay'), video = document.getElementById('scanner-ean-video');
+    const overlay = document.getElementById('scanner-ean-overlay');
+    const video = document.getElementById('scanner-ean-video');
     const pedirStream = (deviceId) => navigator.mediaDevices.getUserMedia({
-        video: deviceId
-            ? { deviceId: { exact: deviceId }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-            : { facingMode: { ideal: 'environment' }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    try {
-        _scannerStream = await pedirStream(null);
-        const idealId = await _escolherCameraTraseiraIdeal();
-        if (idealId && idealId !== _scannerStream.getVideoTracks()[0].getSettings().deviceId) {
-            try {
-                const melhor = await pedirStream(idealId);
-                _scannerStream.getTracks().forEach(t => t.stop());
-                _scannerStream = melhor;
-            } catch (e) { /* se der erro trocando, fica com a câmera genérica que já funcionou */ }
+        audio: false,
+        video: {
+            ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } }),
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30, max: 30 }
         }
+    });
+    let stream = null;
+    try {
+        // Primeiro obtém permissão; assim o Chrome passa a revelar os nomes das lentes.
+        stream = await pedirStream(null);
+        const atualId = stream.getVideoTracks()[0]?.getSettings?.().deviceId;
+        const idealId = await _escolherCameraTraseiraIdeal();
+        if (idealId && idealId !== atualId) {
+            // Evita abrir duas lentes ao mesmo tempo (muitas vezes o Samsung bloqueia a troca).
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+            try {
+                stream = await pedirStream(idealId);
+            } catch (trocaErro) {
+                // Se a lente escolhida não abrir, volta para a câmera traseira padrão.
+                stream = await pedirStream(null);
+            }
+        }
+        _scannerStream = stream;
+        video.setAttribute('playsinline', '');
+        video.muted = true;
+        video.autoplay = true;
+        video.srcObject = _scannerStream;
+        await video.play();
+        await _aguardarVideoPronto(video);
+        await _ajustarFocoContinuo(_scannerStream);
+        _configurarToqueParaFocar(video, _scannerStream);
+        document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
+        document.getElementById('scanner-ean-status').textContent = 'Mantenha o código centralizado e mova o celular devagar para focar.';
+        overlay.style.display = 'flex';
+        _scannerRodando = true;
+        return true;
     } catch (e) {
-        toast('Não consegui acessar a câmera (permissão negada?).', 'error');
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        _scannerStream = null;
+        video.srcObject = null;
+        const msg = e?.name === 'NotAllowedError'
+            ? 'Permita o acesso à câmera nas configurações do Chrome e tente novamente.'
+            : e?.name === 'NotFoundError'
+                ? 'Não encontrei uma câmera disponível neste aparelho.'
+                : 'Não consegui iniciar a câmera. Feche outros apps que estejam usando-a e tente novamente.';
+        toast('📷 ' + msg, 'error', 3500);
         return false;
     }
-    video.srcObject = _scannerStream;
-    await video.play();
-    await _ajustarFocoContinuo(_scannerStream);
-    _configurarToqueParaFocar(video, _scannerStream);
-    document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
-    document.getElementById('scanner-ean-status').textContent = '';
-    overlay.style.display = 'flex';
-    _scannerRodando = true;
-    return true;
 }
 
-/* Botão único 📷 (ao lado do campo Produto) pra tudo que é leitura de
-   código de barras neste app: reconhece sozinho se o que foi lido é um
-   código de PRODUTO (embalagem do fabricante — só dígitos) ou um código de
-   PESO (algo que o próprio app já gerou, tem "." — ex: de um laudo antigo
-   ou etiqueta). Cada caso vai pro campo certo, sem precisar de botão
-   separado nem de escanear os dois numa sequência obrigatória. */
+/* Botão único 📷: mantém o fluxo original para código de produto e de peso. */
 async function abrirScannerEAN() {
     if (!(await _iniciarCamera('📷 Ler código de barras'))) return;
     const video = document.getElementById('scanner-ean-video');
-    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    let detector;
+    try {
+        const formatosPreferidos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'];
+        const suportados = typeof BarcodeDetector.getSupportedFormats === 'function'
+            ? await BarcodeDetector.getSupportedFormats()
+            : formatosPreferidos;
+        const formatos = formatosPreferidos.filter(f => suportados.includes(f));
+        if (!formatos.length) throw new Error('Nenhum formato de código de barras compatível.');
+        detector = new BarcodeDetector({ formats: formatos });
+    } catch (e) {
+        pararScannerEAN();
+        toast('Não foi possível preparar a leitura de código de barras neste Chrome.', 'error');
+        return;
+    }
+    let detectando = false;
     const loop = async () => {
-        if (!_scannerRodando) return;
+        if (!_scannerRodando || detectando) return;
+        detectando = true;
         try {
-            const codigos = await detector.detect(video);
-            if (codigos.length) { pararScannerEAN(); _resolverEAN(codigos[0].rawValue.trim()); return; }
-        } catch (e) { /* frame inválido, ignora e tenta de novo */ }
-        if (_scannerRodando) setTimeout(loop, 350);
+            if (video.readyState >= 2 && video.videoWidth > 0) {
+                const codigos = await detector.detect(video);
+                if (codigos.length) {
+                    const codigo = String(codigos[0].rawValue || '').trim();
+                    if (codigo) {
+                        pararScannerEAN();
+                        _resolverEAN(codigo);
+                        return;
+                    }
+                }
+            }
+        } catch (e) { /* frame desfocado/inválido: continua tentando */ }
+        finally { detectando = false; }
+        if (_scannerRodando) setTimeout(loop, 180);
     };
     loop();
 }
 
 function pararScannerEAN() {
     _scannerRodando = false;
-    if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+    if (_scannerStream) {
+        _scannerStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
+        _scannerStream = null;
+    }
     const video = document.getElementById('scanner-ean-video');
-    if (video) video.onclick = null;
-    document.getElementById('scanner-ean-overlay').style.display = 'none';
+    if (video) { video.onclick = null; video.srcObject = null; }
+    const overlay = document.getElementById('scanner-ean-overlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 async function _resolverEAN(codigo) {
