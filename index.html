@@ -1330,6 +1330,8 @@
         .vc-phead { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; } .vc-foto { width: 90px; border-radius: 8px; margin: 4px 0; }
         .vc-rtit { font-weight: 800; font-size: 14px; margin-bottom: 8px; } .vc-rev { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eef1f4; font-size: 12px; } .vc-rev span { color: #6b7a8d; font: 500 11px 'DM Mono', monospace; } .vc-rev.atual { background: #f6faf7; }
         .vc-rbtn { display: flex; flex-direction: column; gap: 4px; } .vc-rbtn button { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 1px solid #dde3ea; background: #f0f3f6; font-weight: 700; }
+        .sc-btn { background: #243140; color: #fff; border: 1px solid #3a4a5c; border-radius: 8px; padding: 9px 13px; font: 700 12px 'Sora', sans-serif; cursor: pointer; }
+        .sc-btn.on { background: #1a6b3c; border-color: #27ae60; }
         /* Tela "Conferência": barcodes grandes, de borda a borda, pro coletor ler direto da tela */
         .vc-scan .vc-body { max-width: none; padding: 8px 0 60px; }
         .vc-scan .vc-id, .vc-scan .vc-total, .vc-scan .vc-alerta, .vc-scan .vc-revs { margin-left: 10px; margin-right: 10px; }
@@ -1381,9 +1383,10 @@
 <!-- Scanner de código de barras (embalagem) -->
 <div id="scanner-ean-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:4000;flex-direction:column;align-items:center;justify-content:center;">
     <p id="scanner-ean-titulo" style="color:#fff;font:700 14px Sora,sans-serif;margin:0 0 10px;text-align:center">📷 Identificar produto</p>
-    <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;background:#111"></video>
+    <video id="scanner-ean-video" playsinline muted style="width:100%;max-width:480px;aspect-ratio:3/4;max-height:52vh;object-fit:cover;background:#111"></video>
     <p id="scanner-ean-status" style="color:#9fe2bf;font:700 13px 'DM Mono',monospace;margin:14px 0 2px;text-align:center;padding:0 24px;min-height:18px"></p>
     <p style="color:#9aa7b4;font:500 12px Sora,sans-serif;margin:0 0 16px;text-align:center;padding:0 24px">Aponte para o código de barras · se ficar embaçado, toque na tela em cima dele pra focar</p>
+    <div id="scanner-ean-controles" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 0 14px;padding:0 16px"></div>
     <button type="button" onclick="pararScannerEAN()" style="background:#c0392b;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:700 13px Sora,sans-serif;cursor:pointer">✕ Cancelar</button>
 </div>
 
@@ -3295,7 +3298,7 @@ async function abrirHistorico() {
     let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
     const A = _lsGet('pesagem_auditoria', []), sync = !!_syncCfg()?.token;
     let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada conferência tem identidade e chave próprias. Salvar de novo cria uma <b>revisão</b>; nada é sobrescrito. Conferência finalizada fica <b>selada</b> 🔒.</p>`;
-    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #dde3ea"><div style="flex:1;font-size:12px;min-width:0"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histImprimirLaudo('${x.id}')">🖨 Laudo</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="padding:10px 0;border-bottom:1px solid #dde3ea"><div style="font-size:12px;min-width:0;line-height:1.55"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histImprimirLaudo('${x.id}')">🖨 Laudo</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
     if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
 }
@@ -3642,39 +3645,69 @@ let _scannerStream = null, _scannerRodando = false;
 /* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
    Devolve false (sem lançar exceção) se não der certo, pra cada modo
    decidir sozinho o que avisar. */
-/* Entre as câmeras traseiras do aparelho, evita a ultra-wide: ela dá uma
-   visão mais aberta, mas em troca tem distância mínima de foco pior —
-   exatamente o sintoma de "código pequeno sempre embaçado". Só dá pra ver
-   o nome/label de cada câmera DEPOIS da permissão já ter sido concedida
-   (por isso primeiro abre genérica, já com facingMode:environment, e só
-   então checa se existe uma opção melhor pra trocar). */
-async function _escolherCameraTraseiraIdeal() {
-    try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const traseiras = devices.filter(d => d.kind === 'videoinput' && !/front|frontal|user/i.test(d.label));
-        if (traseiras.length <= 1) return null;
-        const ruim = /ultra|wide angle|0\.5|grande angular/i;
-        const melhor = traseiras.find(d => !ruim.test(d.label));
-        return melhor ? melhor.deviceId : null;
-    } catch (e) { return null; }
+/* ── CÂMERA DO SCANNER ───────────────────────────────────────────────────
+   Problema: celular com várias lentes traseiras (principal, ultra-wide,
+   macro, tele) — o navegador escolhe uma sozinho, e muitas vezes não é a que
+   foca de perto. Solução em 4 camadas, da mais automática à manual:
+   1) na 1ª vez, abre cada câmera traseira, lê a distância mínima de foco que
+      ela anuncia e escolhe a que foca mais de perto (guarda a escolha);
+   2) zoom (padrão 2×): o código ocupa mais da imagem e dá pra segurar o
+      celular mais longe, fora da distância mínima de foco da lente;
+   3) botão "Foco perto": trava o foco na menor distância possível;
+   4) botão "Câmera": você troca de lente na mão (e a escolha fica salva). */
+const _CAM_PREF = 'pesagem_camera_pref';
+let _cameras = [], _focoPerto = false;
+
+function _abrirStreamCamera(deviceId) {
+    const base = { focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } };
+    return navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { ...base, deviceId: { exact: deviceId } } : { ...base, facingMode: { ideal: 'environment' } }
+    });
+}
+async function _abrirComFallback(deviceId) {
+    try { return await _abrirStreamCamera(deviceId); } catch (e) { return await _abrirStreamCamera(null); }
 }
 
-/* Força foco CONTÍNUO (em vez do foco único/fixo que alguns Android usam
-   por padrão em getUserMedia, que trava focado "no infinito" e nunca mais
-   reajusta pra perto — é exatamente o problema relatado). */
+/* Só dá pra ver o nome (label) das câmeras DEPOIS da permissão concedida. */
+async function _listarCamerasTraseiras() {
+    const todas = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const traseiras = todas.filter(d => /back|rear|traseira|environment/i.test(d.label));
+    return traseiras.length ? traseiras : todas.filter(d => !/front|frontal|user|selfie/i.test(d.label));
+}
+
+/* Abre cada câmera por um instante só pra ler o que ela anuncia (menor
+   distância de foco, em metros). Nem todo aparelho informa isso. */
+async function _sondarCameras(lista) {
+    const out = [];
+    for (const d of lista.slice(0, 5)) {
+        try {
+            const st = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: d.deviceId } } });
+            const cap = st.getVideoTracks()[0].getCapabilities ? st.getVideoTracks()[0].getCapabilities() : {};
+            out.push({ id: d.deviceId, label: d.label, focoMin: cap.focusDistance ? cap.focusDistance.min : null });
+            st.getTracks().forEach(t => t.stop());
+        } catch (e) { /* essa lente não abre sozinha — ignora */ }
+    }
+    return out;
+}
+
+function _melhorParaPerto(sondadas) {
+    const comFoco = sondadas.filter(c => typeof c.focoMin === 'number' && c.focoMin > 0);
+    if (comFoco.length) return comFoco.sort((a, b) => a.focoMin - b.focoMin)[0].id; // menor distância mínima = foca mais de perto
+    const comum = sondadas.find(c => !/ultra|wide angle|0\.5|grande angular|tele|zoom/i.test(c.label)); // sem dado de foco: pelo menos foge de ultra-wide/tele
+    return comum ? comum.id : null;
+}
+
+/* Foco contínuo (em vez do foco único que alguns Android travam no "infinito"). */
 async function _ajustarFocoContinuo(stream) {
     const track = stream.getVideoTracks()[0];
     if (!track || !track.getCapabilities) return;
     try {
         const cap = track.getCapabilities();
-        if (cap.focusMode && cap.focusMode.includes('continuous')) {
-            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-        }
-    } catch (e) { /* aparelho não deixa controlar foco por software — segue sem travar */ }
+        if (cap.focusMode && cap.focusMode.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+    } catch (e) { /* aparelho não deixa controlar foco por software — segue */ }
 }
 
-/* Toque na imagem = refocar ali (fallback manual pra quando o foco
-   automático contínuo não existir ou não resolver sozinho). */
+/* Toque na imagem = refocar ali. */
 function _configurarToqueParaFocar(video, stream) {
     video.onclick = async (ev) => {
         const track = stream.getVideoTracks()[0];
@@ -3684,10 +3717,76 @@ function _configurarToqueParaFocar(video, stream) {
         const rect = video.getBoundingClientRect();
         const x = (ev.clientX - rect.left) / rect.width, y = (ev.clientY - rect.top) / rect.height;
         try {
-            await track.applyConstraints({ advanced: [{ pointsOfInterest: [{ x, y }], focusMode: cap.focusMode?.includes('single-shot') ? 'single-shot' : undefined }] });
+            await track.applyConstraints({ advanced: [{ pointsOfInterest: [{ x, y }] }] });
             toast('🎯 Focando aí…', 'info', 1000);
         } catch (e) {}
     };
+}
+
+/* Roda toda vez que uma câmera nova entra no <video> (abertura ou troca). */
+async function _prepararCameraAtual() {
+    const video = document.getElementById('scanner-ean-video');
+    _focoPerto = false;
+    await _ajustarFocoContinuo(_scannerStream);
+    _configurarToqueParaFocar(video, _scannerStream);
+    const track = _scannerStream.getVideoTracks()[0], cap = track.getCapabilities ? track.getCapabilities() : {};
+    if (cap.zoom) {
+        const pref = _lsGet(_CAM_PREF, null) || {};
+        const z = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, pref.zoom !== undefined ? pref.zoom : 2));
+        try { await track.applyConstraints({ advanced: [{ zoom: z }] }); } catch (e) {}
+    }
+    _montarControlesCamera();
+}
+
+function _montarControlesCamera() {
+    const box = document.getElementById('scanner-ean-controles');
+    if (!box || !_scannerStream) return;
+    const track = _scannerStream.getVideoTracks()[0];
+    const cap = track.getCapabilities ? track.getCapabilities() : {}, set = track.getSettings ? track.getSettings() : {};
+    const p = [];
+    if (_cameras.length > 1) {
+        const i = Math.max(0, _cameras.findIndex(c => c.deviceId === set.deviceId));
+        p.push(`<button type="button" class="sc-btn" onclick="_trocarCamera()">🔄 Câmera ${i + 1}/${_cameras.length}</button>`);
+    }
+    if (cap.zoom && cap.zoom.max > 1.2) {
+        const atual = set.zoom || 1;
+        [1, 2, 3].filter(z => z <= cap.zoom.max + 0.01).forEach(z =>
+            p.push(`<button type="button" class="sc-btn${Math.abs(atual - z) < 0.2 ? ' on' : ''}" onclick="_aplicarZoom(${z})">${z}×</button>`));
+    }
+    if (cap.focusDistance) p.push(`<button type="button" class="sc-btn${_focoPerto ? ' on' : ''}" onclick="_alternarFocoPerto()">🔍 Foco perto</button>`);
+    box.innerHTML = p.join('');
+}
+
+async function _aplicarZoom(z) {
+    const track = _scannerStream && _scannerStream.getVideoTracks()[0]; if (!track) return;
+    try {
+        await track.applyConstraints({ advanced: [{ zoom: z }] });
+        _lsSet(_CAM_PREF, { ...(_lsGet(_CAM_PREF, null) || {}), zoom: z });
+    } catch (e) { toast('Esse aparelho não deixa trocar o zoom.', 'info'); }
+    _montarControlesCamera();
+}
+
+async function _alternarFocoPerto() {
+    const track = _scannerStream && _scannerStream.getVideoTracks()[0]; if (!track) return;
+    const cap = track.getCapabilities ? track.getCapabilities() : {}; if (!cap.focusDistance) return;
+    const novo = !_focoPerto;
+    try {
+        await track.applyConstraints({ advanced: [novo ? { focusMode: 'manual', focusDistance: cap.focusDistance.min } : { focusMode: 'continuous' }] });
+        _focoPerto = novo;
+    } catch (e) { toast('Esse aparelho não deixa fixar o foco por aqui.', 'info'); }
+    _montarControlesCamera();
+}
+
+async function _trocarCamera() {
+    if (_cameras.length < 2 || !_scannerStream) return;
+    const atual = _scannerStream.getVideoTracks()[0].getSettings().deviceId;
+    const prox = _cameras[(Math.max(0, _cameras.findIndex(c => c.deviceId === atual)) + 1) % _cameras.length].deviceId;
+    _scannerStream.getTracks().forEach(t => t.stop());
+    _scannerStream = await _abrirComFallback(prox);
+    const video = document.getElementById('scanner-ean-video');
+    video.srcObject = _scannerStream; await video.play();
+    _lsSet(_CAM_PREF, { ...(_lsGet(_CAM_PREF, null) || {}), id: prox, auto: false }); // escolha manual vale mais que a automática
+    await _prepararCameraAtual();
 }
 
 async function _iniciarCamera(tituloTexto) {
@@ -3696,42 +3795,35 @@ async function _iniciarCamera(tituloTexto) {
         return false;
     }
     const overlay = document.getElementById('scanner-ean-overlay'), video = document.getElementById('scanner-ean-video');
-    const pedirStream = (deviceId) => navigator.mediaDevices.getUserMedia({
-        video: deviceId
-            ? { deviceId: { exact: deviceId }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-            : { facingMode: { ideal: 'environment' }, focusMode: { ideal: 'continuous' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
     try {
-        _scannerStream = await pedirStream(null);
-        const idealId = await _escolherCameraTraseiraIdeal();
-        if (idealId && idealId !== _scannerStream.getVideoTracks()[0].getSettings().deviceId) {
-            try {
-                const melhor = await pedirStream(idealId);
-                _scannerStream.getTracks().forEach(t => t.stop());
-                _scannerStream = melhor;
-            } catch (e) { /* se der erro trocando, fica com a câmera genérica que já funcionou */ }
+        let stream = await _abrirStreamCamera(null); // 1º acesso: libera a permissão e os nomes das câmeras
+        _cameras = await _listarCamerasTraseiras();
+        const pref = _lsGet(_CAM_PREF, null) || {};
+        let alvo = _cameras.some(c => c.deviceId === pref.id) ? pref.id : null;
+        if (!alvo && _cameras.length > 1) {
+            stream.getTracks().forEach(t => t.stop());
+            alvo = _melhorParaPerto(await _sondarCameras(_cameras));
+            if (alvo) _lsSet(_CAM_PREF, { ...pref, id: alvo, auto: true });
+            stream = await _abrirComFallback(alvo);
+        } else if (alvo && alvo !== stream.getVideoTracks()[0].getSettings().deviceId) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = await _abrirComFallback(alvo);
         }
+        _scannerStream = stream;
     } catch (e) {
         toast('Não consegui acessar a câmera (permissão negada?).', 'error');
         return false;
     }
     video.srcObject = _scannerStream;
     await video.play();
-    await _ajustarFocoContinuo(_scannerStream);
-    _configurarToqueParaFocar(video, _scannerStream);
     document.getElementById('scanner-ean-titulo').textContent = tituloTexto;
     document.getElementById('scanner-ean-status').textContent = '';
     overlay.style.display = 'flex';
     _scannerRodando = true;
+    await _prepararCameraAtual();
     return true;
 }
 
-/* Botão único 📷 (ao lado do campo Produto) pra tudo que é leitura de
-   código de barras neste app: reconhece sozinho se o que foi lido é um
-   código de PRODUTO (embalagem do fabricante — só dígitos) ou um código de
-   PESO (algo que o próprio app já gerou, tem "." — ex: de um laudo antigo
-   ou etiqueta). Cada caso vai pro campo certo, sem precisar de botão
-   separado nem de escanear os dois numa sequência obrigatória. */
 async function abrirScannerEAN() {
     if (!(await _iniciarCamera('📷 Ler código de barras'))) return;
     const video = document.getElementById('scanner-ean-video');
