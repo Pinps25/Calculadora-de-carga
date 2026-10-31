@@ -973,13 +973,25 @@
         .input-clear-wrap:hover .btn-clear-field { opacity: .45; pointer-events: all; }
         .input-clear-wrap:focus-within .btn-clear-field { opacity: .7; pointer-events: all; }
 
-        /* ─── COMPACT MODE ─── */
-        body.compact .fw-pcx,
-        body.compact .fw-pemb,
-        body.compact .fw-qemb { display: none !important; }
-        body.compact .fw-bto,
-        body.compact .fw-pal { grid-column: span 4 !important; }
-        body.compact .fw-qcx { grid-column: span 4 !important; }
+        /* Vários fornecedores na conferência */
+        .btn-e-outros { margin-top: 8px; background: #e8f5ee; color: #1a6b3c; border: 1px dashed #7cc79b; border-radius: 8px; padding: 6px 12px; font: 700 12px 'Sora', sans-serif; cursor: pointer; }
+        .btn-e-outros:active { opacity: .7; }
+        .forn-extra { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+        .forn-extra .drawer-input { flex: 1; min-width: 0; }
+        .forn-extra-x { flex-shrink: 0; width: 38px; height: 38px; border: 1px solid #f5c6c3; background: #fdf2f1; color: #c0392b; border-radius: 8px; font-size: 14px; cursor: pointer; }
+        .item-forn-wrap { margin-bottom: 12px; }
+        .item-forn-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .item-forn-chip { border: 1px solid #c9d3dd; background: #fff; color: #1c2b3a; border-radius: 999px; padding: 6px 12px; font: 700 12px 'Sora', sans-serif; cursor: pointer; }
+        .item-forn-chip.on { background: #1a6b3c; border-color: #1a6b3c; color: #fff; }
+        html.dark .item-forn-chip { background: #18222c; border-color: #2c3a48; color: #e6edf3; }
+        html.dark .item-forn-chip.on { background: #1a6b3c; border-color: #27ae60; color: #fff; }
+        html.dark .btn-e-outros { background: #153325; color: #4cd68a; border-color: #2e8b57; }
+        .vc-pforn { font-size: 11px; font-weight: 700; color: #6b7a8d; margin-top: 2px; }
+        /* ─── RECURSOS QUE PODEM SER DESLIGADOS NO MENU CONFIG. ─── */
+        body.no-scan .btn-scan-ean { display: none !important; }
+        body.no-pd .pd-panel, body.no-pd .toggle-pd { display: none !important; }
+        body.no-undo #btn-undo { display: none !important; }
+        body.no-enviar #btn-enviar { display: none !important; }
 
         /* ─── UNDO BUTTON ─── */
         .btn-undo {
@@ -1113,6 +1125,7 @@
                 padding: 1.8mm 3mm; -webkit-print-color-adjust: exact; print-color-adjust: exact;
             }
             .lp-num { font-size: 7pt; font-weight: 800; letter-spacing: .1em; color: #5fd68f !important; white-space: nowrap; }
+            .lp-forn { font-size: 6.5pt; font-weight: 700; color: #bfe9d0 !important; white-space: nowrap; letter-spacing: .04em; text-transform: uppercase; }
             .lp-nome { flex: 1; font-size: 10.5pt; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; color: #fff !important; }
             .lp-body { display: flex; align-items: stretch; }
             .lp-foto { width: 29mm; flex: none; padding: 2mm; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e3e9ee; }
@@ -1433,6 +1446,8 @@
             <div class="drawer-field">
                 <label class="drawer-label">Fornecedor</label>
                 <input type="text" id="fornecedor" class="drawer-input" placeholder="Nome do fornecedor" autocomplete="off">
+                <div id="forn-extras" data-pronto="0"></div>
+                <button type="button" class="btn-e-outros" id="btn-e-outros" onclick="adicionarFornecedorExtra()" hidden>＋ E outros</button>
             </div>
             <div class="drawer-field">
                 <label class="drawer-label">Data da Pesagem</label>
@@ -1515,9 +1530,33 @@
                 <div class="toggle-info"><span class="toggle-label">Painel de detalhes</span><span class="toggle-desc">Acordeão com resumo dos cálculos</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-detalhes" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
             </label>
-            <label class="toggle-item" for="cfg-compact">
-                <div class="toggle-info"><span class="toggle-label">Modo compacto</span><span class="toggle-desc">Oculta P.Caixa, P.Emb e Emb/Cx</span></div>
-                <div class="toggle-switch"><input type="checkbox" id="cfg-compact" onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            <label class="toggle-item" for="cfg-scanner">
+                <div class="toggle-info"><span class="toggle-label">Leitor de código de barras</span><span class="toggle-desc">Botão 📷 ao lado do nome do produto</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-scanner" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-pd">
+                <div class="toggle-info"><span class="toggle-label">Peso desejado</span><span class="toggle-desc">Painel 🎯 com o peso alvo do item</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-pd" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-aprend">
+                <div class="toggle-info"><span class="toggle-label">Aprendizado e sugestões</span><span class="toggle-desc">Sugere produtos do fornecedor e preenche as médias</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-aprend" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-off">
+                <div class="toggle-info"><span class="toggle-label">Busca online de produtos</span><span class="toggle-desc">Consulta a Open Food Facts quando o código é novo</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-off" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-undo">
+                <div class="toggle-info"><span class="toggle-label">Botão desfazer</span><span class="toggle-desc">Mostra o ↩ no topo da tela</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-undo" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-enviar">
+                <div class="toggle-info"><span class="toggle-label">Botão enviar</span><span class="toggle-desc">Mostra o ☁ Enviar no topo da tela</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-enviar" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
+            </label>
+            <label class="toggle-item" for="cfg-vibra">
+                <div class="toggle-info"><span class="toggle-label">Vibração</span><span class="toggle-desc">Vibra em alertas e erros (precisa do sistema de alertas)</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-vibra" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
             </label>
             <button class="btn-drawer-action" style="width:100%;margin-top:10px" onclick="verificarAtualizacao()">🔄 Verificar atualização</button>
         </div>
@@ -1546,6 +1585,10 @@
     <div class="card-body">
         <!-- Produto + Validade Global -->
         <div class="form-section">
+            <div class="item-forn-wrap" id="item-forn-wrap" hidden>
+                <label class="field-label">🏭 Fornecedor deste item</label>
+                <div class="item-forn-chips" id="item-forn-chips"></div>
+            </div>
             <div class="grid-produto">
                 <div class="validade-global-wrap">
                     <label class="field-label">📅 Validade (Global)</label>
@@ -1716,10 +1759,28 @@
 /* ══ CAMADA 0 · CONFIG ══ */
 
 const CONFIG_KEY = 'pesagem_config_v8';
-const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, compact:false, tolTara:45 };
+const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, tolTara:45,
+                    scanner:true, pesoDesejado:true, aprendizado:true, offLookup:true, desfazer:true, enviar:true, vibracao:true };
+/* Interruptores "simples": [chave no appConfig, id do checkbox, classe aplicada no <body> quando DESLIGADO (ou null se só a lógica consulta appConfig)] */
+const _CFG_SIMPLES = [
+    ['scanner',      'cfg-scanner', 'no-scan'],
+    ['pesoDesejado', 'cfg-pd',      'no-pd'],
+    ['aprendizado',  'cfg-aprend',  null],
+    ['offLookup',    'cfg-off',     null],
+    ['desfazer',     'cfg-undo',    'no-undo'],
+    ['enviar',       'cfg-enviar',  'no-enviar'],
+    ['vibracao',     'cfg-vibra',   null]
+];
+function aplicarClassesConfig() {
+    document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
+    document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
+    document.body.classList.toggle('no-camera',        !appConfig.camera);
+    document.body.classList.toggle('no-detalhes',      !appConfig.detalhes);
+    _CFG_SIMPLES.forEach(([k, , cls]) => { if (cls) document.body.classList.toggle(cls, appConfig[k] === false); });
+}
 
 function salvarConfig()  { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig)); } catch {} }
-function carregarConfig(){ try { const s = localStorage.getItem(CONFIG_KEY); if(s) Object.assign(appConfig, JSON.parse(s)); } catch {} }
+function carregarConfig(){ try { const s = localStorage.getItem(CONFIG_KEY); if(s) Object.assign(appConfig, JSON.parse(s)); } catch {} delete appConfig.compact; }
 
 function sincronizarCheckboxes() {
     document.getElementById('cfg-alerts').checked      = appConfig.alerts;
@@ -1729,7 +1790,7 @@ function sincronizarCheckboxes() {
     document.getElementById('cfg-avulsos').checked     = appConfig.avulsos;
     document.getElementById('cfg-camera').checked      = appConfig.camera;
     document.getElementById('cfg-detalhes').checked    = appConfig.detalhes;
-    document.getElementById('cfg-compact').checked     = appConfig.compact;
+    _CFG_SIMPLES.forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.checked = appConfig[k] !== false; });
     document.getElementById('cfg-tol').value           = appConfig.tolTara;
 }
 
@@ -1741,15 +1802,11 @@ function aplicarConfig() {
     appConfig.avulsos      = document.getElementById('cfg-avulsos').checked;
     appConfig.camera       = document.getElementById('cfg-camera').checked;
     appConfig.detalhes     = document.getElementById('cfg-detalhes').checked;
-    appConfig.compact      = document.getElementById('cfg-compact').checked;
+    _CFG_SIMPLES.forEach(([k, id]) => { const el = document.getElementById(id); if (el) appConfig[k] = el.checked; });
     const tol = parseFloat(String(document.getElementById('cfg-tol').value).replace(',', '.'));
     appConfig.tolTara      = (tol > 0 && tol <= 100) ? tol : 45;
 
-    document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
-    document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
-    document.body.classList.toggle('no-camera',        !appConfig.camera);
-    document.body.classList.toggle('no-detalhes',      !appConfig.detalhes);
-    document.body.classList.toggle('compact',           appConfig.compact);
+    aplicarClassesConfig();
 
     if (!appConfig.detalhes) document.getElementById('details-panel').classList.remove('open');
     salvarConfig();
@@ -1760,12 +1817,13 @@ function aplicarConfig() {
 
 const FORMATO_3 = { minimumFractionDigits: 3, maximumFractionDigits: 3 };
 
-const state = { cid:'', tk:'', baseRev:'', conferente:'', fornecedor:'', dataPesagem:'', idAtivo:0, produtos:[] };
+const state = { cid:'', tk:'', baseRev:'', conferente:'', fornecedor:'', outrosFornecedores:[], dataPesagem:'', idAtivo:0, produtos:[] };
 
 function criarProduto() {
     return {
         nome: '', validade: '', totalLiq: '0,000 Kg',
         pesoDesejado: '',                  // ← NOVO
+        fornIdx: 0,                        // de qual fornecedor é este item: 0 = principal, 1.. = "E outros"
         avulsos: { qcx:'', qemb:'', peso:'' },
         pallets: [criarPallet()]
     };
@@ -1947,23 +2005,107 @@ async function carregar() {
 }
 
 function exportarEstado() {
-    return { versao:'V8', esquema:2, cid:_cid(), tk:state.tk || '', baseRev:state.baseRev || '', conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos };
+    /* Só grava os campos novos (outros fornecedores / fornIdx) quando têm algo — assim conferências
+       antigas ou de um fornecedor só continuam idênticas (mesmo hash) e sincronizam sem conflito falso. */
+    const out = { versao:'V8', esquema:2, cid:_cid(), tk:state.tk || '', baseRev:state.baseRev || '', conferente:state.conferente, fornecedor:state.fornecedor, dataPesagem:state.dataPesagem, produtos:state.produtos.map(p => p.fornIdx ? p : (({ fornIdx, ...resto }) => resto)(p)) };
+    if ((state.outrosFornecedores || []).length) out.outrosFornecedores = state.outrosFornecedores;
+    return out;
 }
 
 function importarEstado(raw, opts = {}) {
     if (!raw || !Array.isArray(raw.produtos)) throw new Error('Formato inválido');
     state.conferente  = raw.conferente  || '';
     state.fornecedor  = raw.fornecedor  || '';
+    state.outrosFornecedores = Array.isArray(raw.outrosFornecedores) ? raw.outrosFornecedores.map(x => String(x ?? '')) : [];
     state.dataPesagem = raw.dataPesagem || '';
     _setCid(raw.cid || (opts.boot && localStorage.getItem('pesagem_cid_atual')) || _gerarCid()); state.tk = raw.tk || ''; state.baseRev = raw.baseRev || '';
     state.produtos = raw.produtos.map(p => ({
         ...criarProduto(), ...p,
         validade:      p.validade      || p.pallets?.[0]?.val || '',
         pesoDesejado:  p.pesoDesejado  || '',
+        fornIdx:       (Number.isInteger(p.fornIdx) && p.fornIdx >= 0 && p.fornIdx <= state.outrosFornecedores.length) ? p.fornIdx : 0,
         avulsos: { qcx:'', qemb:'', peso:'', ...(p.avulsos || {}) },
         pallets: (p.pallets || [criarPallet()]).map(pl => criarPallet(pl))
     }));
     state.idAtivo = 0;
+}
+
+/* ══ VÁRIOS FORNECEDORES NA MESMA CONFERÊNCIA ("E outros") ══
+   state.fornecedor = o principal; state.outrosFornecedores = os demais;
+   cada item guarda só o NÚMERO do fornecedor (fornIdx: 0 = principal), então
+   renomear/digitar um fornecedor nunca desliga os itens dele. */
+const _fornNomes = est => [String(est.fornecedor || ''), ...((est.outrosFornecedores || []).map(x => String(x || '')))];
+function _fornDoItem(est, pr) {
+    const nomes = _fornNomes(est), i = pr && Number.isInteger(pr.fornIdx) ? pr.fornIdx : 0;
+    return (nomes[i] || '').trim() || (est.fornecedor || '').trim();
+}
+function _tituloFornecedores(est) {
+    const vistos = [];
+    _fornNomes(est).map(n => n.trim()).filter(Boolean).forEach(n => { if (!vistos.some(v => _kk(v) === _kk(n))) vistos.push(n); });
+    return vistos.join(' + ') || 'Sem fornecedor';
+}
+/* Fornecedor do item que está na tela agora (lê o campo ao vivo, que é mais novo que o state). */
+function _fornecedorAtivoTxt() {
+    const pr = state.produtos[state.idAtivo] || {}, i = pr.fornIdx || 0, prim = (document.getElementById('fornecedor')?.value || '').trim();
+    if (i === 0) return prim;
+    const campo = document.querySelectorAll('.forn-extra-input')[i - 1];
+    return ((campo ? campo.value : (state.outrosFornecedores || [])[i - 1]) || '').trim() || prim;
+}
+function renderizarFornecedoresExtras() {
+    const wrap = document.getElementById('forn-extras'); if (!wrap) return;
+    wrap.innerHTML = (state.outrosFornecedores || []).map((nome, i) =>
+        `<div class="forn-extra"><input type="text" class="drawer-input forn-extra-input" data-i="${i}" placeholder="Outro fornecedor…" autocomplete="off" value="${_esc(nome)}"><button type="button" class="forn-extra-x" aria-label="Remover fornecedor" onclick="removerFornecedorExtra(${i})">✕</button></div>`).join('');
+    wrap.dataset.pronto = '1';
+    wrap.querySelectorAll('.forn-extra-input').forEach(_ligarSugFornecedor);
+    _atualizarBotaoEOutros();
+}
+function _ligarSugFornecedor(el) {
+    const mostrar = () => { if (appConfig.aprendizado === false) { _esconderSug(); return; } _sugAtual = { el, fn: _candFornecedores }; _mostrarSug(el, _candFornecedores()); };
+    el.addEventListener('input', mostrar); el.addEventListener('focus', mostrar);
+    el.addEventListener('blur', () => setTimeout(() => { if (_sugAtual?.el === el && document.activeElement !== el) _esconderSug(); }, 160));
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') _esconderSug(); });
+}
+function _atualizarBotaoEOutros() {
+    const b = document.getElementById('btn-e-outros'); if (!b) return;
+    b.hidden = !(document.getElementById('fornecedor')?.value || '').trim();
+}
+function adicionarFornecedorExtra() {
+    lerFormularioParaState(); salvarHistorico();
+    (state.outrosFornecedores = state.outrosFornecedores || []).push('');
+    renderizarTudo();
+    const ins = document.querySelectorAll('.forn-extra-input'); if (ins.length) ins[ins.length - 1].focus();
+}
+function removerFornecedorExtra(i) {
+    lerFormularioParaState(); salvarHistorico();
+    const usados = state.produtos.filter(p => p.fornIdx === i + 1 && (p.nome || '').trim()).length;
+    state.outrosFornecedores.splice(i, 1);
+    state.produtos.forEach(p => { if (p.fornIdx === i + 1) p.fornIdx = 0; else if (p.fornIdx > i + 1) p.fornIdx--; });
+    renderizarTudo();
+    if (usados) toast(`${usados} item(ns) voltaram para o fornecedor principal.`, 'info', 3500);
+}
+function atualizarSeletorFornecedorItem() {
+    const wrap = document.getElementById('item-forn-wrap'), box = document.getElementById('item-forn-chips'); if (!wrap || !box) return;
+    const vis = _fornNomes(state).map((n, i) => ({ n: n.trim(), i })).filter(x => x.n);
+    if (!(state.outrosFornecedores || []).length || vis.length < 2) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const atual = state.produtos[state.idAtivo]?.fornIdx || 0;
+    box.innerHTML = vis.map(x => `<button type="button" class="item-forn-chip${x.i === atual ? ' on' : ''}" onclick="selecionarFornecedorItem(${x.i})">${_esc(x.n)}</button>`).join('');
+}
+function selecionarFornecedorItem(i) {
+    lerFormularioParaState(); salvarHistorico();
+    state.produtos[state.idAtivo].fornIdx = i;
+    atualizarSeletorFornecedorItem();
+    _preencherAprendido();
+    calcular(true);
+}
+/* Usado pelo leitor de código: coloca o item no fornecedor certo (cria "E outros" se for um fornecedor novo na carga). */
+function _atribuirFornecedorAoItem(nome) {
+    lerFormularioParaState();
+    const kn = _kk(nome), nomes = _fornNomes(state);
+    let i = nomes.findIndex(n => n.trim() && _kk(n) === kn);
+    if (!(state.fornecedor || '').trim()) { state.fornecedor = nome; i = 0; }
+    else if (i < 0) { (state.outrosFornecedores = state.outrosFornecedores || []).push(nome); i = state.outrosFornecedores.length; }
+    state.produtos[state.idAtivo].fornIdx = i;
 }
 
 /* ══ CAMADA 4 · RENDERIZAÇÃO ══ */
@@ -1972,6 +2114,7 @@ function renderizarTudo() {
     const p = state.produtos[state.idAtivo];
     document.getElementById('conferente').value    = state.conferente;
     document.getElementById('fornecedor').value    = state.fornecedor;
+    renderizarFornecedoresExtras(); atualizarSeletorFornecedorItem();
     document.getElementById('data-pesagem').value  = state.dataPesagem || _dataHoje();
     document.getElementById('validade-global').value = p.validade;
     document.getElementById('produto').value         = p.nome;
@@ -2226,6 +2369,8 @@ function calcular(silencioso = false) {
 function lerFormularioParaState() {
     state.conferente  = document.getElementById('conferente').value;
     state.fornecedor  = document.getElementById('fornecedor').value;
+    const _fx = document.getElementById('forn-extras');
+    if (_fx && _fx.dataset.pronto === '1') state.outrosFornecedores = Array.from(_fx.querySelectorAll('.forn-extra-input')).map(i => i.value);
     state.dataPesagem = document.getElementById('data-pesagem').value;
 
     const p = state.produtos[state.idAtivo];
@@ -2369,7 +2514,8 @@ function novoProduto() {
     }
     lerFormularioParaState();
     salvarHistorico();
-    state.produtos.push(criarProduto());
+    const _novo = criarProduto(); _novo.fornIdx = state.produtos[state.idAtivo].fornIdx || 0; // item novo herda o fornecedor do anterior
+    state.produtos.push(_novo);
     state.idAtivo = state.produtos.length - 1;
     renderizarTudo();
 }
@@ -2569,7 +2715,7 @@ function _montarHtmlLaudo(estadoFonte, nome) {
         // Peso Desejado: calcula diferença
         let pdHtml = '';
         const { valor: desejado } = parseSeguro(prod.pesoDesejado || '');
-        if (desejado > 0) {
+        if (desejado > 0 && appConfig.pesoDesejado !== false) {
             const diff    = liqTotal - desejado;
             const absDiff = Math.abs(diff);
             const cls     = Math.abs(diff) < 0.0005 ? 'exato' : (diff > 0 ? 'passou' : 'faltou');
@@ -2600,7 +2746,7 @@ function _montarHtmlLaudo(estadoFonte, nome) {
         ].filter(Boolean).join('');
 
         // Dois códigos de barras do item: produto (EAN lido da embalagem) + peso líquido desta pesagem
-        const A = _apel(), kfProd = _canonFA(A, _kk(estadoFonte.fornecedor)), kpProd = _canonPA(A, kfProd, _kk(prod.nome));
+        const A = _apel(), kfProd = _canonFA(A, _kk(_fornDoItem(estadoFonte, prod))), kpProd = _canonPA(A, kfProd, _kk(prod.nome));
         const eanProduto = _codigoProduto(kfProd, kpProd).ean;
         const codigoPeso = liqTotal > 0 ? _codificarPeso(liqTotal) : '';
         const barcodesHtml = `
@@ -2618,6 +2764,7 @@ function _montarHtmlLaudo(estadoFonte, nome) {
             <div class="lp-head">
                 <span class="lp-num">ITEM ${globalIdx + 1}</span>
                 <span class="lp-nome">${_esc(prod.nome) || 'Produto sem nome'}</span>
+                ${(estadoFonte.outrosFornecedores || []).some(x => (x || '').trim()) ? `<span class="lp-forn">${_esc(_fornDoItem(estadoFonte, prod))}</span>` : ''}
             </div>
             <div class="lp-body">
                 ${fotoHtml}
@@ -2642,7 +2789,7 @@ function _montarHtmlLaudo(estadoFonte, nome) {
         <div class="print-cab-titulo">LAUDO DE <span>PESAGEM</span></div>
         <div class="print-cab-meta">
             <div class="print-cab-cell"><span class="print-cab-cell-label">Conferente</span><span class="print-cab-cell-val">${_esc((estadoFonte.conferente || '--').toUpperCase())}</span></div>
-            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${_esc((estadoFonte.fornecedor || '--').toUpperCase())}</span></div>
+            <div class="print-cab-cell"><span class="print-cab-cell-label">Fornecedor</span><span class="print-cab-cell-val">${_esc(_tituloFornecedores(estadoFonte) === 'Sem fornecedor' ? '--' : _tituloFornecedores(estadoFonte).toUpperCase())}</span></div>
             <div class="print-cab-cell"><span class="print-cab-cell-label">Data / Hora</span><span class="print-cab-cell-val">${dataHora}</span></div>
             <div class="print-cab-cell"><span class="print-cab-cell-label">Referência</span><span class="print-cab-cell-val" style="font-size:7pt;">${_esc(nome)}</span></div>
         </div>
@@ -2709,11 +2856,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const failsafe = setTimeout(() => esconderLoading(), 5000);
     mostrarLoading('Iniciando...');
     try {
-        carregarConfig(); sincronizarCheckboxes();
-        document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
-        document.body.classList.toggle('no-avulsos',       !appConfig.avulsos);
-        document.body.classList.toggle('no-camera',        !appConfig.camera);
-        document.body.classList.toggle('no-detalhes',      !appConfig.detalhes);
+        carregarConfig(); sincronizarCheckboxes(); aplicarClassesConfig();
         const dpEl = document.getElementById('data-pesagem');
         if (dpEl && !dpEl.value) dpEl.value = _dataHoje();
         await iniciarIDB();
@@ -2765,8 +2908,8 @@ function mostrarLoading(msg = 'Carregando...') {
     if (txt) txt.innerText = msg; if (el) el.classList.add('open');
 }
 function esconderLoading() { const el = document.getElementById('loading'); if (el) el.classList.remove('open'); }
-function vibrarForte() { if (appConfig.alerts) navigator.vibrate?.([500, 100, 500]); }
-function vibrarLeve()  { if (appConfig.alerts) navigator.vibrate?.(200); }
+function vibrarForte() { if (appConfig.alerts && appConfig.vibracao !== false) navigator.vibrate?.([500, 100, 500]); }
+function vibrarLeve()  { if (appConfig.alerts && appConfig.vibracao !== false) navigator.vibrate?.(200); }
 
 /* ══ CALCULADORA DE VALIDADE ══ */
 
@@ -2966,7 +3109,7 @@ document.addEventListener('input', e => {
     if (!ev) {
         // Static inputs (não gerados por template)
         if (t.id === 'validade-global' || t.id === 'produto') agendarCalculo();
-        if (['conferente','fornecedor','data-pesagem'].includes(t.id)) agendarSincronizacao();
+        if (['conferente','fornecedor','data-pesagem'].includes(t.id) || t.classList.contains('forn-extra-input')) agendarSincronizacao();
         if (t.id === 'avulso-qcx' || t.id === 'avulso-qemb') agendarCalculo();
         if (t.id === 'avulso-peso') { onInputKg(t); }
         if (t.id === 'peso-desejado') { onInputKg(t); atualizarPesoDesejado(); }
@@ -3030,8 +3173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add-pallet')?.addEventListener('click', adicionarPallet);
     document.getElementById('btn-del-item')?.addEventListener('click', excluirItemAtual);
     setupEnterNav();
-    // Aplica compact mode se estava ativo
-    document.body.classList.toggle('compact', !!appConfig.compact);
 });
 
 /* ══ V9 · EXPORTAR / COMPARTILHAR / LEMBRETE DE BACKUP ══ */
@@ -3047,7 +3188,7 @@ function _resumoTexto() {
     lerFormularioParaState();
     const idOrig = state.idAtivo;
     const fmt = v => v.toLocaleString('pt-BR', FORMATO_3);
-    let txt = `CONFERÊNCIA DE PESAGEM\nFornecedor: ${state.fornecedor || '--'}\nConferente: ${state.conferente || '--'}\nData: ${state.dataPesagem ? state.dataPesagem.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR')}\n`;
+    let txt = `CONFERÊNCIA DE PESAGEM\nFornecedor: ${state.fornecedor ? _tituloFornecedores(state) : '--'}\nConferente: ${state.conferente || '--'}\nData: ${state.dataPesagem ? state.dataPesagem.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR')}\n`;
     state.produtos.forEach((p, i) => {
         state.idAtivo = i;
         const t = calcularResultadosGlobais().totais;
@@ -3273,7 +3414,7 @@ async function histSalvar(status = 'final', opt = {}) {
     }
     const liq = _totaisProdutos().reduce((a, x) => a + x.liq, 0), cid = state.cid, prev = rec ? _cabeca(rec) : null, n = prev ? prev.n + 1 : 1;
     const resumo = prev ? _resumoMudancas(prev.estado, atual) : [];
-    const rev = { n, prev: prev?.h || null, status, ua: Date.now(), quando: new Date().toLocaleString('pt-BR'), titulo: (state.fornecedor || '').trim() || 'Sem fornecedor', conferente: (state.conferente || '').trim(), disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() }, nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: atual };
+    const rev = { n, prev: prev?.h || null, status, ua: Date.now(), quando: new Date().toLocaleString('pt-BR'), titulo: _tituloFornecedores(state), conferente: (state.conferente || '').trim(), disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() }, nProd: state.produtos.filter(p => p.nome || p.pallets.some(pl => pl.bto)).length, liq, estado: atual };
     if (prev && prev.status === 'final' && status !== 'final') rev.reaberta = true;
     rev.h = _revHash(cid, n, rev.prev, status, atual);
     const novo = rec || { id: cid, cid, tk: state.tk, criada: Date.now(), v: 3, revs: [] };
@@ -3440,10 +3581,10 @@ const _cdb = () => new Promise((ok, er) => { const r = indexedDB.open('PesagemCa
 const _cTx = async (modo, fn) => { const db = await _cdb(); return new Promise((ok, er) => { const tx = db.transaction('cargas', modo), rq = fn(tx.objectStore('cargas')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = () => er(tx.error); }); };
 const _temDados = () => state.produtos.some(p => p.nome || p.pallets.some(pl => pl.bto));
 
-function _estadoVazio() { state.fornecedor = ''; state.dataPesagem = ''; state.produtos = [criarProduto()]; state.idAtivo = 0; }
+function _estadoVazio() { state.fornecedor = ''; state.outrosFornecedores = []; state.dataPesagem = ''; state.produtos = [criarProduto()]; state.idAtivo = 0; }
 async function _estacionarAtual(titulo) {
     lerFormularioParaState();
-    const c = { sid: _sid(), id: Date.now(), titulo: titulo || (state.fornecedor || 'Carga sem nome'), quando: new Date().toLocaleString('pt-BR'), estado: JSON.parse(JSON.stringify(exportarEstado())) };
+    const c = { sid: _sid(), id: Date.now(), titulo: titulo || (state.fornecedor ? _tituloFornecedores(state) : 'Carga sem nome'), quando: new Date().toLocaleString('pt-BR'), estado: JSON.parse(JSON.stringify(exportarEstado())) };
     await _cTx('readwrite', st => st.put(c));
 }
 async function abrirCargas() {
@@ -3605,7 +3746,9 @@ function _salvarCodigoEAN(kf, kp, ean) {
    antes (ex: ao abrir a tela de Aprendizado). */
 function _codigoProduto(kf, kp) {
     const ean = _codigos()[kf + '|' + kp]?.ean || '';
-    const doCsv = (_csvMemCache || _lsGet(_K.csv, { mapa: {} }).mapa || {})[kf + '|' + kp];
+    const mapaCsv = _csvMemCache || _lsGet(_K.csv, { mapa: {} }).mapa || {};
+    let doCsv = mapaCsv[kf + '|' + kp];
+    if (!doCsv) { const Fo = _medias().F[kf], P = Fo && Fo.p[kp]; if (P) doCsv = mapaCsv[_kk(Fo.nome) + '|' + _kk(P.nome)]; }
     return { ean, kg: doCsv?.kg || '', fatiado: doCsv?.fatiado || '', peca: doCsv?.peca || '', noCsv: !!doCsv };
 }
 
@@ -3640,6 +3783,14 @@ function _buscarPorEAN(codigo) {
    precisar voltar na tela de Aprendizado pra colar o código de novo.
    ========================================================================== */
 const _eanPendente = {}; // { [índice do produto em state.produtos]: código }
+function _aplicarEanPendentes() {
+    Object.keys(_eanPendente).forEach(idx => {
+        const pr = state.produtos[idx]; if (!pr) { delete _eanPendente[idx]; return; }
+        const nome = (pr.nome || '').trim(); if (!nome) return; // ainda sem nome: continua pendente
+        const A = _apel(), forn = _fornDoItem(state, pr) || 'Sem fornecedor', kf = _canonFA(A, _kk(forn)), kp = _canonPA(A, kf, _kk(nome));
+        _salvarCodigoEAN(kf, kp, _eanPendente[idx]); delete _eanPendente[idx];
+    });
+}
 let _scannerStream = null, _scannerRodando = false;
 
 /* Abre a câmera e deixa o <video> tocando dentro do overlay compartilhado.
@@ -3859,9 +4010,10 @@ async function _resolverEAN(codigo) {
     }
     const achado = _buscarPorEAN(codigo); // código de PRODUTO (embalagem do fabricante) — 1º tenta o seu registro local
     if (achado) {
-        const fo = document.getElementById('fornecedor'), pd = document.getElementById('produto');
-        fo.value = achado.nomeForn; fo.dispatchEvent(new Event('change'));
-        pd.value = achado.nomeProd; pd.dispatchEvent(new Event('change'));
+        salvarHistorico();
+        _atribuirFornecedorAoItem(achado.nomeForn);
+        state.produtos[state.idAtivo].nome = achado.nomeProd;
+        renderizarTudo();
         _preencherAprendido();
         toast(`🏷️ ${achado.nomeProd} identificado.`, 'success');
         return;
@@ -3890,6 +4042,7 @@ async function _resolverEAN(codigo) {
    qualquer falha (sem internet, timeout, CORS, produto não cadastrado lá)
    — sempre devolve null nesses casos, nunca trava o fluxo de scan. */
 async function _buscarOpenFoodFacts(codigo) {
+    if (appConfig.offLookup === false) return null;
     try {
         const ctrl = new AbortController(), timeout = setTimeout(() => ctrl.abort(), 4000);
         const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(codigo)}.json?fields=product_name,brands`, { signal: ctrl.signal });
@@ -3920,22 +4073,20 @@ function _aprender(silencioso, auto) {
     if (_pausaApr) return;
     try {
         lerFormularioParaState();
-        const O = _obsAll(), cid = _cid(), now = Date.now(), dev = _device(), forn = (state.fornecedor || '').trim() || 'Sem fornecedor';
+        _aplicarEanPendentes();
+        if (appConfig.aprendizado === false) return;
+        const O = _obsAll(), cid = _cid(), now = Date.now(), dev = _device(), forn0 = (state.fornecedor || '').trim() || 'Sem fornecedor';
         const atuais = new Set(), ok = (v, mx) => v > 0 && v <= mx; let mudou = 0;
         state.produtos.forEach((pr, idxProduto) => {
             const nome = (pr.nome || '').trim(); if (!nome) return;
-            if (_eanPendente[idxProduto]) {
-                const A = _apel(), kf = _canonFA(A, _kk(forn)), kp = _canonPA(A, kf, _kk(nome));
-                _salvarCodigoEAN(kf, kp, _eanPendente[idxProduto]);
-                delete _eanPendente[idxProduto];
-            }
+            const forn = _fornDoItem(state, pr) || 'Sem fornecedor';
             const pls = pr.pallets.filter(pl => parseSeguro(pl.bto).valor > 0); if (!pls.length) return;
             const o = { pcx: [], pemb: [], qemb: [], pal: [] };
             pls.forEach(pl => {
                 const cx = parseSeguro(pl.pcx).valor, em = parseSeguro(pl.pemb).valor, qe = Math.round(parseSeguro(pl.qemb).valor), pa = parseSeguro(pl.pal).valor;
                 if (ok(cx, 60)) o.pcx.push(+cx.toFixed(4)); if (ok(em, 10)) o.pemb.push(+em.toFixed(4)); if (ok(qe, 1000)) o.qemb.push(qe); if (ok(pa, 200)) o.pal.push(+pa.toFixed(3));
             });
-            const k = cid + '|' + _kk(nome); atuais.add(k); _registrarAliases(forn, nome);
+            const k = cid + '|' + _kk(nome) + (_kk(forn) !== _kk(forn0) ? '@' + _kk(forn) : ''); atuais.add(k); _registrarAliases(forn, nome);
             const base = Object.assign({ k, cid, forn, prod: nome, d: state.dataPesagem || _dataHoje() }, o);
             const h = _hash(JSON.stringify([base.forn, base.prod, base.d, o.pcx, o.pemb, o.qemb, o.pal])), ant = O[k];
             const st = auto ? (ant && ant.st === 'final' ? 'final' : 'rascunho') : 'final';
@@ -3960,7 +4111,7 @@ function _medias() {
     const efetiva = o => !o.del && (o.st === 'final' || now - o.ua > 864e5);
     Object.values(O).filter(efetiva).sort((a, b) => (a.d === b.d ? a.ua - b.ua : (a.d > b.d ? 1 : -1))).forEach(o => {
         const kf = _canonFA(A, _kk(o.forn)), kp = _canonPA(A, kf, _kk(o.prod));
-        const Fo = F[kf] = F[kf] || { nome: o.forn, p: {} };
+        const Fo = F[kf] = F[kf] || { nome: A.n[kf]?.nome || o.forn, p: {} };
         const P = Fo.p[kp] = Fo.p[kp] || { nome: A.n[kf + '|' + kp]?.nome || o.prod, n: 0, obs: [], ult: '' };
         P.n++; P.ult = o.d; P.obs.push(o);
     });
@@ -4002,9 +4153,14 @@ function _mediaProd(forn, prod) {
     const [pcx, f1] = pick('pcx'), [pemb, f2] = pick('pemb'), [qemb, f3] = pick('qemb');
     return { n: L?.n || 0, pcx, pemb, qemb, fonte: f1, fontes: { pcx: f1, pemb: f2, qemb: f3 }, conf: L?.conf || 'baixa' };
 }
+/* Grupo do fornecedor digitado (tolera erro de digitação); null se for um fornecedor novo. */
+function _fornecedorConhecido(txt) {
+    const B = _aprBase().f; let kf = _canonF(_kk(txt || '')); if (!B[kf]) kf = _chaveSimilar(B, kf);
+    return B[kf] ? kf : null;
+}
 function _nomesProdutos() {
     const nomes = new Map();
-    const F = _aprBase().f[_canonF(_kk(state.fornecedor || document.getElementById('fornecedor')?.value || ''))];
+    const kfSel = _fornecedorConhecido(_fornecedorAtivoTxt()), F = kfSel ? _aprBase().f[kfSel] : null;
     if (F) Object.entries(F.p).forEach(([k, v]) => nomes.set(k, v.nome));
     return [...nomes.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
@@ -4014,8 +4170,9 @@ function _atualizarListaForn() {
     dl.innerHTML = Object.values(_medias().F).map(f => `<option value="${_esc(f.nome)}"></option>`).join('');
 }
 function _preencherAprendido() {
+    if (appConfig.aprendizado === false) return;
     lerFormularioParaState();
-    const pr = state.produtos[state.idAtivo], m = _mediaProd(state.fornecedor, pr.nome); if (!m) return;
+    const pr = state.produtos[state.idAtivo], m = _mediaProd(_fornDoItem(state, pr), pr.nome); if (!m) return;
     let mudou = false;
     pr.pallets.forEach(pl => [['pcx', m.pcx], ['pemb', m.pemb], ['qemb', m.qemb]].forEach(([k, v]) => { if (v > 0 && !String(pl[k]).trim()) { pl[k] = k === 'qemb' ? String(Math.round(v)) : v.toFixed(3).replace('.', ','); mudou = true; } }));
     if (mudou) { renderizarTudo(); toast(m.fonte === 'manual' ? '🔧 Preenchido com o ajuste manual.' : `📚 Preenchido com a média de ${m.n} pesagem(ns).`, 'success'); }
@@ -4023,6 +4180,7 @@ function _preencherAprendido() {
 
 /* ── tela Aprendizado ── */
 let _aprLista = [], _quarLista = [], _apeLista = [];
+let _aprFornLista = [], _aprAbertos = new Set(); // fornecedores (chaves) na ordem da tela e quais estão abertos
 async function abrirAprendizado(forcarCsv) {
     await buscarCsvPublico(forcarCsv); // popula _csvMemCache; usa cache de 6h se já tiver, então é rápido na maioria das vezes
     const { F, quar } = _medias(), A = _apel(), J = _lsGet(_K.aj, {}), I = _lsGet(_K.ia, {});
@@ -4030,15 +4188,80 @@ async function abrirAprendizado(forcarCsv) {
     let tot = 0, h = '';
     if (quar.length) h += `<div style="background:#fff4e0;border:1px solid #f0c27a;border-radius:10px;padding:10px;margin-bottom:12px"><b style="font-size:12px">⚠ ${quar.length} valor(es) em quarentena</b><div style="font-size:11px;color:#6b7a8d;margin-bottom:6px">Fora do padrão: não entram na média até você decidir.</div>` + quar.slice(0, 8).map((q, i) => `<div style="display:flex;gap:6px;align-items:center;padding:5px 0;border-top:1px dotted #e3c48d"><div style="flex:1;font-size:11px"><b>${_esc(q.pn)}</b> <span style="color:#6b7a8d">(${_esc(q.fn)})</span><br>${_fN(q.v)} kg · mediana ${_fN(q.med)} kg</div><button style="${_BTN}" onclick="decidirQuarentena(${i},'aceito')">Aceitar</button><button style="${_BTN2}" onclick="decidirQuarentena(${i},'descartado')">Descartar</button></div>`).join('') + '</div>';
     const forns = Object.entries(F).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
-    h += forns.length ? forns.map(([kf, Fo]) => `<div style="margin-bottom:12px"><b style="font-size:12px">${_esc(Fo.nome)}</b>` + Object.entries(Fo.p).map(([kp, P]) => {
-        tot += P.n; const m = _mediaProd(Fo.nome, P.nome), i = _aprLista.push({ kf, kp }) - 1, cf = { alta: '🟢', 'média': '🟡', baixa: '🔴' }[P.conf];
-        const cod = _codigoProduto(kf, kp), codBadge = cod.ean ? ' 🏷️' : (cod.noCsv ? ' #️⃣' : '');
-        return `<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${P.regime ? ' 🔄' : ''}${m.fontes.pcx === 'manual' ? ' 🔧' : ''}${codBadge}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
-    }).join('') + '</div>').join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
+    _aprFornLista = forns.map(([kf]) => kf);
+    h += forns.length ? forns.map(([kf, Fo], fi) => {
+        const prods = Object.entries(Fo.p).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR')), aberto = _aprAbertos.has(kf);
+        const linhas = prods.map(([kp, P]) => {
+            tot += P.n; const m = _mediaProd(Fo.nome, P.nome), i = _aprLista.push({ kf, kp }) - 1, cf = { alta: '🟢', 'média': '🟡', baixa: '🔴' }[P.conf];
+            const cod = _codigoProduto(kf, kp), codBadge = cod.ean ? ' 🏷️' : (cod.noCsv ? ' #️⃣' : '');
+            return `<div style="display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px dotted #dde3ea"><div style="flex:1;min-width:0;font:500 11px 'DM Mono',monospace"><b style="font-family:Sora">${_esc(P.nome)}</b> ${cf}${P.regime ? ' 🔄' : ''}${m.fontes.pcx === 'manual' ? ' 🔧' : ''}${codBadge}<br><span style="color:#6b7a8d">${P.n}× · Cx ${m.pcx ? _fN(m.pcx) + ' kg' : '--'}${P.am.length > 1 ? ` (${_fN(P.min)}–${_fN(P.max)})` : ''} · Emb ${m.pemb ? _fN(m.pemb * 1000, 1) + ' g' : '--'} · ${m.qemb || '--'}/cx</span></div><button style="${_BTN2}" onclick="editarAjuste(${i})">✏</button></div>`;
+        }).join('');
+        const pes = prods.reduce((t, [, P]) => t + P.n, 0);
+        return `<div style="border:1px solid #dde3ea;border-radius:12px;margin-bottom:8px;overflow:hidden"><div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f0f3f6"><button type="button" onclick="alternarFornAprend(${fi})" style="flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit"><span id="apr-seta-${fi}" style="display:inline-block;width:14px">${aberto ? '▾' : '▸'}</span><b style="font-size:13px">${_esc(Fo.nome)}</b><br><span style="font-size:11px;color:#6b7a8d;margin-left:14px">${prods.length} produto(s) · ${pes} pesagem(ns)</span></button><button type="button" style="${_BTN2}" onclick="editarFornecedor(${fi})" aria-label="Editar fornecedor">✏</button></div><div id="apr-prods-${fi}" style="display:${aberto ? 'block' : 'none'};padding:2px 12px 6px">${linhas}</div></div>`;
+    }).join('') : '<p style="font-size:13px;color:#6b7a8d">Ainda vazio. Ao gerar o laudo ou limpar tudo, o app aprende com a pesagem.</p>';
     h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button style="${_BTN}" onclick="baixarPacote(false)">📦 Pacote (.zip)</button><button style="${_BTN2}" onclick="baixarPacote(true)">📦 Sem fotos</button><button style="${_BTN2}" onclick="document.getElementById('pk-file').click()">📥 Importar pacote</button><button style="${_BTN2}" onclick="document.getElementById('lg-file').click()">📥 Dados antigos (arquivo)</button><button style="${_BTN2}" onclick="reaplicarAntigo()">↻ Reaplicar do aparelho</button><button style="${_BTN2}" onclick="zerarAprendizado()">Zerar</button><button style="${_BTN2};grid-column:1/-1" onclick="abrirAprendizado(true)">🔄 Atualizar códigos (Dados.csv)</button></div><input type="file" id="lg-file" accept=".json" style="display:none" onchange="importarLegado(event)"><input type="file" id="pk-file" accept=".zip" style="display:none" onchange="importarPacote(event)">`;
     if (_apeLista.length) h += `<details style="margin-top:12px"><summary style="font-size:12px;font-weight:700;cursor:pointer">Nomes unificados (${_apeLista.length})</summary>` + _apeLista.map(([t, k], i) => `<div style="display:flex;gap:6px;align-items:center;font:500 11px 'DM Mono',monospace;padding:4px 0"><span style="flex:1">${_esc(k.split('|').pop())} → ${_esc(A[t][k])}</span><button style="${_BTN2}" onclick="desfazerApelido(${i})">desfazer</button></div>`).join('') + '</details>';
     h += `<p style="font-size:11px;color:#6b7a8d;margin-top:8px">${tot} pesagem(ns) · 🟢 ≥10 · 🟡 3–9 · 🔴 &lt;3. · 🔄 padrão mudou. Prioridade: 🔧 ajuste manual › média automática (as pesagens recentes pesam mais). · 🏷️ tem código de barras · #️⃣ tem código de pesagem (Dados.csv) mas ainda sem código de barras</p>`;
     _modal('📚 Aprendizado por fornecedor', h);
+}
+function alternarFornAprend(fi) {
+    const kf = _aprFornLista[fi], box = document.getElementById('apr-prods-' + fi), seta = document.getElementById('apr-seta-' + fi); if (!box) return;
+    const abrir = box.style.display === 'none';
+    box.style.display = abrir ? 'block' : 'none'; if (seta) seta.textContent = abrir ? '▾' : '▸';
+    if (abrir) _aprAbertos.add(kf); else _aprAbertos.delete(kf);
+}
+/* Quando um nome vira outro (renomear/unir), o que estava guardado na chave antiga
+   (ajuste manual de peso e código de barras) precisa ir junto — senão "some" da tela. */
+function _migrarChaveProduto(kf, kpAntigo, kpNovo) {
+    if (kpAntigo === kpNovo) return;
+    const Aj = _lsGet(_K.aj, {});
+    if (Aj[kf]?.[kpAntigo]) { Aj[kf][kpNovo] = Aj[kf][kpNovo] || Aj[kf][kpAntigo]; delete Aj[kf][kpAntigo]; _lsSet(_K.aj, Aj); }
+    const C = _codigos(), ka = kf + '|' + kpAntigo, kn = kf + '|' + kpNovo;
+    if (C[ka]) { if (!C[kn]) C[kn] = C[ka]; delete C[ka]; _lsSet(_K.cod, C); }
+}
+function _migrarChavesFornecedor(kfAntigo, kfNovo) {
+    const Aj = _lsGet(_K.aj, {});
+    if (Aj[kfAntigo]) { Aj[kfNovo] = Aj[kfNovo] || {}; Object.entries(Aj[kfAntigo]).forEach(([kp, v]) => { if (!Aj[kfNovo][kp]) Aj[kfNovo][kp] = v; }); delete Aj[kfAntigo]; _lsSet(_K.aj, Aj); }
+    const C = _codigos(); let mudou = false;
+    Object.keys(C).forEach(ch => { if (ch.startsWith(kfAntigo + '|')) { const novo = kfNovo + ch.slice(kfAntigo.length); if (!C[novo]) C[novo] = C[ch]; delete C[ch]; mudou = true; } });
+    if (mudou) _lsSet(_K.cod, C);
+    const A = _apel(), now = Date.now(); let mA = false;
+    ['p', 'n'].forEach(tp => Object.keys(A[tp]).forEach(ch => {
+        if (!ch.startsWith(kfAntigo + '|')) return;
+        const novo = kfNovo + ch.slice(kfAntigo.length);
+        if (!A[tp][novo]) { A[tp][novo] = A[tp][ch]; A.t[tp + ':' + novo] = now; delete A.d[tp + ':' + novo]; }
+        delete A[tp][ch]; A.d[tp + ':' + ch] = now; mA = true;
+    }));
+    if (mA) _lsSet(_K.ap, A);
+}
+function editarFornecedor(fi) {
+    const kf = _aprFornLista[fi], Fo = _medias().F[kf]; if (!Fo) return;
+    const n = Object.keys(Fo.p).length;
+    _corpo(`<label style="font-size:11px">Nome do fornecedor</label><input id="rf-nome" style="${_INP}" value="${_esc(Fo.nome)}"><p style="font-size:11px;color:#6b7a8d;margin:-4px 0 12px">Os ${n} produto(s) aprendido(s) continuam ligados a ele. Se o novo nome já existir na lista, os dois fornecedores são unidos num só.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="renomearFornecedor(${fi})">Salvar nome</button><button style="${_BTN2}" onclick="abrirAprendizado()">Voltar</button></div>`);
+}
+function renomearFornecedor(fi) {
+    const kf = _aprFornLista[fi], F = _medias().F, Fo = F[kf]; if (!Fo) return;
+    const novo = (document.getElementById('rf-nome').value || '').trim();
+    if (!novo) { toast('Digite o nome do fornecedor.', 'warning'); return; }
+    const kn = _kk(novo), t = Date.now();
+    if (kn === kf) { // só mudou maiúscula/acento: troca só o jeito de escrever
+        const A = _apel(); A.n[kf] = { nome: novo, t }; _lsSet(_K.ap, A); _bump(); abrirAprendizado(); toast('✏ Nome atualizado.', 'success'); return;
+    }
+    const alvo = _canonFA(_apel(), kn);
+    if (F[alvo] && alvo !== kf) { // o novo nome já é de outro fornecedor: UNIR
+        mostrarConfirm(`Já existe "${F[alvo].nome}". Unir os produtos de "${Fo.nome}" nele?`, '🔀', () => {
+            _migrarChavesFornecedor(kf, alvo);
+            const A = _apel(); A.f[kf] = alvo; A.t['f:' + kf] = Date.now(); delete A.d['f:' + kf];
+            _lsSet(_K.ap, A); _bump(); abrirAprendizado(); toast('🔀 Fornecedores unidos.', 'success');
+        }, 'warning');
+        return;
+    }
+    /* Nome novo: o grupo continua o MESMO (mesma chave interna, então ajustes e códigos não se perdem);
+       o nome novo passa a apontar pra ele, e é o que aparece nas telas e sugestões. */
+    const A = _apel();
+    A.n[kf] = { nome: novo, t };
+    A.f[kn] = kf; A.t['f:' + kn] = t; delete A.d['f:' + kn];
+    _lsSet(_K.ap, A); _bump(); _atualizarListaForn(); abrirAprendizado(); toast('✏ Fornecedor renomeado.', 'success');
 }
 function decidirQuarentena(i, dec) { const q = _quarLista[i]; if (!q) return; const Q = _lsGet(_K.q, {}); Q[q.key] = dec; _lsSet(_K.q, Q); _bump(); abrirAprendizado(); }
 function desfazerApelido(i) { const [t, k] = _apeLista[i], A = _apel(); delete A[t][k]; A.d[t + ':' + k] = Date.now(); _lsSet(_K.ap, A); _bump(); abrirAprendizado(); }
@@ -4074,6 +4297,7 @@ function renomearProduto(i) {
         const A = _apel(), now = Date.now();
         if (kn !== kp) {
             A.p[kf + '|' + kp] = kn; A.t['p:' + kf + '|' + kp] = now; delete A.d['p:' + kf + '|' + kp];
+            _migrarChaveProduto(kf, kp, kn);
             if (A.p[kf + '|' + kn]) { delete A.p[kf + '|' + kn]; A.d['p:' + kf + '|' + kn] = now; }
         }
         A.n[kf + '|' + kn] = { nome: novo, t: now };
@@ -4241,6 +4465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _syncValidadeTxt(); _atualizarListaForn(); _atualizarDatalist();
         const fo = document.getElementById('fornecedor');
         fo.addEventListener('change', () => { _atualizarDatalist(); _preencherAprendido(); });
+        fo.addEventListener('input', _atualizarBotaoEOutros);
         document.getElementById('produto').addEventListener('change', () => setTimeout(_preencherAprendido, 0));
     }, 50);
 });
@@ -4260,12 +4485,13 @@ function _candFornecedores() {
     return Object.values(_aprBase().f).map(F => { const n = Object.values(F.p); return { nome: F.nome, det: `${n.length} produto(s) · ${n.reduce((a, P) => a + P.n, 0)} pesagem(ns)`, peso: n.reduce((a, P) => a + P.n, 0) }; });
 }
 function _candProdutos() {
-    const B = _aprBase(), kfAt = _canonF(_kk(document.getElementById('fornecedor').value || '')), mapa = new Map();
+    const B = _aprBase(), txt = _fornecedorAtivoTxt(), kfSel = txt ? _fornecedorConhecido(txt) : null, mapa = new Map();
     const add = (nome, det, origem, peso, tag) => { const k = _kk(nome), c = mapa.get(k); if (!c || origem < c.o) mapa.set(k, { nome, det, o: origem, peso, tag }); };
-    Object.entries(B.f).forEach(([kf, F]) => Object.values(F.p).forEach(P => {
-        const mesmo = kf === kfAt;
-        add(P.nome, _fmtPerfil(_mediaProd(F.nome, P.nome)), mesmo ? 0 : 2, P.n, mesmo ? '' : F.nome);
-    }));
+    if (txt && !kfSel) return []; // fornecedor novo: ainda não tem produto aprendido pra sugerir
+    Object.entries(B.f).forEach(([kf, F]) => {
+        if (kfSel && kf !== kfSel) return; // com fornecedor escolhido, sugere SÓ os produtos dele
+        Object.values(F.p).forEach(P => add(P.nome, _fmtPerfil(_mediaProd(F.nome, P.nome)), kfSel ? 0 : 2, P.n, kfSel ? '' : F.nome));
+    });
     return [...mapa.values()];
 }
 function _rank(nome, q) {
@@ -4304,7 +4530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fo = document.getElementById('fornecedor'), pr = document.getElementById('produto');
         [[fo, _candFornecedores], [pr, _candProdutos]].forEach(([el, fn]) => {
             el.removeAttribute('list');
-            const mostrar = () => { _sugAtual = { el, fn }; _mostrarSug(el, fn()); };
+            const mostrar = () => { if (appConfig.aprendizado === false) { _esconderSug(); return; } _sugAtual = { el, fn }; _mostrarSug(el, fn()); };
             el.addEventListener('input', mostrar); el.addEventListener('focus', mostrar);
             el.addEventListener('blur', () => setTimeout(() => { if (_sugAtual?.el === el && document.activeElement !== el) _esconderSug(); }, 160));
             el.addEventListener('keydown', e => { if (e.key === 'Escape') _esconderSug(); });
@@ -4323,8 +4549,8 @@ document.addEventListener('DOMContentLoaded', () => { try { navigator.storage?.p
 /* ══ AVISO DE DESVIO (usa a média do próprio sistema, sem IA) ══ */
 function _avisoDesvio(el) {
     const wrap = el.closest('.input-clear-wrap') || el, h0 = wrap.nextElementSibling; if (h0?.classList.contains('dev-hint')) h0.remove();
-    const v = parseSeguro(el.value).valor; if (!(v > 0)) return;
-    const m = _mediaProd(document.getElementById('fornecedor').value, document.getElementById('produto').value), r = _resolver(document.getElementById('fornecedor').value, document.getElementById('produto').value), L = r?.L;
+    const v = parseSeguro(el.value).valor; if (!(v > 0) || appConfig.aprendizado === false) return;
+    const fx = _fornecedorAtivoTxt(), px = document.getElementById('produto').value, m = _mediaProd(fx, px), r = _resolver(fx, px), L = r?.L;
     if (!m || !L || L.n < 2) return;
     let msg = '';
     if (el.matches('.pcx-in') && m.pcx > 0) { const tol = L.n >= 3 ? Math.max(0.15 * m.pcx, 2.5 * (L.dp || 0)) : 0.25 * m.pcx; if (Math.abs(v - m.pcx) > tol) msg = `⚠ Média desta caixa: ${_fN(m.pcx)} kg (${L.n}×). Você digitou ${_fN(v)}.`; }
@@ -4579,7 +4805,7 @@ async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(
    grandes (produto em cima, peso líquido embaixo) pro coletor ler direto da
    tela do celular. Preto sobre branco fixo, independente do tema escuro. */
 function _blocoBarcodesScan(est, p, liqTotal) {
-    const A = _apel(), kf = _canonFA(A, _kk(est.fornecedor)), kp = _canonPA(A, kf, _kk(p.nome));
+    const A = _apel(), kf = _canonFA(A, _kk(_fornDoItem(est, p))), kp = _canonPA(A, kf, _kk(p.nome));
     const ean = _codigoProduto(kf, kp).ean;
     const peso = liqTotal > 0 ? _codificarPeso(liqTotal) : '';
     const bloco = (codigo, legenda, vazio) => `<div class="vc-bcbloco">${codigo ? `<svg class="vc-bc" data-code="${_esc(codigo)}"></svg>` : `<div class="vc-bcvazio">${vazio}</div>`}<span class="vc-bcleg">${legenda}</span></div>`;
@@ -4635,7 +4861,7 @@ async function verConferencia(id, revH, modoScan) {
         const pal = g.resultadosPallets.filter(r => r.bto > 0), t = g.totais, dias = p.validade ? _diasAte(p.validade) : null; liqTot += t.liqTotal;
         pal.forEach(r => { if (r.estado === 'VERMELHO') red++; if (r.estado === 'LARANJA') ora++; });
         const av = p.avulsos || {}, temAv = av.qcx || av.qemb || av.peso, meta = _num(p.pesoDesejado || ''), dif = meta ? t.liqTotal - meta : null;
-        return `<div class="vc-prod"><div class="vc-ptop"><span class="vc-pnome">${_esc(p.nome || 'Sem nome')}</span><span class="vc-liq">${kgf(t.liqTotal)}</span></div>
+        return `<div class="vc-prod"><div class="vc-ptop"><span class="vc-pnome">${_esc(p.nome || 'Sem nome')}</span><span class="vc-liq">${kgf(t.liqTotal)}</span></div>${(est.outrosFornecedores || []).some(x => (x || '').trim()) ? `<div class="vc-pforn">🏭 ${_esc(_fornDoItem(est, p) || '—')}</div>` : ''}
             ${p.validade ? `<div class="vc-val ${dias < 0 || dias === 0 ? 'bad' : dias <= 30 ? 'warn' : 'ok'}">📅 Validade ${p.validade.split('-').reverse().join('/')} — ${dias < 0 ? 'VENCIDO há ' + Math.abs(dias) + ' dia(s)' : dias === 0 ? 'VENCE HOJE' : 'faltam ' + dias + ' dia(s)'}</div>` : ''}
             <div class="vc-grid">${row('Peso bruto total', kgf(t.somaBruto))}${row('Tara dos pallets', kgf(t.taraMadTotal))}${row('Tara das caixas', kgf(t.taraCxTotal))}${row('Tara das embalagens', kgf(t.taraEmbTotal))}${row('Total de caixas', _fN(t.somaQcx, 0))}${row('Total de embalagens', _fN(t.somaQemb, 0))}${row('PESO LÍQUIDO', kgf(t.liqTotal), 'dest')}</div>
             ${dif !== null ? `<div class="vc-meta ${dif >= 0 ? 'ok' : 'bad'}">🎯 Meta ${kgf(meta)} → ${dif >= 0 ? '+' : ''}${_kg(dif)} kg ${dif >= 0 ? '✔' : '(abaixo da meta)'}</div>` : ''}
