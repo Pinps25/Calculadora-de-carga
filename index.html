@@ -1554,6 +1554,10 @@
                 <div class="toggle-info"><span class="toggle-label">Botão enviar</span><span class="toggle-desc">Mostra o ☁ Enviar no topo da tela</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-enviar" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
             </label>
+            <label class="toggle-item" for="cfg-vivo">
+                <div class="toggle-info"><span class="toggle-label">Ao vivo entre aparelhos</span><span class="toggle-desc">Envia e recebe conferências em andamento (≈ 5 s)</span></div>
+                <div class="toggle-switch"><input type="checkbox" id="cfg-vivo" checked onchange="aplicarConfig(); _vivoAgora()"><span class="toggle-track"></span></div>
+            </label>
             <label class="toggle-item" for="cfg-vibra">
                 <div class="toggle-info"><span class="toggle-label">Vibração</span><span class="toggle-desc">Vibra em alertas e erros (precisa do sistema de alertas)</span></div>
                 <div class="toggle-switch"><input type="checkbox" id="cfg-vibra" checked onchange="aplicarConfig()"><span class="toggle-track"></span></div>
@@ -1760,7 +1764,7 @@
 
 const CONFIG_KEY = 'pesagem_config_v8';
 const appConfig = { alerts:true, autocomplete:true, autosave:true, confirmador:true, avulsos:true, camera:true, detalhes:true, tolTara:45,
-                    scanner:true, pesoDesejado:true, aprendizado:true, offLookup:true, desfazer:true, enviar:true, vibracao:true };
+                    scanner:true, pesoDesejado:true, aprendizado:true, offLookup:true, desfazer:true, enviar:true, vibracao:true, vivo:true };
 /* Interruptores "simples": [chave no appConfig, id do checkbox, classe aplicada no <body> quando DESLIGADO (ou null se só a lógica consulta appConfig)] */
 const _CFG_SIMPLES = [
     ['scanner',      'cfg-scanner', 'no-scan'],
@@ -1769,7 +1773,8 @@ const _CFG_SIMPLES = [
     ['offLookup',    'cfg-off',     null],
     ['desfazer',     'cfg-undo',    'no-undo'],
     ['enviar',       'cfg-enviar',  'no-enviar'],
-    ['vibracao',     'cfg-vibra',   null]
+    ['vibracao',     'cfg-vibra',   null],
+    ['vivo',         'cfg-vivo',    null]
 ];
 function aplicarClassesConfig() {
     document.body.classList.toggle('no-confirmadores', !appConfig.confirmador);
@@ -1969,6 +1974,7 @@ function iniciarIDB() {
 }
 
 function persistir() {
+    try { _vivoAgendar(); _histAutoMarcar(); } catch {}
     if (!appConfig.autosave) return;
     const dados = exportarEstado();
     const json  = JSON.stringify(dados);
@@ -3383,9 +3389,9 @@ const _atualizarIdInfo = async () => {
     const el = document.getElementById('conf-id-info'); if (!el) return;
     if (!state.cid) { el.textContent = ''; return; }
     const rec = await _hGet(state.cid).catch(() => null);
-    if (!rec) { el.innerHTML = `🆕 Conferência nova · 🔑 ${state.tk ? _esc(state.tk.slice(-4)) : '····'} · ainda não salva`; return; }
+    if (!rec) { el.innerHTML = `🆕 Conferência nova · 🔑 ${state.tk ? _esc(state.tk.slice(-4)) : '····'} · ainda não salva${_vivoBadge()}`; return; }
     const h = _cabeca(rec), s2 = _selo(rec), novo = state.baseRev && state.baseRev !== h.h;
-    el.innerHTML = `${s2.ico} Rev ${h.n} · 🔑 ${_esc(rec.tk.slice(-4))} · salva ${_haTxt(h.ua)}${novo ? ' · <b style="color:#c0392b">⚠ há versão mais nova no histórico</b>' : ''}`;
+    el.innerHTML = `${s2.ico} Rev ${h.n} · 🔑 ${_esc(rec.tk.slice(-4))} · salva ${_haTxt(h.ua)}${novo ? ' · <b style="color:#c0392b">⚠ há versão mais nova no histórico</b>' : ''}${_vivoBadge()}`;
 };
 let _idTimer = null; const _idInfoDeb = () => { clearTimeout(_idTimer); _idTimer = setTimeout(_atualizarIdInfo, 400); };
 
@@ -3404,7 +3410,7 @@ async function histSalvar(status = 'final', opt = {}) {
             const fotosDif = JSON.stringify((atual.produtos || []).map(p => (p.pallets || []).map(pl => pl.foto || ''))) !== JSON.stringify((head.estado.produtos || []).map(p => (p.pallets || []).map(pl => pl.foto || '')));
             if (rec.status === status) { if (fotosDif) { head.estado = atual; _espelhar(rec); await _hTx('readwrite', st => st.put(rec)); } state.baseRev = rec.h; _ultimoSalvar = { msg: `Sem mudanças (rev ${rec.n}).`, n: rec.n }; return true; }
         } else if (dg.problema) {
-            const r = opt.silencioso ? 'novo' : await _dialogoSalvar(rec, dg);
+            const r = opt.auto ? 'cancelar' : opt.silencioso ? 'novo' : await _dialogoSalvar(rec, dg);
             if (r === 'cancelar') return false;
             if (r === 'novo') { origem = { cid: rec.id, rev: head.h }; _setCid(_gerarCid()); state.tk = _tkNovo(); atual.cid = state.cid; atual.tk = state.tk; rec = null; }
         }
@@ -3428,6 +3434,7 @@ async function histSalvar(status = 'final', opt = {}) {
     for (const x of (await _hLista())) { if (x.status === 'andamento' && x.id !== cid && Date.now() - (x.ua || 0) > 60 * 864e5) await _hTx('readwrite', st => st.delete(x.id)); }
     _ultimoSalvar = { msg: prev ? `Revisão ${n} salva${resumo.length ? ' (' + resumo.slice(0, 2).join('; ') + ')' : ''}.` : (origem ? 'Salva como NOVA conferência.' : 'Conferência salva (rev 1).'), n, nova: !prev };
     _syncAgendar(3000); _atualizarIdInfo();
+    if (status === 'final') _vivoFinalizado(cid);
     return true;
 }
 async function _migrarHistorico() {
@@ -3435,13 +3442,16 @@ async function _migrarHistorico() {
     for (let i = 0; i < H.length; i++) { const x = H[i]; await _hTx('readwrite', st => st.put({ id: 'old-' + i + '-' + String(x.quando || '').replace(/\W/g, ''), ts: Date.now() - (i + 1) * 1000, titulo: String(x.titulo || 'Sem fornecedor').split(' · ')[0], quando: x.quando || '', nProd: x.estado?.produtos?.length || 0, liq: null, estado: x.estado })); }
     try { localStorage.removeItem('pesagem_historico'); } catch {}
 }
-async function abrirHistorico() {
-    let L = []; try { await _migrarHistorico(); L = await _hLista(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
+async function abrirHistorico(semSync) {
+    let L = []; try { await _migrarHistorico(); L = await _hListaComVivo(); } catch { toast('Histórico indisponível neste navegador.', 'error'); return; }
     const A = _lsGet('pesagem_auditoria', []), sync = !!_syncCfg()?.token;
     let h = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="${_BTN}" onclick="histSalvarAgora()">Salvar agora</button>${sync ? `<button style="${_BTN2}" onclick="histAtualizar()">🔄 Atualizar</button>` : ''}<button style="${_BTN2}" onclick="baixarBackupCompleto()">⬇ Backup completo</button><button style="${_BTN2}" onclick="document.getElementById('file-import').click()">⬆ Restaurar</button></div><p style="font-size:11px;color:#6b7a8d;margin:8px 0">Cada conferência tem identidade e chave próprias. Salvar de novo cria uma <b>revisão</b>; nada é sobrescrito. Conferência finalizada fica <b>selada</b> 🔒.</p>`;
-    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="padding:10px 0;border-bottom:1px solid #dde3ea"><div style="font-size:12px;min-width:0;line-height:1.55"><b>${_esc(x.titulo)}</b> <span style="font-size:10px">${s2.ico} ${s2.txt}</span><br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button><button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button><button style="${_BTN2}" onclick="histImprimirLaudo('${x.id}')">🖨 Laudo</button><button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button></div></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
+    h += L.length ? L.map(x => { const s2 = _selo(x); return `<div style="padding:10px 0;border-bottom:1px solid #dde3ea"><div style="font-size:12px;min-width:0;line-height:1.55"><b>${_esc(x.titulo)}</b> ${x.vivo ? `<span style="font-size:10px;font-weight:800;color:#1a6b3c">🟢 AO VIVO · ${_haSeg(x.vivoUa)}</span>` : `<span style="font-size:10px">${s2.ico} ${s2.txt}</span>`}<br><span style="color:#6b7a8d">${_esc(x.quando)} · ${x.nProd} produto(s)${typeof x.liq === 'number' ? ' · ' + _kg(x.liq) + ' kg' : ''}<br>rev ${x.n} · 🔑 ${_esc((x.tk || '').slice(-4))}${x.disp ? ' · ' + _esc(x.conferente || 'sem conferente') + ' · ' + _esc(x.disp.nome) : ''}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button style="${_BTN}" onclick="verConferencia('${x.id}')">Ver</button>${x.vivo ? '' : `<button style="${_BTN2}" onclick="histAbrir('${x.id}')">${x.status === 'final' ? 'Reabrir' : 'Continuar'}</button>`}<button style="${_BTN2}" onclick="histImprimirLaudo('${x.id}')">🖨 Laudo</button>${x.vivo ? '' : `<button style="${_BTN2}" onclick="histBaixar('${x.id}')">⬇</button><button style="${_BTN2}" onclick="histExcluir('${x.id}')">🗑</button>`}</div></div>`; }).join('') : '<p style="font-size:13px;color:#6b7a8d">Histórico vazio.</p>';
     if (A.length) h += `<b style="font-size:12px;display:block;margin-top:16px">🔐 Autorizações recentes</b>` + A.slice(0, 10).map(a => `<div style="font:500 11px 'DM Mono',monospace;padding:4px 0;color:#6b7a8d">${_esc(a.quando)} · ${_esc(a.prod)} · pallet ${a.pallet} · ${a.tipo}</div>`).join('');
     _modal('🗂 Histórico de conferências', h);
+    const _cb = document.getElementById('modal-v10-body');
+    if (_cb) { _cb.dataset.tela = 'hist'; _cb.dataset.sig = L.map(x => `${x.id}:${x.h || ''}:${x.vivoUa || ''}`).join('|'); }
+    if (!semSync && _syncCfg()?.token) sincronizar(false, null, { poll: true });   // abrir o Histórico já busca novidades
 }
 async function histAtualizar() { await sincronizar(true, '🔄 Histórico atualizado.'); abrirHistorico(); }
 async function histSalvarAgora() { const ok = await histSalvar('auto'); toast(ok ? '🗂 ' + (_ultimoSalvar.msg || 'Conferência salva no histórico.') : (ok === false ? 'Nada foi salvo.' : 'Nada para salvar ainda.'), ok ? 'success' : 'info'); abrirHistorico(); }
@@ -4593,20 +4603,27 @@ function _mesDeId(id) { const m = /^c?([0-9a-z]{8})[0-9a-z]{0,6}$/.exec(String(i
 function _pathConf(id) { const m = _mesDeId(id); return m === 'legado' ? `conferencias/legado/${id}.json` : `conferencias/${m.slice(0, 4)}/${m.slice(5)}/${id}.json`; }
 const _trivial = txt => { try { const j = JSON.parse(txt); return !Object.keys(j).length || (Array.isArray(j.itens) && !j.itens.length && !j.em); } catch { return false; } };
 
+let _ghRestante = null; // requisições que ainda restam na cota do token (o GitHub informa em cada resposta)
 async function _gh(path, o = {}) {
-    const c = _syncCfg(), r = await fetch((c.api || 'https://api.github.com') + path, { method: o.method || 'GET', headers: Object.assign({ Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, o.body ? { 'Content-Type': 'application/json' } : {}), body: o.body ? JSON.stringify(o.body) : undefined });
+    const c = _syncCfg(), r = await fetch((c.api || 'https://api.github.com') + path, { method: o.method || 'GET', cache: o.cache, headers: Object.assign({ Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, o.body ? { 'Content-Type': 'application/json' } : {}), body: o.body ? JSON.stringify(o.body) : undefined });
+    const rest = r.headers.get('x-ratelimit-remaining'); if (rest !== null && rest !== '') _ghRestante = Number(rest);
     const json = r.status === 204 ? null : await r.json().catch(() => null);
-    if (r.status >= 400 && !(o.ok || []).includes(r.status)) { const e = new Error((json && json.message) || ('HTTP ' + r.status)); e.status = r.status; e.auth = r.status === 401 || r.status === 403; throw e; }
+    if (r.status >= 400 && !(o.ok || []).includes(r.status)) {
+        const msg = (json && json.message) || ('HTTP ' + r.status);
+        // 403/429 também é "limite de requisições" — não pode ser tratado como token sem permissão (travaria a sincronização).
+        const limite = (r.status === 403 || r.status === 429) && (r.headers.get('x-ratelimit-remaining') === '0' || !!r.headers.get('retry-after') || /rate limit|abuse|secondary/i.test(msg));
+        const e = new Error(msg); e.status = r.status; e.rate = limite; e.retry = Number(r.headers.get('retry-after')) || 0; e.auth = !limite && (r.status === 401 || r.status === 403); throw e;
+    }
     return { status: r.status, json };
 }
 const _repoPath = c => `/repos/${c.owner}/${c.repo}`;
 async function _ghEstado(c) {
     const rp = _repoPath(c);
-    let ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
+    let ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409], cache: 'no-cache' });
     if (ref.status !== 200) {
         if (_funcao() === 'prevencao') throw new Error('O repositório ainda está vazio. Peça ao conferente para enviar.');
         await _gh(`${rp}/contents/LEIA-ME.md`, { method: 'PUT', body: { message: 'inicio: dados do app Conferência de Pesagem', content: _txt64('# Dados do app Conferência de Pesagem\n\nGerado automaticamente. Não edite à mão.\n') }, ok: [404, 409, 422] });
-        ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409] });
+        ref = await _gh(`${rp}/git/ref/heads/${c.branch}`, { ok: [404, 409], cache: 'no-cache' });
         if (ref.status !== 200) throw new Error('Branch "' + c.branch + '" não encontrada.');
     }
     const head = ref.json.object.sha, cm = await _gh(`${rp}/git/commits/${head}`), treeSha = cm.json.tree.sha;
@@ -4682,39 +4699,60 @@ async function _empurrar(c, R) {
     const cm = await _gh(`${rp}/git/commits`, { method: 'POST', body: { message: `sync ${_device()}: ${mudou.length} arquivo(s)${del.length ? `, ${del.length} removido(s)` : ''}`, tree: tr.json.sha, parents: [R.head] } });
     const up = await _gh(`${rp}/git/refs/heads/${c.branch}`, { method: 'PATCH', body: { sha: cm.json.sha, force: false }, ok: [409, 422] });
     if (up.status !== 200) return 'conflito';
+    _novaHead = cm.json.sha;
     mudou.forEach(f => { st.shas[f.path] = f.sha; }); del.forEach(p => { delete st.shas[p]; }); _lsSet(_SS, st);
     return 'ok';
 }
+let _syncDirty = false, _syncRerun = false, _novaHead = null, _syncPausaAte = 0;
+/* Chamado quando ALGO LOCAL mudou e precisa subir. Se já há uma sincronização em andamento, o pedido NÃO se perde:
+   fica marcado e roda de novo assim que ela terminar (antes, uma edição feita no meio do envio ficava esquecida até o próximo ciclo). */
 function _syncAgendar(ms) {
-    if (_syncBusy || !_syncCfg()?.token || _syncCfg().bloqueado) return;
+    if (!_syncCfg()?.token || _syncCfg().bloqueado) return;
+    _syncDirty = true;
+    if (_syncBusy) { _syncRerun = true; return; }
     clearTimeout(_syncTimer); _syncTimer = setTimeout(() => sincronizar(false), ms || 4000);
 }
-async function sincronizar(manual, msg) {
-    const c = _syncCfg(); if (!c?.token || _syncBusy) return;
+/* Ponta atual do ramo no GitHub: 1 requisição que revalida (If-None-Match); sem novidade o GitHub responde 304, que não gasta cota. */
+async function _cabecaRemota(c) {
+    const r = await _gh(`${_repoPath(c)}/git/ref/heads/${c.branch}`, { ok: [404, 409], cache: 'no-cache' });
+    return r.status === 200 ? r.json.object.sha : null;
+}
+async function sincronizar(manual, msg, opt = {}) {
+    const c = _syncCfg(); if (!c?.token) return;
+    if (_syncBusy) { if (manual || !opt.poll) _syncRerun = true; return; }
     if (!manual && c.bloqueado) return;
-    if (!manual && !_syncPend) { const falta = 6000 - (Date.now() - _syncSt().last); if (falta > 0) { _syncAgendar(falta + 300); return; } }
-    if (!navigator.onLine) { _syncPend = true; _syncErr = 'Sem internet. Envio pendente.'; if (manual) toast('Sem internet: envio pendente.', 'info'); _syncUI(); return; }
+    if (!manual && Date.now() < _syncPausaAte) return;
+    if (!manual && !_syncPend) { const falta = 6000 - (Date.now() - _syncSt().last); if (falta > 0) { clearTimeout(_syncTimer); _syncTimer = setTimeout(() => sincronizar(false, null, opt), falta + 300); return; } }
+    if (!navigator.onLine) { _syncPend = true; _syncDirty = true; _syncErr = 'Sem internet. Envio pendente.'; if (manual) toast('Sem internet: envio pendente.', 'info'); _syncUI(); return; }
     _syncBusy = true; _syncErr = ''; _syncUI();
     try {
-        let ok = false;
-        const ro = _funcao() === 'prevencao';
-        for (let i = 0; i < 4 && !ok; i++) { const R = await _ghEstado(c); await _puxar(c, R); ok = ro ? true : (await _empurrar(c, R)) === 'ok'; }
+        const ro = _funcao() === 'prevencao', st0 = _syncSt();
+        // Verificação barata: nada mudou nem aqui nem no GitHub → não baixa nada (e a cada 5 min faz uma conferência completa de qualquer jeito).
+        if (opt.poll && !manual && !_syncPend && !_syncDirty && st0.head && Date.now() - (st0.completo || 0) < 300000) {
+            const h = await _cabecaRemota(c);
+            if (h && h === st0.head) { st0.last = Date.now(); _lsSet(_SS, st0); return; }
+        }
+        _syncDirty = false; _novaHead = null;
+        let ok = false, R = null;
+        for (let i = 0; i < 4 && !ok; i++) { R = await _ghEstado(c); await _puxar(c, R); ok = ro ? true : (await _empurrar(c, R)) === 'ok'; }
         if (!ok) throw new Error('Conflito persistente. Tente de novo.');
-        const st = _syncSt(); st.last = Date.now(); _lsSet(_SS, st); _syncPend = false;
+        const st = _syncSt(); st.last = Date.now(); st.completo = st.last; st.head = _novaHead || R.head; _lsSet(_SS, st); _syncPend = false;
         _atualizarDatalist(); _atualizarListaForn();
         if (manual) toast(msg || '☁ Sincronizado.', 'success');
         if (_funcao() === 'prevencao') prevRender();
-        _atualizarIdInfo();
+        _vivoMudou(); _atualizarIdInfo(); _vivoGarantirCanal();
     } catch (e) {
-        if (e.auth) { _syncErr = e.status === 401 ? 'Token recusado ou expirado. Gere outro e reconecte.' : 'Sem permissão. O token precisa de "Contents: Read and write" neste repositório.'; const c2 = _syncCfg(); c2.bloqueado = true; _lsSet(_SC, c2); if (!_syncAvisou) { _syncAvisou = true; toast('☁ ' + _syncErr, 'error', 6000); } }
+        _syncDirty = true;
+        if (e.rate) { _syncPend = true; _syncErr = 'Limite de requisições do GitHub atingido. Tento de novo em instantes.'; _syncPausaAte = Date.now() + Math.max(_V().pausaMin, (e.retry || 0) * 1000); if (manual) toast('☁ ' + _syncErr, 'warning', 5000); }
+        else if (e.auth) { _syncErr = e.status === 401 ? 'Token recusado ou expirado. Gere outro e reconecte.' : 'Sem permissão. O token precisa de "Contents: Read and write" neste repositório.'; const c2 = _syncCfg(); c2.bloqueado = true; _lsSet(_SC, c2); if (!_syncAvisou) { _syncAvisou = true; toast('☁ ' + _syncErr, 'error', 6000); } }
         else { _syncPend = true; _syncErr = String(e.message || e).slice(0, 140); if (manual) toast('☁ ' + _syncErr, 'warning', 5000); }
-    } finally { _syncBusy = false; _syncUI(); }
+    } finally { _syncBusy = false; _syncUI(); if (_syncRerun) { _syncRerun = false; _syncAgendar(1500); } }
 }
 function _syncUI() { const el = document.getElementById('sync-status'); if (el) el.innerHTML = _syncStatusHtml(); }
 function _syncStatusHtml() {
     const c = _syncCfg(), st = _syncSt(); if (!c) return '';
     const quando = st.last ? new Date(st.last).toLocaleString('pt-BR') : 'ainda não';
-    return `<div style="font:500 12px 'DM Mono',monospace;line-height:1.7"><b style="font-family:Sora">${_esc(c.owner)}/${_esc(c.repo)}</b> · ${_esc(c.branch)}<br>Último envio: ${quando}<br>${_syncBusy ? '🔄 Sincronizando…' : _syncErr ? '⚠ ' + _esc(_syncErr) : '✅ Em dia'}</div>`;
+    return `<div style="font:500 12px 'DM Mono',monospace;line-height:1.7"><b style="font-family:Sora">${_esc(c.owner)}/${_esc(c.repo)}</b> · ${_esc(c.branch)}<br>Último envio: ${quando}<br>${_syncBusy ? '🔄 Sincronizando…' : _syncErr ? '⚠ ' + _esc(_syncErr) : '✅ Em dia'}${_vivoLinhaStatus()}</div>`;
 }
 function abrirSync() {
     const c = _syncCfg();
@@ -4741,10 +4779,216 @@ async function syncConectar() {
 }
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => sincronizar(false), 3500);
-    window.addEventListener('online', () => _syncAgendar(1500));
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - _syncSt().last > 120000) _syncAgendar(1500); });
-    setInterval(() => { if (document.visibilityState === 'visible') _syncAgendar(500); }, 600000);
+    window.addEventListener('online', () => { _syncAgendar(1500); _vivoAgora(); });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') { if (Date.now() - _syncSt().last > 15000) sincronizar(false, null, { poll: true }); _vivoAgora(); }
+        else { _vivoEnviar(); _histAutoAgora(true); }   // saiu do app / apagou a tela: manda o que falta
+    });
+    const _cicloSync = () => { if (document.visibilityState === 'visible') sincronizar(false, null, { poll: true }); setTimeout(_cicloSync, _V().intervaloSync); };
+    setTimeout(_cicloSync, _V().intervaloSync);
+    setInterval(() => _histAutoAgora(false), _V().autoCheckMs);
+    _vivoAgora();
 });
+
+/* ══════════ AO VIVO ENTRE APARELHOS + HISTÓRICO AUTOMÁTICO ══════════
+   Por que um canal separado: o histórico guarda REVISÕES encadeadas (nada se sobrescreve). Se cada digitação virasse
+   revisão, o arquivo da conferência incharia sem parar (e a "poda" de um aparelho volta pelos outros). Então:
+     • AO VIVO  = 1 arquivo leve por conferência em andamento (só o último estado, sem revisões), num ramo à parte
+                  ("ao-vivo"), regravado ~4 s depois de cada mudança. Não mexe no histórico nem no ramo principal.
+     • HISTÓRICO = continua com revisões; agora também são criadas sozinhas (a cada ~10 min com mudanças, ao sair do app
+                  e ao finalizar), e todos os aparelhos buscam novidades a cada ~15 s.
+   Leitura barata: a lista da pasta é pedida com revalidação (ETag); sem novidade o GitHub responde 304, que não gasta cota. */
+const VIVO_BRANCH = 'ao-vivo', VIVO_DIR = 'aovivo', _VS_KEY = 'pesagem_vivo_estado';
+const _V = () => Object.assign({ intervalo: 3000, debounce: 1500, minEntre: 4000, apagarMs: 60000, intervaloSync: 15000, autoHistMs: 600000, autoCheckMs: 60000, pausaMin: 60000, vencidoMs: 12 * 3600e3 }, window._vivoCfg || {});
+const _VS = () => Object.assign({ shas: {}, hash: '', cid: '', apagar: {} }, _lsGet(_VS_KEY, {}));
+const _vivoMut = fn => { const v = _VS(); fn(v); _lsSet(_VS_KEY, v); };
+const _vivoMem = new Map();                                   // cid -> conferência em andamento recebida de OUTRO aparelho
+const _vivoSt = { ok: 0, erro: '', semCanal: false, envio: 0 };
+let _vivoHeadVisto = null, _vivoTimerL = null, _vivoTimerE = null, _vivoEnviando = false, _vivoPend = false, _vivoPausaAte = 0, _vivoFalhas = 0, _vivoLendo = false;
+const _vivoNome = cid => String(cid).replace(/[^\w~.-]/g, '_') + '.json';
+const _vivoLigado = () => { const c = _syncCfg(); return !!(c && c.token && !c.bloqueado && appConfig.vivo !== false && Date.now() >= _vivoPausaAte); };
+const _vivoPodeEscrever = () => _vivoLigado() && _funcao() !== 'prevencao' && _syncSt().last > 0;
+const _utf8b64 = txt => { const u = new TextEncoder().encode(txt); let bin = ''; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
+function _haSeg(ts) { const sg = Math.max(0, Math.round((Date.now() - ts) / 1000)); return sg < 60 ? `há ${sg} s` : _haTxt(ts); }
+
+/* ── envio (só aparelhos que NÃO são Prevenção) ── */
+/* 1ª mudança depois de um tempo parado sai em ~1,5 s; digitando sem parar, sai no máximo a cada ~4 s (poupa a cota do token). */
+function _vivoAgendar() {
+    if (!_vivoPodeEscrever() || _vivoTimerE) return;   // já há envio marcado: ele leva o estado mais novo, lido na hora de enviar
+    const espera = Math.max(_V().debounce, _V().minEntre - (Date.now() - _vivoSt.envio));
+    _vivoTimerE = setTimeout(() => { _vivoTimerE = null; _vivoEnviar(); }, espera);
+}
+/* Ramo técnico "ao-vivo": nasce de um commit vazio (órfão), sem copiar nada do histórico. Criado uma vez, logo depois da 1ª sincronização,
+   pra que os outros aparelhos já o encontrem (e a leitura fique barata desde o começo). */
+async function _vivoCriarCanal() {
+    const rp = _repoPath(_syncCfg());
+    const t = await _gh(`${rp}/git/trees`, { method: 'POST', body: { tree: [{ path: 'LEIA-ME.md', mode: '100644', type: 'blob', content: 'Ramo técnico do app Conferência de Pesagem: arquivos "ao vivo" temporários. Pode ser ignorado.\n' }] } });
+    const cm = await _gh(`${rp}/git/commits`, { method: 'POST', body: { message: 'ao vivo: início', tree: t.json.sha, parents: [] } });
+    await _gh(`${rp}/git/refs`, { method: 'POST', body: { ref: 'refs/heads/' + VIVO_BRANCH, sha: cm.json.sha }, ok: [422] }); // 422 = já existe
+    _vivoMut(v => { v.canal = true; });
+}
+async function _vivoGarantirCanal() {
+    if (_VS().canal || !_vivoPodeEscrever()) return;
+    try { await _vivoCriarCanal(); } catch (e) { if (e.rate || e.auth) _vivoErro(e); }
+}
+async function _vivoPut(cid, txt, tentativa = 0) {
+    const c = _syncCfg(), caminho = `${_repoPath(c)}/contents/${VIVO_DIR}/${_vivoNome(cid)}`, VS = _VS();
+    const body = { message: `ao vivo · ${_nomeDisp()}`, content: _utf8b64(txt), branch: VIVO_BRANCH };
+    if (VS.shas[cid]) body.sha = VS.shas[cid];
+    const r = await _gh(caminho, { method: 'PUT', body, ok: [404, 409, 422] });
+    if (r.status === 200 || r.status === 201) { _vivoMut(v => { v.shas[cid] = r.json.content.sha; }); return; }
+    if (tentativa >= 3) throw new Error((r.json && r.json.message) || ('HTTP ' + r.status));
+    const msg = (r.json && r.json.message) || '';
+    if (/branch/i.test(msg) && !/sha/i.test(msg)) { _vivoMut(v => { v.canal = false; }); await _vivoCriarCanal(); }
+    else { const g = await _gh(`${caminho}?ref=${VIVO_BRANCH}`, { ok: [404], cache: 'no-store' }); _vivoMut(v => { if (g.status === 200) v.shas[cid] = g.json.sha; else delete v.shas[cid]; }); }
+    return _vivoPut(cid, txt, tentativa + 1);
+}
+async function _vivoEnviar() {
+    clearTimeout(_vivoTimerE); _vivoTimerE = null;
+    if (!_vivoPodeEscrever() || !_temDados()) return;
+    if (_vivoEnviando) { _vivoPend = true; return; }
+    _vivoEnviando = true;
+    try {
+        const cid = _cid(), est = exportarEstado(), rec = await _hGet(cid).catch(() => null);
+        let liq = null; try { liq = _calcEntry(est).reduce((t, { g }) => t + g.totais.liqTotal, 0); } catch {}
+        const base = { cid, tk: state.tk || '', n: rec ? (_cabeca(rec).n || 0) : 0, titulo: _tituloFornecedores(state), conferente: (state.conferente || '').trim(), nProd: est.produtos.filter(p => (p.nome || '').trim()).length, liq, estado: _semFotos(est) };
+        // o hash ignora o que muda só por salvar/finalizar (tk, nº da revisão): só conteúdo novo regrava o arquivo ao vivo
+        const hash = _blobSha(JSON.stringify(Object.assign({}, base, { tk: '', n: 0, estado: Object.assign({}, base.estado, { tk: '' }) }))), VS = _VS();
+        if (hash !== VS.hash || VS.cid !== cid) {
+            await _vivoPut(cid, JSON.stringify(Object.assign({ v: 1, ua: Date.now(), disp: { id: _device(), nome: _nomeDisp(), funcao: _funcao() } }, base)));
+            _vivoMut(v => { if (v.cid && v.cid !== cid) v.apagar[v.cid] = Date.now() + _V().apagarMs; delete v.apagar[cid]; v.hash = hash; v.cid = cid; });
+            _vivoSt.envio = Date.now();
+        }
+        _vivoSt.erro = ''; _vivoFalhas = 0;
+    } catch (e) { _vivoErro(e); }
+    finally { _vivoEnviando = false; if (_vivoPend) { _vivoPend = false; _vivoAgendar(); } }
+}
+/* Conferência finalizada: o registro oficial segue pelo histórico; o arquivo "ao vivo" sai depois de um tempo (dá tempo dos outros aparelhos receberem o oficial). */
+function _vivoFinalizado(cid) { _vivoMut(v => { v.apagar[cid] = Date.now() + _V().apagarMs; }); }
+async function _vivoProcessarApagar() {
+    if (!_vivoPodeEscrever()) return;
+    const c = _syncCfg(), rp = _repoPath(c), agora = Date.now();
+    const devidos = Object.keys(_VS().apagar).filter(cid => _VS().apagar[cid] <= agora).slice(0, 3);
+    for (const cid of devidos) {
+        const caminho = `${rp}/contents/${VIVO_DIR}/${_vivoNome(cid)}`;
+        let sha = _VS().shas[cid];
+        if (!sha) { const g = await _gh(`${caminho}?ref=${VIVO_BRANCH}`, { ok: [404], cache: 'no-store' }); sha = g.status === 200 ? g.json.sha : null; }
+        if (sha) {
+            const d = await _gh(caminho, { method: 'DELETE', body: { message: 'ao vivo · fim', sha, branch: VIVO_BRANCH }, ok: [404, 409, 422] });
+            if (d.status === 409 || d.status === 422) { _vivoMut(v => { delete v.shas[cid]; }); continue; } // sha velho: tenta de novo no próximo ciclo
+        }
+        _vivoMut(v => { delete v.apagar[cid]; delete v.shas[cid]; if (v.cid === cid) v.hash = ''; });
+    }
+}
+
+/* ── leitura (todos os aparelhos) ── */
+async function _vivoLer() {
+    if (_vivoLendo) return; _vivoLendo = true;
+    try {
+        const c = _syncCfg(), rp = _repoPath(c), meuArq = _vivoNome(_cid());
+        const ref = await _gh(`${rp}/git/ref/heads/${VIVO_BRANCH}`, { ok: [404, 409], cache: 'no-cache' });   // sem novidade: 304, que não gasta cota
+        if (ref.status !== 200) { _vivoSt.semCanal = true; _vivoHeadVisto = null; if (_vivoMem.size) { _vivoMem.clear(); _vivoMudou(); } return; }
+        _vivoSt.semCanal = false;
+        const head = ref.json.object.sha;
+        if (head === _vivoHeadVisto) return;
+        const r = await _gh(`${rp}/contents/${VIVO_DIR}?ref=${VIVO_BRANCH}`, { ok: [404], cache: 'no-cache' });  // 404 = pasta vazia (ninguém em andamento)
+        const arqs = (r.status === 200 && Array.isArray(r.json) ? r.json : []).filter(f => f.type === 'file' && /\.json$/.test(f.name));
+        const nomes = new Set(arqs.map(f => f.name));
+        let mudou = false;
+        for (const [cid, v] of [..._vivoMem]) if (!nomes.has(v.arquivo)) { _vivoMem.delete(cid); mudou = true; }
+        const conhecido = f => [..._vivoMem.values()].some(v => v.arquivo === f.name && v.sha === f.sha);
+        const baixar = arqs.filter(f => f.name !== meuArq && !conhecido(f));
+        for (let i = 0; i < baixar.length; i += 4) await Promise.all(baixar.slice(i, i + 4).map(async f => {
+            const b = await _gh(`${rp}/git/blobs/${f.sha}`);
+            let p = null; try { p = JSON.parse(_b64txt(b.json.content)); } catch {}
+            if (p && p.cid && p.estado && Array.isArray(p.estado.produtos)) { _vivoMem.set(p.cid, Object.assign(p, { arquivo: f.name, sha: f.sha })); mudou = true; }
+        }));
+        if (_vivoPodeEscrever()) for (const [cid, v] of _vivoMem) if (Date.now() - v.ua > 24 * 3600e3) _vivoMut(x => { x.apagar[cid] = 0; }); // faxina de abandonadas
+        _vivoHeadVisto = head;
+        if (mudou) _vivoMudou();
+    } finally { _vivoLendo = false; }
+}
+function _vivoErro(e) {
+    _vivoFalhas++;
+    if (e.rate) { _vivoPausaAte = Date.now() + Math.max(_V().pausaMin, (e.retry || 0) * 1000); _vivoSt.erro = 'Limite de requisições do GitHub — ao vivo pausado por 1 min.'; }
+    else if (e.auth) { _vivoPausaAte = Date.now() + 5 * 60000; _vivoSt.erro = e.status === 401 ? 'Token recusado ou expirado.' : 'Token sem permissão para o ao vivo (precisa de Contents: Read and write).'; }
+    else { _vivoPausaAte = Date.now() + Math.min(60000, 5000 * _vivoFalhas); _vivoSt.erro = String(e.message || e).slice(0, 100); }
+    _syncUI(); try { _atualizarIdInfo(); } catch {}
+}
+async function _vivoCiclo() {
+    let prox = _V().intervalo;
+    try {
+        if (_vivoLigado() && document.visibilityState === 'visible' && navigator.onLine) {
+            await _vivoLer(); _vivoSt.ok = Date.now(); _vivoSt.erro = ''; _vivoFalhas = 0;
+            await _vivoProcessarApagar();
+            if (_vivoSt.semCanal) prox = Math.max(prox, 5000);   // ramo ainda não existe (nenhum aparelho com escrita sincronizou): consulta mais devagar. Depois que existe, nunca some.
+        }
+    } catch (e) { _vivoErro(e); prox = Math.max(prox, _vivoPausaAte - Date.now(), 5000); }
+    if (_ghRestante != null) { if (_ghRestante < 150) prox = Math.max(prox, 120000); else if (_ghRestante < 600) prox = Math.max(prox, 30000); } // cota do token acabando: desacelera
+    clearTimeout(_vivoTimerL); _vivoTimerL = setTimeout(_vivoCiclo, prox);
+}
+function _vivoAgora() { clearTimeout(_vivoTimerL); _vivoTimerL = setTimeout(_vivoCiclo, 50); }
+function _vivoBadge() {
+    if (!_syncCfg()?.token || appConfig.vivo === false) return '';
+    if (_vivoSt.erro) return ' · ☁🟠';
+    return _vivoSt.ok && Date.now() - _vivoSt.ok < 30000 ? ' · ☁🟢 ao vivo' : '';
+}
+
+/* ── como as conferências "ao vivo" aparecem nas telas ── */
+function _recVivo(v, h) {
+    const est = v.estado, ant = h ? _cabeca(h) : null, n = ant ? ant.n + 1 : 1;
+    const rev = { n, prev: ant ? ant.h : null, status: 'andamento', ua: v.ua, quando: new Date(v.ua).toLocaleString('pt-BR'), titulo: v.titulo, conferente: v.conferente || '', disp: v.disp || null, nProd: v.nProd || 0, liq: typeof v.liq === 'number' ? v.liq : null, estado: est };
+    rev.h = _revHash(v.cid, n, rev.prev, 'andamento', est);
+    const rec = { id: v.cid, cid: v.cid, tk: (h && h.tk) || v.tk || '', criada: (h && h.criada) || v.ua, v: 3, revs: [...(h ? h.revs : []), rev], vivo: true, vivoUa: v.ua };
+    return _espelhar(rec) || rec;
+}
+function _vivoValida(v, h) { return v && !(v.disp && v.disp.id === _device()) && Date.now() - v.ua <= _V().vencidoMs && (!h || (h.ua || h.ts || 0) < v.ua); }
+async function _hListaComVivo() {
+    let L = []; try { L = await _hLista(); } catch {}
+    if (!_vivoMem.size) return L;
+    const porId = new Map(L.map(x => [x.id, x])), vivos = [];
+    _vivoMem.forEach((v, cid) => { const h = porId.get(cid); if (_vivoValida(v, h)) vivos.push(_recVivo(v, h)); });
+    const sub = new Set(vivos.map(x => x.id));
+    return [...L.filter(x => !sub.has(x.id)), ...vivos];
+}
+async function _hGetOuVivo(id) {
+    const h = await _hGet(id).catch(() => null), v = _vivoMem.get(id);
+    return _vivoValida(v, h) ? _recVivo(v, h) : h;
+}
+/* Algo novo chegou (ao vivo ou histórico): atualiza só o que está aberto na tela, sem perder a posição de rolagem. */
+async function _vivoMudou() {
+    try {
+        if (_funcao() === 'prevencao') prevRender();
+        const corpo = document.getElementById('modal-v10-body');
+        if (corpo && corpo.dataset.tela === 'hist') {
+            const L = await _hListaComVivo(), sig = L.map(x => `${x.id}:${x.h || ''}:${x.vivoUa || ''}`).join('|');
+            if (sig !== corpo.dataset.sig) { const box = corpo.parentElement, y = box.scrollTop; await abrirHistorico(true); const b2 = document.getElementById('modal-v10-body'); if (b2) b2.parentElement.scrollTop = y; }
+        }
+        const ov = document.getElementById('ver-conf');
+        if (ov && ov.dataset.cid && !ov.dataset.revh && ov.dataset.cid !== _cid()) {
+            const rec = await _hGetOuVivo(ov.dataset.cid), ua = rec ? String(rec.vivoUa || rec.ua || '') : '';
+            if (rec && ua !== ov.dataset.ua) { const y = ov.scrollTop; await verConferencia(ov.dataset.cid, null, !!ov.dataset.scan); const o2 = document.getElementById('ver-conf'); if (o2) o2.scrollTop = y; }
+        }
+        _atualizarIdInfo();
+    } catch (e) { console.warn('[ao vivo]', e); }
+}
+
+/* ── histórico automático ── */
+let _histSujo = false, _histUltAuto = 0;
+function _histAutoMarcar() { _histSujo = true; }
+async function _histAutoAgora(forcar) {
+    if (!_histSujo || _funcao() === 'prevencao' || !_temDados()) return;
+    const dt = Date.now() - _histUltAuto;
+    if (dt < 30000 || (!forcar && dt < _V().autoHistMs)) return;
+    _histUltAuto = Date.now(); _histSujo = false;
+    try { await histSalvar('auto', { silencioso: true, auto: true }); } catch { _histSujo = true; }
+}
+function _vivoLinhaStatus() {
+    if (!_syncCfg()?.token) return '';
+    if (appConfig.vivo === false) return '<br>📡 Ao vivo: desligado';
+    if (_vivoSt.erro) return `<br>📡 Ao vivo: ⚠ ${_esc(_vivoSt.erro)}`;
+    return `<br>📡 Ao vivo: ${_vivoSt.ok ? '🟢 conferido ' + _haSeg(_vivoSt.ok) : '…iniciando'}${_vivoSt.semCanal ? ' (ninguém enviou ainda)' : ''}${_vivoMem.size ? ' · ' + _vivoMem.size + ' em andamento' : ''}`;
+}
 
 /* ══════════ APARELHOS · SALVAR E ENVIAR · PAINEL DA PREVENÇÃO ══════════ */
 const _disp = () => Object.assign({ nome: '', funcao: 'conferente' }, _lsGet('pesagem_dispositivo', {}));
@@ -4788,17 +5032,17 @@ function _resumoEntry(e) {
 }
 async function prevRender() {
     const el = document.getElementById('prev-lista'); if (!el) return;
-    let L = []; try { L = await _hLista(); } catch {}
+    let L = []; try { L = await _hListaComVivo(); } catch {}
     if (document.getElementById('prev-so-andamento')?.checked) L = L.filter(x => x.status === 'andamento');
     L.sort((a, b) => ((b.status === 'andamento') - (a.status === 'andamento')) || ((b.ua || b.ts) - (a.ua || a.ts)));
-    const st = _syncSt(); document.getElementById('prev-quando').textContent = st.last ? 'Atualizado às ' + new Date(st.last).toLocaleTimeString('pt-BR') : 'Ainda não atualizado';
+    const st = _syncSt(); document.getElementById('prev-quando').textContent = (st.last ? 'Atualizado às ' + new Date(st.last).toLocaleTimeString('pt-BR') : 'Ainda não atualizado') + (_vivoSt.erro ? ' · ⚠ ao vivo: ' + _vivoSt.erro : _vivoBadge());
     el.innerHTML = L.length ? L.map(e => {
         let r; try { r = _resumoEntry(e); } catch { r = { liq: e.liq || 0, red: 0, ora: 0, menor: null }; }
         const chips = [r.red ? `<span class="prev-chip bad">🔴 ${r.red} bloqueado(s)</span>` : '', r.ora ? `<span class="prev-chip warn">🟠 ${r.ora} em atenção</span>` : '', (!r.red && !r.ora) ? '<span class="prev-chip ok">🟢 sem alertas</span>' : '', r.menor != null ? `<span class="prev-chip ${r.menor < 0 ? 'bad' : r.menor <= 30 ? 'warn' : ''}">⏳ ${r.menor < 0 ? 'vencido' : r.menor + ' d'}</span>` : ''].join('');
-        return `<div class="prev-card ${e.status === 'andamento' ? 'andamento' : ''}" onclick="verConferencia('${e.id}')"><div class="pc-top"><span class="pc-nome">${_esc(e.titulo)}</span><span class="prev-badge ${e.status === 'andamento' ? 'andamento' : 'final'}">${e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span></div><div class="pc-sub">${_esc(e.conferente || 'sem conferente')} · ${_esc(e.disp?.nome || '—')}<br>rev ${e.n || 1} · ${_selo(e).ico} ${_selo(e).txt} · 🔑 ${_esc((e.tk || '').slice(-4))}<br>${e.nProd} produto(s) · ${_kg(r.liq)} kg · ${_haTxt(e.ua || e.ts)}</div><div class="prev-chips">${chips}</div></div>`;
+        return `<div class="prev-card ${e.status === 'andamento' ? 'andamento' : ''}" onclick="verConferencia('${e.id}')"><div class="pc-top"><span class="pc-nome">${_esc(e.titulo)}</span><span class="prev-badge ${e.vivo || e.status !== 'andamento' ? 'final' : 'andamento'}">${e.vivo ? '🟢 AO VIVO' : e.status === 'andamento' ? '🟡 em andamento' : '🟢 finalizada'}</span></div><div class="pc-sub">${_esc(e.conferente || 'sem conferente')} · ${_esc(e.disp?.nome || '—')}<br>rev ${e.n || 1} · ${_selo(e).ico} ${_selo(e).txt} · 🔑 ${_esc((e.tk || '').slice(-4))}<br>${e.nProd} produto(s) · ${_kg(r.liq)} kg · ${e.vivo ? _haSeg(e.ua) : _haTxt(e.ua || e.ts)}</div><div class="prev-chips">${chips}</div></div>`;
     }).join('') : '<p style="padding:0 16px;font-size:13px;color:#6b7a8d">Nenhuma conferência ainda. Toque em 🔄 Atualizar.</p>';
 }
-async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(!!manual, '🔄 Atualizado.'); else if (manual) toast('Conecte o GitHub em ☰ › Sincronizar.', 'warning'); prevRender(); }
+async function prevAtualizar(manual) { if (_syncCfg()?.token) await sincronizar(!!manual, '🔄 Atualizado.', { poll: !manual }); else if (manual) toast('Conecte o GitHub em ☰ › Sincronizar.', 'warning'); _vivoAgora(); prevRender(); }
 /* ── TELA "CONFERÊNCIA" ─────────────────────────────────────────────────
    É a mesma tela de leitura do histórico/prevenção (verConferencia), mas
    aberta em modo scan: no fim de cada produto aparecem 2 códigos de barras
@@ -4841,7 +5085,7 @@ async function abrirTelaConferencia() {
 /* Imprimir o laudo (PDF) agora mora no Histórico: monta a folha a partir da
    conferência SALVA — não mexe na conferência que está aberta na tela. */
 async function histImprimirLaudo(id, revH) {
-    const rec = await _hGet(id); if (!rec) { toast('Conferência não encontrada.', 'error'); return; }
+    const rec = await _hGetOuVivo(id); if (!rec) { toast('Conferência não encontrada.', 'error'); return; }
     const rev = revH ? (rec.revs.find(r => r.h === revH) || _cabeca(rec)) : _cabeca(rec);
     let html; try { html = _montarHtmlLaudo(rev.estado, `${rec.titulo} · rev ${rev.n}`); } catch (e) { toast('Não consegui montar o laudo desta conferência.', 'error'); return; }
     document.getElementById('print-area').innerHTML = html;
@@ -4850,7 +5094,7 @@ async function histImprimirLaudo(id, revH) {
 }
 
 async function verConferencia(id, revH, modoScan) {
-    const rec = await _hGet(id); if (!rec) return;
+    const rec = await _hGetOuVivo(id); if (!rec) return;
     const head = _cabeca(rec), rev = revH ? (rec.revs.find(r => r.h === revH) || head) : head, est = rev.estado, antiga = rev.h !== head.h;
     let calc; try { calc = _calcEntry(est); } catch { toast('Não consegui abrir esta conferência.', 'error'); return; }
     const sel = _selo(rec), okRev = _revHash(rec.id, rev.n, rev.prev, rev.status, rev.estado) === rev.h, ro = _funcao() === 'prevencao';
@@ -4872,7 +5116,9 @@ async function verConferencia(id, revH, modoScan) {
     const revs = [...rec.revs].sort((a, b) => b.n - a.n || (b.ua || 0) - (a.ua || 0)).map(r => { const pv = rec.revs.find(x => x.h === r.prev), ch = pv ? _resumoMudancas(pv.estado, r.estado) : ['Primeira versão']; return `<div class="vc-rev ${r.h === rev.h ? 'atual' : ''}"><div><b>Rev ${r.n}</b> · ${r.status === 'final' ? '🔒 finalizada' : '✏ em andamento'}${r.reaberta ? ' · reaberta' : ''}<br><span>${_esc(r.quando)} · ${_esc(r.conferente || '—')} · ${_esc(r.disp?.nome || '—')}</span><br><span>${ch.slice(0, 3).map(l => _esc(l)).join(' · ') || 'sem mudanças de conteúdo'}</span></div><div class="vc-rbtn">${r.h === rev.h ? '<span>vendo</span>' : `<button onclick="verConferencia('${rec.id}','${r.h}')">Ver</button>`}${ro ? '' : `<button onclick="histRestaurarRev('${rec.id}','${r.h}')">Restaurar como nova</button>`}</div></div>`; }).join('');
     document.getElementById('ver-conf')?.remove();
     const o = document.createElement('div'); o.id = 'ver-conf'; o.className = 'vc-full' + (modoScan ? ' vc-scan' : '');
+    o.dataset.cid = rec.id; o.dataset.revh = revH || ''; o.dataset.scan = modoScan ? '1' : ''; o.dataset.ua = String(rec.vivoUa || rec.ua || '');
     o.innerHTML = `<div class="vc-bar"><button onclick="document.getElementById('ver-conf').remove()">← Voltar</button><span style="flex:1">${modoScan ? '📷 Conferência' : '👁 Somente leitura'}</span><button onclick="histImprimirLaudo('${rec.id}','${rev.h}')">🖨 Laudo</button></div><div class="vc-body">
+        ${rec.vivo ? `<div class="vc-alerta ok">🟢 AO VIVO — em andamento em outro aparelho, atualizada ${_haSeg(rec.vivoUa)}. Esta tela se atualiza sozinha.</div>` : ''}
         <div class="vc-id"><div class="vc-forn">${_esc(rec.titulo)}</div><div class="vc-badges"><span class="vc-b ${sel.cls}">${sel.ico} ${sel.txt}</span><span class="vc-b">Rev ${rev.n} de ${head.n}</span><span class="vc-b">🔑 ${_esc((rec.tk || '').slice(-4))}</span></div><div class="vc-sub">Conferente: ${_esc(rev.conferente || '—')} · Aparelho: ${_esc(rev.disp?.nome || '—')}<br>${_esc(rev.quando)} (${_haTxt(rev.ua)}) · Data da pesagem: ${est.dataPesagem ? est.dataPesagem.split('-').reverse().join('/') : '—'}<br>Selo: ${okRev ? '✔ íntegro' : '⚠ INVÁLIDO (alterado fora do app)'} · ${rev.h.slice(0, 10)}${rec.origem ? '<br>Copiada de outra conferência (' + _esc(rec.origem.cid.slice(-4)) + ')' : ''}</div></div>
         ${antiga ? `<div class="vc-alerta warn">Você está vendo a revisão ${rev.n}, que é ANTIGA. <button onclick="verConferencia('${rec.id}')">Ver a mais recente</button></div>` : ''}
         ${rec.conflito ? '<div class="vc-alerta warn">🔀 Há versões divergentes desta conferência (feitas em lugares diferentes). Todas estão guardadas abaixo.</div>' : ''}
